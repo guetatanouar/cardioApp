@@ -16,7 +16,6 @@ import {
   Search,
   Settings,
   Sun,
-  UserCircle2,
   Users
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -39,15 +38,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 type HeaderNotification = { id: string; title: string; detail: string };
+type ColorTheme = "blue" | "green" | "purple" | "red";
+
+function applyColorTheme(theme: ColorTheme) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  root.classList.remove("theme-blue", "theme-green", "theme-purple", "theme-red");
+  root.classList.add(`theme-${theme}`);
+}
 
 const staffNav = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
   { href: "/patients", icon: Users, label: "Patients" },
   { href: "/agenda", icon: CalendarDays, label: "Agenda" },
   { href: "/suivi", icon: Activity, label: "Suivi médical" },
-  { href: "/chat", icon: MessageSquare, label: "Chat" },
-  { href: "/prescriptions", icon: FileText, label: "Ordonnances" },
-  { href: "/settings", icon: Settings, label: "Paramètres" }
+  { href: "/prescriptions", icon: FileText, label: "Prescriptions" },
+  { href: "/chat", icon: MessageSquare, label: "Messagerie" }
 ];
 
 const patientNav = [
@@ -68,8 +74,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isPatientRoute = pathname?.startsWith("/patient");
 
   const [search, setSearch] = React.useState("");
-  const [notifOpen, setNotifOpen] = React.useState(false);
-  const [profileOpen, setProfileOpen] = React.useState(false);
   const [notifications, setNotifications] = React.useState<HeaderNotification[]>([]);
   const [chatUnreadCount, setChatUnreadCount] = React.useState(0);
 
@@ -130,6 +134,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   React.useEffect(() => {
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem("cardio-color-theme") : null;
+    const nextTheme: ColorTheme = stored === "green" || stored === "purple" || stored === "red" ? stored : "blue";
+    applyColorTheme(nextTheme);
+  }, []);
+
+  React.useEffect(() => {
     if (!session && !isAuthRoute) {
       router.replace("/login");
     }
@@ -177,12 +187,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navItems = session?.role === "patient" ? patientNav : staffNav;
   const totalNotif = notifications.length;
 
-  const initials = (session?.role ?? "").slice(0, 2).toUpperCase();
+  const fullName = session?.fullName ?? (session?.role === "patient" ? "Espace patient" : "Personnel médical");
+  const shortName = fullName.split(" ").slice(-1)[0] ?? fullName;
+  const initials = fullName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((x) => x[0])
+    .join("")
+    .toUpperCase();
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,hsl(var(--secondary))_0%,transparent_35%),radial-gradient(circle_at_90%_0%,hsl(var(--accent))_0%,transparent_25%)]">
       <div className="flex min-h-screen">
-        <aside className="hidden w-64 flex-col bg-gradient-to-b from-slate-900 to-indigo-900 text-white md:flex">
+        <aside className="hidden w-60 flex-col bg-gradient-to-b from-slate-900 to-indigo-900 text-white md:flex">
           <div className="flex items-center gap-2 p-4">
             <div className="h-9 w-9 rounded-md bg-white/15 shadow-sm" />
             <div className="leading-tight">
@@ -214,7 +232,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <div className="p-2">
+          <div className="space-y-1 p-2">
+            <Link
+              href="/settings"
+              className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/90 hover:bg-white/10"
+            >
+              <Settings className="h-4 w-4" />
+              <span>Paramètres</span>
+            </Link>
             <Button
               variant="ghost"
               className="w-full justify-start text-white hover:bg-white/10 hover:text-white"
@@ -230,7 +255,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         <div className="flex flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-card/90 px-4 py-3 backdrop-blur">
+          <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border bg-card/90 px-4 backdrop-blur">
             <div className="w-full max-w-md">
               <form
                 onSubmit={(e) => {
@@ -256,7 +281,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-2">
-                    <span>{locale === "fr" ? "FR" : locale === "en" ? "EN" : "AR"}</span>
+                    <span className="text-base leading-none">{locale === "fr" ? "🇫🇷" : locale === "en" ? "🇬🇧" : "🇸🇦"}</span>
                     <ChevronDown className="h-4 w-4 opacity-70" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -265,6 +290,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <DropdownMenuSeparator />
                   {locales.map((l) => (
                     <DropdownMenuItem key={l} onClick={() => setLocale(l)}>
+                      <span className="mr-2">{l === "fr" ? "🇫🇷" : l === "en" ? "🇬🇧" : "🇸🇦"}</span>
                       {l === "fr" ? "Français" : l === "en" ? "English" : "العربية"}
                     </DropdownMenuItem>
                   ))}
@@ -285,7 +311,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-96">
-                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                  <DropdownMenuLabel className="flex items-center justify-between gap-2">
+                    <span>Notifications</span>
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-primary"
+                      onClick={() => setNotifications([])}
+                    >
+                      Tout marquer comme lu
+                    </button>
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="max-h-72 overflow-auto">
                     {notifications.map((n: HeaderNotification) => (
@@ -305,14 +340,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Avatar className="h-7 w-7">
                       <AvatarFallback className="bg-primary text-primary-foreground">{initials || "U"}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline">{session?.role ?? "staff"}</span>
+                    <span className="hidden sm:inline">{shortName}</span>
                     <ChevronDown className="h-4 w-4" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
-                    <div className="text-sm font-semibold">{session?.role === "patient" ? "Espace patient" : "Personnel médical"}</div>
-                    <div className="text-xs text-muted-foreground">{session?.role}</div>
+                    <div className="text-sm font-semibold">{fullName}</div>
+                    <div className="text-xs text-muted-foreground">{session?.role === "patient" ? "Patient" : session?.role === "admin" ? "Cardiologue · Admin" : "Secrétaire · Staff"}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => router.push("/settings")}>Mon profil</DropdownMenuItem>

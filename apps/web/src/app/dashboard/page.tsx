@@ -92,20 +92,11 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader>
-            <CardTitle>Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-muted-foreground">{offline ? "Offline" : summary ? "Online" : "Loading"}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Patients</CardTitle>
+            <CardTitle>Total Patients</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{summary?.patientsTotal ?? "—"}</div>
-            <div className="text-sm text-muted-foreground">Total patients</div>
+            <div className="text-sm text-muted-foreground">actifs</div>
           </CardContent>
         </Card>
 
@@ -115,30 +106,32 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold">{summary?.appointmentsCountToday ?? "—"}</div>
-            <div className="text-sm text-muted-foreground">{summary?.appointmentsPlanned ?? 0} planifies - {summary?.appointmentsUrgent ?? 0} urgents</div>
+            <div className="text-sm text-muted-foreground">{summary?.appointmentsPlanned ?? 0} planifiés</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Messages</CardTitle>
+            <CardTitle>Cas urgents</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{summary?.unreadStaffMessages ?? "—"}</div>
-            <div className="text-sm text-muted-foreground">non lus (staff)</div>
+            <div className="text-2xl font-semibold">{summary?.appointmentsUrgent ?? "—"}</div>
+            <div className="text-sm text-muted-foreground">à traiter</div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Alertes critiques</CardTitle>
+            <CardTitle>Consultations / mois</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{alerts.length}</div>
-            <div className="text-sm text-muted-foreground">patients a surveiller</div>
+            <div className="text-2xl font-semibold">{summary?.appointmentsCompleted ?? "—"}</div>
+            <div className="text-sm text-muted-foreground">ce mois</div>
           </CardContent>
         </Card>
       </div>
+
+      {offline ? <div className="text-sm text-amber-600">Mode hors ligne: affichage des données de démonstration.</div> : null}
 
       <div className="grid gap-4 md:grid-cols-4">
         <Link href="/patients" className="rounded-lg border border-border bg-card p-4 text-sm hover:bg-accent/40">Nouveau dossier patient</Link>

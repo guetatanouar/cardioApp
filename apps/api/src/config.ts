@@ -1,3 +1,16 @@
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "node:url";
+
+const envFile = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".env");
+const resolvedEnvPath = process.env.DOTENV_CONFIG_PATH ?? envFile;
+const dotenvResult = dotenv.config({ path: resolvedEnvPath });
+if (dotenvResult.error) {
+  console.warn(`Unable to load .env file at ${resolvedEnvPath}:`, dotenvResult.error);
+} else {
+  console.debug(`Loaded .env from ${resolvedEnvPath}`);
+}
+
 function getEnv(key: string, defaultValue?: string, isRequired = false): string {
   const value = process.env[key];
   if (!value && isRequired) {

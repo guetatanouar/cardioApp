@@ -9,11 +9,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+type ColorTheme = "blue" | "green" | "purple" | "red";
+
+function applyColorTheme(theme: ColorTheme) {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  root.classList.remove("theme-blue", "theme-green", "theme-purple", "theme-red");
+  root.classList.add(`theme-${theme}`);
+}
+
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { locale, setLocale } = useI18n();
 
-  const [tab, setTab] = React.useState<"profile" | "security" | "permissions" | "access" | "appearance">("profile");
+  const [tab, setTab] = React.useState<"profile" | "notifications" | "security" | "permissions" | "access" | "appearance">("profile");
 
   const [profile, setProfile] = React.useState({ fullName: "", email: "", role: "" });
   const [profileMessage, setProfileMessage] = React.useState<string | null>(null);
@@ -26,6 +35,14 @@ export default function SettingsPage() {
   const [selectedPatientId, setSelectedPatientId] = React.useState("");
   const [patientAccount, setPatientAccount] = React.useState<any | null>(null);
   const [patientAccountForm, setPatientAccountForm] = React.useState({ username: "", password: "", isActive: true, resetPassword: "" });
+  const [colorTheme, setColorTheme] = React.useState<ColorTheme>("blue");
+  const [notificationsPrefs, setNotificationsPrefs] = React.useState({
+    urgentAlerts: true,
+    lowSpO2: true,
+    medicationReminders: true,
+    newPatients: false,
+    weeklySummary: false
+  });
 
   async function loadProfile() {
     const res = await apiFetch<{ fullName: string; email: string; role: string }>("/api/settings/profile");
@@ -62,6 +79,18 @@ export default function SettingsPage() {
     load().catch(() => undefined);
     loadProfile().catch(() => undefined);
     loadPatients().catch(() => undefined);
+    const stored = typeof window !== "undefined" ? window.localStorage.getItem("cardio-color-theme") : null;
+    const initialTheme: ColorTheme = stored === "green" || stored === "purple" || stored === "red" ? stored : "blue";
+    setColorTheme(initialTheme);
+    applyColorTheme(initialTheme);
+    const storedNotif = typeof window !== "undefined" ? window.localStorage.getItem("cardio-notification-prefs") : null;
+    if (storedNotif) {
+      try {
+        setNotificationsPrefs(JSON.parse(storedNotif));
+      } catch {
+        // ignore invalid persisted settings
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -123,6 +152,22 @@ export default function SettingsPage() {
     await loadPatientAccount(selectedPatientId);
   }
 
+  function saveColorTheme(nextTheme: ColorTheme) {
+    setColorTheme(nextTheme);
+    applyColorTheme(nextTheme);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("cardio-color-theme", nextTheme);
+    }
+  }
+
+  function setNotificationPref(key: keyof typeof notificationsPrefs, value: boolean) {
+    const next = { ...notificationsPrefs, [key]: value };
+    setNotificationsPrefs(next);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("cardio-notification-prefs", JSON.stringify(next));
+    }
+  }
+
   const permissionRows: Array<{ key: string; label: string; dbKey: string }> = [
     { key: "canViewPatients", label: "Voir patients", dbKey: "can_view_patients" },
     { key: "canEditPatients", label: "Modifier patients", dbKey: "can_edit_patients" },
@@ -142,6 +187,7 @@ export default function SettingsPage() {
         <CardContent>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant={tab === "profile" ? "default" : "outline"} onClick={() => setTab("profile")}>Profil</Button>
+            <Button size="sm" variant={tab === "notifications" ? "default" : "outline"} onClick={() => setTab("notifications")}>Notifications</Button>
             <Button size="sm" variant={tab === "security" ? "default" : "outline"} onClick={() => setTab("security")}>Securite</Button>
             <Button size="sm" variant={tab === "permissions" ? "default" : "outline"} onClick={() => setTab("permissions")}>Permissions secretaire</Button>
             <Button size="sm" variant={tab === "access" ? "default" : "outline"} onClick={() => setTab("access")}>Acces patient</Button>
@@ -149,6 +195,35 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {tab === "notifications" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notifications</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {[
+              { key: "urgentAlerts", title: "Alertes urgentes", hint: "Tension élevée / SpO2 bas" },
+              { key: "lowSpO2", title: "Alertes valeurs critiques", hint: "Selon seuils patient" },
+              { key: "medicationReminders", title: "Renouvellement ordonnances", hint: "Rappels automatiques" },
+              { key: "newPatients", title: "Nouveaux patients", hint: "Notification d'inscription" },
+              { key: "weeklySummary", title: "Rapport hebdomadaire", hint: "Synthèse activité" }
+            ].map((item) => (
+              <label key={item.key} className="flex items-center justify-between rounded-xl border border-border px-3 py-2">
+                <div>
+                  <div className="text-sm font-medium">{item.title}</div>
+                  <div className="text-xs text-muted-foreground">{item.hint}</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={Boolean(notificationsPrefs[item.key as keyof typeof notificationsPrefs])}
+                  onChange={(e) => setNotificationPref(item.key as keyof typeof notificationsPrefs, e.target.checked)}
+                />
+              </label>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {tab === "profile" ? (
         <Card>
@@ -287,6 +362,29 @@ export default function SettingsPage() {
             <CardTitle>Preferences</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground">Theme de couleur</div>
+              <div className="flex gap-2">
+                {[
+                  { key: "blue", label: "Bleu", className: "bg-blue-500" },
+                  { key: "green", label: "Vert", className: "bg-emerald-500" },
+                  { key: "purple", label: "Violet", className: "bg-violet-500" },
+                  { key: "red", label: "Rouge", className: "bg-red-500" }
+                ].map((option) => {
+                  const active = colorTheme === option.key;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className={`h-7 w-7 rounded-full border-2 ${option.className} ${active ? "border-foreground" : "border-transparent"}`}
+                      onClick={() => saveColorTheme(option.key as ColorTheme)}
+                      title={option.label}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="space-y-1">
               <div className="text-sm text-muted-foreground">Theme</div>
               <div className="flex gap-2">
