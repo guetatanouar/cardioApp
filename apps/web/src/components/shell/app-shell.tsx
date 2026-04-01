@@ -28,6 +28,15 @@ import { getDir, locales } from "@/lib/i18n/messages";
 import { apiFetch } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 
 const staffNav = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -166,15 +175,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const navItems = session?.role === "patient" ? patientNav : staffNav;
   const totalNotif = notifications.length;
 
+  const initials = (session?.role ?? "").slice(0, 2).toUpperCase();
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,hsl(var(--secondary))_0%,transparent_35%),radial-gradient(circle_at_90%_0%,hsl(var(--accent))_0%,transparent_25%)]">
       <div className="flex min-h-screen">
-        <aside className="hidden w-64 flex-col border-r border-border bg-card/90 backdrop-blur md:flex">
+        <aside className="hidden w-64 flex-col bg-gradient-to-b from-slate-900 to-indigo-900 text-white md:flex">
           <div className="flex items-center gap-2 p-4">
-            <div className="h-9 w-9 rounded-md bg-primary shadow-sm" />
+            <div className="h-9 w-9 rounded-md bg-white/15 shadow-sm" />
             <div className="leading-tight">
               <div className="text-sm font-semibold">CardioManager</div>
-              <div className="text-xs text-muted-foreground">Cabinet</div>
+              <div className="text-xs text-white/70">Gestion de cabinet</div>
             </div>
           </div>
           <nav className="flex-1 space-y-1 p-2">
@@ -186,8 +197,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent",
-                    active && "bg-accent"
+                    "flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/90 hover:bg-white/10",
+                    active && "bg-white/15"
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -204,7 +215,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="p-2">
             <Button
               variant="ghost"
-              className="w-full justify-start"
+              className="w-full justify-start text-white hover:bg-white/10 hover:text-white"
               onClick={() => {
                 clearSession();
                 router.replace("/login");
@@ -240,87 +251,82 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="relative flex items-center gap-2">
-              <select
-                value={locale}
-                onChange={(e) => setLocale(e.target.value as "fr" | "en" | "ar")}
-                className="h-9 rounded-md border border-input bg-transparent px-2 text-sm"
-              >
-                {locales.map((l) => (
-                  <option key={l} value={l}>
-                    {l === "fr" ? "FR" : l === "en" ? "EN" : "AR"}
-                  </option>
-                ))}
-              </select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <span>{locale === "fr" ? "FR" : locale === "en" ? "EN" : "AR"}</span>
+                    <ChevronDown className="h-4 w-4 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-44">
+                  <DropdownMenuLabel>Langue</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {locales.map((l) => (
+                    <DropdownMenuItem key={l} onClick={() => setLocale(l)}>
+                      {l === "fr" ? "Français" : l === "en" ? "English" : "العربية"}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <Button variant="outline" size="sm" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
                 {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
 
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setNotifOpen((v) => !v);
-                    setProfileOpen(false);
-                  }}
-                >
-                  <Bell className="h-4 w-4" />
-                  {totalNotif > 0 ? (
-                    <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-white">{totalNotif}</span>
-                  ) : null}
-                </Button>
-
-                {notifOpen ? (
-                  <div className="absolute right-0 top-11 z-50 w-80 rounded-lg border border-border bg-card p-2 shadow-lg">
-                    <div className="px-2 pb-2 text-sm font-medium">Notifications</div>
-                    <div className="max-h-72 space-y-1 overflow-auto">
-                      {notifications.map((n) => (
-                        <div key={n.id} className="rounded-md border border-border p-2">
-                          <div className="text-sm font-medium">{n.title}</div>
-                          <div className="text-xs text-muted-foreground">{n.detail}</div>
-                        </div>
-                      ))}
-                      {notifications.length === 0 ? <div className="px-2 py-4 text-sm text-muted-foreground">Aucune notification</div> : null}
-                    </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Bell className="h-4 w-4" />
+                    {totalNotif > 0 ? (
+                      <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-white">{totalNotif}</span>
+                    ) : null}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-96">
+                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="max-h-72 overflow-auto">
+                    {notifications.map((n) => (
+                      <div key={n.id} className="rounded-md border border-border p-2">
+                        <div className="text-sm font-medium">{n.title}</div>
+                        <div className="text-xs text-muted-foreground">{n.detail}</div>
+                      </div>
+                    ))}
+                    {notifications.length === 0 ? <div className="px-2 py-4 text-sm text-muted-foreground">Aucune notification</div> : null}
                   </div>
-                ) : null}
-              </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-              <div className="relative">
-                <button
-                  className="flex h-9 items-center gap-2 rounded-md border border-input px-2 text-sm"
-                  onClick={() => {
-                    setProfileOpen((v) => !v);
-                    setNotifOpen(false);
-                  }}
-                  type="button"
-                >
-                  <UserCircle2 className="h-5 w-5" />
-                  <span className="hidden sm:inline">{session?.role ?? "staff"}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-
-                {profileOpen ? (
-                  <div className="absolute right-0 top-11 z-50 w-52 rounded-lg border border-border bg-card p-1 shadow-lg">
-                    <Link href="/settings" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent">
-                      <Settings className="h-4 w-4" />
-                      Paramètres
-                    </Link>
-                    <button
-                      type="button"
-                      className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive hover:bg-accent"
-                      onClick={() => {
-                        clearSession();
-                        router.replace("/login");
-                      }}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Déconnexion
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex h-9 items-center gap-2 rounded-md border border-input bg-transparent px-2 text-sm">
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="bg-primary text-primary-foreground">{initials || "U"}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:inline">{session?.role ?? "staff"}</span>
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="text-sm font-semibold">{session?.role === "patient" ? "Espace patient" : "Personnel médical"}</div>
+                    <div className="text-xs text-muted-foreground">{session?.role}</div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => router.push("/settings")}>Mon profil</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/settings")}>Paramètres</DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={() => {
+                      clearSession();
+                      router.replace("/login");
+                    }}
+                  >
+                    Déconnexion
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
           <main className="flex-1 p-4">{children}</main>

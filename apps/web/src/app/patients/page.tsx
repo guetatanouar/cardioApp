@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 type PatientListItem = {
   id: string;
@@ -126,124 +127,158 @@ export default function PatientsPage() {
     return "bg-emerald-100 text-emerald-700";
   }
 
+  function exportCsv() {
+    const header = ["id", "last_name", "first_name", "date_of_birth", "severity_status", "pathology", "phone", "email"];
+    const rows = filteredItems.map((p) => [
+      p.id,
+      p.last_name,
+      p.first_name,
+      p.date_of_birth,
+      p.severity_status,
+      p.pathology ?? "",
+      p.phone ?? "",
+      p.email ?? ""
+    ]);
+    const csv = [header, ...rows]
+      .map((r) => r.map((x) => `"${String(x).replaceAll('"', '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "patients.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center">
-        <Input
-          placeholder="Rechercher par nom"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              setPage(1);
-              load();
-            }
-          }}
-        />
-        <Input
-          placeholder="Filtre pathologie"
-          value={pathologyFilter}
-          onChange={(e) => setPathologyFilter(e.target.value)}
-          className="md:max-w-56"
-        />
-        <select
-          value={severityFilter}
-          onChange={(e) => setSeverityFilter(e.target.value as "all" | "critique" | "surveillance" | "stable")}
-          className="h-10 rounded-md border border-input bg-transparent px-3 text-sm md:w-44"
-        >
-          <option value="all">Toutes severites</option>
-          <option value="critique">Critique</option>
-          <option value="surveillance">Surveillance</option>
-          <option value="stable">Stable</option>
-        </select>
-        <Button variant="outline" onClick={() => { setPage(1); load(); }} disabled={loading}>Chercher</Button>
-        <Button className="md:ml-auto" onClick={() => setShowCreate((v) => !v)}>
-          {showCreate ? "Fermer" : "Nouveau patient"}
-        </Button>
+      <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="flex flex-1 flex-col gap-2 md:flex-row md:items-center">
+          <Input
+            placeholder="Rechercher par nom"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                setPage(1);
+                load();
+              }
+            }}
+          />
+          <Input
+            placeholder="Filtre pathologie"
+            value={pathologyFilter}
+            onChange={(e) => setPathologyFilter(e.target.value)}
+            className="md:max-w-56"
+          />
+          <select
+            value={severityFilter}
+            onChange={(e) => setSeverityFilter(e.target.value as "all" | "critique" | "surveillance" | "stable")}
+            className="h-10 rounded-md border border-input bg-transparent px-3 text-sm md:w-44"
+          >
+            <option value="all">Toutes severites</option>
+            <option value="critique">Critique</option>
+            <option value="surveillance">Surveillance</option>
+            <option value="stable">Stable</option>
+          </select>
+          <Button variant="outline" onClick={() => { setPage(1); load(); }} disabled={loading}>Chercher</Button>
+        </div>
+
+        <div className="flex items-center gap-2 md:ml-auto">
+          <Button variant="outline" onClick={exportCsv}>Exporter CSV</Button>
+          <Dialog open={showCreate} onOpenChange={setShowCreate}>
+            <DialogTrigger asChild>
+              <Button>Nouveau patient</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl p-0">
+              <div className="rounded-t-2xl bg-gradient-to-r from-indigo-600 to-blue-700 px-6 py-4 text-white">
+                <div className="text-sm opacity-90">1/2 — Informations personnelles</div>
+                <div className="text-lg font-semibold">Nouveau patient</div>
+              </div>
+              <div className="p-6">
+                <DialogHeader className="sr-only">
+                  <DialogTitle>Nouveau patient</DialogTitle>
+                </DialogHeader>
+                <form className="space-y-3" onSubmit={createPatient}>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <Input
+                      placeholder="Prenom"
+                      value={createForm.firstName}
+                      onChange={(e) => setCreateForm((s) => ({ ...s, firstName: e.target.value }))}
+                      required
+                    />
+                    <Input
+                      placeholder="Nom"
+                      value={createForm.lastName}
+                      onChange={(e) => setCreateForm((s) => ({ ...s, lastName: e.target.value }))}
+                      required
+                    />
+                    <Input
+                      type="date"
+                      value={createForm.dateOfBirth}
+                      onChange={(e) => setCreateForm((s) => ({ ...s, dateOfBirth: e.target.value }))}
+                      required
+                    />
+                    <Input
+                      placeholder="Groupe sanguin"
+                      value={createForm.bloodType}
+                      onChange={(e) => setCreateForm((s) => ({ ...s, bloodType: e.target.value }))}
+                    />
+                    <Input
+                      placeholder="Telephone"
+                      value={createForm.phone}
+                      onChange={(e) => setCreateForm((s) => ({ ...s, phone: e.target.value }))}
+                    />
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      value={createForm.email}
+                      onChange={(e) => setCreateForm((s) => ({ ...s, email: e.target.value }))}
+                    />
+                    <Input
+                      placeholder="Pathologie"
+                      value={createForm.pathology}
+                      onChange={(e) => setCreateForm((s) => ({ ...s, pathology: e.target.value }))}
+                    />
+                    <select
+                      value={createForm.severityStatus}
+                      onChange={(e) => setCreateForm((s) => ({ ...s, severityStatus: e.target.value as "critique" | "surveillance" | "stable" }))}
+                      className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+                    >
+                      <option value="stable">Stable</option>
+                      <option value="surveillance">Surveillance</option>
+                      <option value="critique">Critique</option>
+                    </select>
+                  </div>
+
+                  <Input
+                    placeholder="Adresse"
+                    value={createForm.address}
+                    onChange={(e) => setCreateForm((s) => ({ ...s, address: e.target.value }))}
+                  />
+
+                  {createError ? <div className="text-sm text-destructive">{createError}</div> : null}
+
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Annuler</Button>
+                    <Button type="submit" disabled={creating}>{creating ? "Creation..." : "Suivant"}</Button>
+                  </div>
+                </form>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
-
-      {showCreate ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Nouveau patient</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-3" onSubmit={createPatient}>
-              <div className="grid gap-3 md:grid-cols-2">
-                <Input
-                  placeholder="Prenom"
-                  value={createForm.firstName}
-                  onChange={(e) => setCreateForm((s) => ({ ...s, firstName: e.target.value }))}
-                  required
-                />
-                <Input
-                  placeholder="Nom"
-                  value={createForm.lastName}
-                  onChange={(e) => setCreateForm((s) => ({ ...s, lastName: e.target.value }))}
-                  required
-                />
-                <Input
-                  type="date"
-                  value={createForm.dateOfBirth}
-                  onChange={(e) => setCreateForm((s) => ({ ...s, dateOfBirth: e.target.value }))}
-                  required
-                />
-                <Input
-                  placeholder="Groupe sanguin"
-                  value={createForm.bloodType}
-                  onChange={(e) => setCreateForm((s) => ({ ...s, bloodType: e.target.value }))}
-                />
-                <Input
-                  placeholder="Telephone"
-                  value={createForm.phone}
-                  onChange={(e) => setCreateForm((s) => ({ ...s, phone: e.target.value }))}
-                />
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={createForm.email}
-                  onChange={(e) => setCreateForm((s) => ({ ...s, email: e.target.value }))}
-                />
-                <Input
-                  placeholder="Pathologie"
-                  value={createForm.pathology}
-                  onChange={(e) => setCreateForm((s) => ({ ...s, pathology: e.target.value }))}
-                />
-                <select
-                  value={createForm.severityStatus}
-                  onChange={(e) => setCreateForm((s) => ({ ...s, severityStatus: e.target.value as "critique" | "surveillance" | "stable" }))}
-                  className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-                >
-                  <option value="stable">Stable</option>
-                  <option value="surveillance">Surveillance</option>
-                  <option value="critique">Critique</option>
-                </select>
-              </div>
-
-              <Input
-                placeholder="Adresse"
-                value={createForm.address}
-                onChange={(e) => setCreateForm((s) => ({ ...s, address: e.target.value }))}
-              />
-
-              {createError ? <div className="text-sm text-destructive">{createError}</div> : null}
-
-              <div className="flex justify-end">
-                <Button type="submit" disabled={creating}>{creating ? "Creation..." : "Creer le patient"}</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      ) : null}
 
       <Card>
         <CardHeader>
           <CardTitle>Patients</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filteredItems.map((p) => (
-              <Link key={p.id} href={`/patients/${p.id}`} className="rounded-lg border border-border p-4 transition hover:bg-accent/40">
+              <Link key={p.id} href={`/patients/${p.id}`} className="rounded-2xl border border-border bg-card p-4 shadow-sm transition hover:bg-accent/30">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="font-semibold">
