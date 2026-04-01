@@ -34,7 +34,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     return messages[locale][key] ?? messages.fr[key];
   };
 
-  return <I18nContext.Provider value={{ locale, t, setLocale }}>{children}</I18nContext.Provider>;
+  return React.createElement(I18nContext.Provider, { value: { locale, t, setLocale } }, children);
 }
 
 export function useI18n() {
