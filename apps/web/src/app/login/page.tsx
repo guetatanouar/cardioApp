@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api/client";
 import { setSession } from "@/lib/auth/storage";
 import { useI18n } from "@/lib/i18n/client";
+import { config } from "@/lib/config";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,24 +18,20 @@ export default function LoginPage() {
   const [mode, setMode] = React.useState<"staff" | "patient">("staff");
   const [staffProfile, setStaffProfile] = React.useState<"admin" | "secretaire">("admin");
 
-  const [login, setLogin] = React.useState("prenom@cabinet-cardio.fr");
-  const [password, setPassword] = React.useState("admin123");
+  const [login, setLogin] = React.useState("");
+  const [password, setPassword] = React.useState("");
 
-  const [patientUsername, setPatientUsername] = React.useState("patient1");
-  const [patientPassword, setPatientPassword] = React.useState("patient123");
+  const [patientUsername, setPatientUsername] = React.useState("");
+  const [patientPassword, setPatientPassword] = React.useState("");
 
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (mode !== "staff") return;
-    if (staffProfile === "admin") {
-      setLogin("p.moreau@cabinet-cardio.fr");
-      setPassword("admin123");
-    } else {
-      setLogin("s.dubois@cabinet-cardio.fr");
-      setPassword("sec123");
-    }
+    // Clear the form when switching to staff mode to prevent auto-filling
+    setLogin("");
+    setPassword("");
   }, [mode, staffProfile]);
 
   async function onSubmitStaff(e: React.FormEvent) {
@@ -43,7 +40,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const res = await apiFetch<{ token: string; user: { id: string; role: "admin" | "secretaire" } }>(
+      const res = await apiFetch<{ token: string; user: { id: string; role: "admin" | "secretaire"; fullName: string } }>(
         "/api/auth/login",
         {
           method: "POST",
@@ -51,12 +48,12 @@ export default function LoginPage() {
         }
       );
 
-      setSession({ token: res.token, role: res.user.role, userId: res.user.id });
+      setSession({ token: res.token, role: res.user.role, userId: res.user.id, fullName: res.user.fullName });
       router.replace("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (/fetch failed|failed to fetch|econnrefused|network/i.test(msg)) {
-        setError("API offline: start backend on http://localhost:4000");
+        setError(`API offline: start backend on ${config.api.baseUrl}`);
       } else {
         setError("Invalid credentials");
       }
@@ -76,7 +73,7 @@ export default function LoginPage() {
         body: JSON.stringify({ username: patientUsername, password: patientPassword })
       });
 
-      setSession({ token: res.token, role: "patient", userId: res.patientId });
+      setSession({ token: res.token, role: "patient", userId: res.patientId, fullName: "Espace patient" });
       router.replace("/patient");
     } catch {
       setError("Invalid credentials");
@@ -146,6 +143,7 @@ export default function LoginPage() {
                   >
                     <div className="text-sm font-semibold">Sophie Dubois</div>
                     <div className="text-xs text-muted-foreground">Secrétaire médicale</div>
+                    {staffProfile === "secretaire" ? <div className="mt-2 inline-flex rounded-full bg-muted px-2 py-0.5 text-xs">Sélectionné</div> : null}
                   </button>
                 </div>
 
@@ -174,6 +172,9 @@ export default function LoginPage() {
                   <div className="text-lg font-semibold">Connexion</div>
                   <div className="text-sm text-muted-foreground">Accédez à votre espace personnel</div>
                 </div>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/80 px-3 py-2 text-sm text-emerald-700">
+                  Accès sécurisé patient
+                </div>
                 <div className="space-y-2">
                   <div className="text-sm">Identifiant</div>
                   <Input
@@ -191,7 +192,7 @@ export default function LoginPage() {
                 </div>
 
                 {error ? <div className="text-sm text-red-500">{error}</div> : null}
-                <Button className="w-full" disabled={loading} type="submit">
+                <Button className="w-full bg-emerald-500 hover:bg-emerald-600" disabled={loading} type="submit">
                   Se connecter
                 </Button>
               </form>

@@ -12,9 +12,13 @@ import { patientsRouter } from "./routes/patients.js";
 import { prescriptionsRouter } from "./routes/prescriptions.js";
 import { settingsRouter } from "./routes/settings.js";
 import { ensureUploadDir } from "./utils/uploads.js";
+import { config, validateConfig } from "./config.js";
 
 const envFile = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".env");
 dotenv.config({ path: process.env.DOTENV_CONFIG_PATH ?? envFile });
+
+// Validate configuration
+validateConfig();
 
 ensureUploadDir();
 
@@ -22,12 +26,12 @@ const app = express();
 
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN?.split(",").map((s: string) => s.trim()) ?? true,
+    origin: config.cors.origin,
     credentials: true
   })
 );
 app.use(express.json({ limit: "5mb" }));
-app.use("/uploads", express.static(path.resolve("uploads")));
+app.use("/uploads", express.static(path.resolve(config.uploads.uploadDir)));
 
 app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ ok: true });
@@ -41,8 +45,7 @@ app.use("/api/chat", chatRouter);
 app.use("/api/prescriptions", prescriptionsRouter);
 app.use("/api/settings", settingsRouter);
 
-const port = Number(process.env.PORT ?? 4000);
-app.listen(port, () => {
+app.listen(config.server.port, () => {
   // eslint-disable-next-line no-console
-  console.log(`API listening on http://localhost:${port}`);
+  console.log(`API listening on http://localhost:${config.server.port}`);
 });
