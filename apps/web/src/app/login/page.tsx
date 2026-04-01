@@ -36,8 +36,13 @@ export default function LoginPage() {
 
       setSession({ token: res.token, role: res.user.role, userId: res.user.id });
       router.replace("/dashboard");
-    } catch {
-      setError("Invalid credentials");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (/fetch failed|failed to fetch|econnrefused|network/i.test(msg)) {
+        setError("API offline: start backend on http://localhost:4000");
+      } else {
+        setError("Invalid credentials");
+      }
     } finally {
       setLoading(false);
     }

@@ -14,7 +14,14 @@ export default function PatientDashboard() {
   const patientId = session?.userId;
 
   const [items, setItems] = React.useState<any[]>([]);
-  const [form, setForm] = React.useState({ systolicBp: "", diastolicBp: "", heartRate: "", spo2: "", weightKg: "" });
+  const [form, setForm] = React.useState({
+    systolicBp: "",
+    diastolicBp: "",
+    heartRate: "",
+    spo2: "",
+    weightKg: "",
+    note: ""
+  });
 
   async function load() {
     if (!patientId) return;
@@ -35,10 +42,11 @@ export default function PatientDashboard() {
         diastolicBp: form.diastolicBp ? Number(form.diastolicBp) : undefined,
         heartRate: form.heartRate ? Number(form.heartRate) : undefined,
         spo2: form.spo2 ? Number(form.spo2) : undefined,
-        weightKg: form.weightKg ? Number(form.weightKg) : undefined
+        weightKg: form.weightKg ? Number(form.weightKg) : undefined,
+        note: form.note || undefined
       })
     });
-    setForm({ systolicBp: "", diastolicBp: "", heartRate: "", spo2: "", weightKg: "" });
+    setForm({ systolicBp: "", diastolicBp: "", heartRate: "", spo2: "", weightKg: "", note: "" });
     await load();
   }
 
@@ -47,9 +55,14 @@ export default function PatientDashboard() {
     .slice(-30)
     .map((v) => ({
       date: new Date(v.recorded_at).toLocaleDateString(),
+      systolic: v.systolic_bp,
+      diastolic: v.diastolic_bp,
       hr: v.heart_rate,
-      spo2: v.spo2
+      spo2: v.spo2,
+      weight: v.weight_kg
     }));
+
+  const latest = items[0];
 
   return (
     <div className="space-y-4">
@@ -65,11 +78,41 @@ export default function PatientDashboard() {
             <Input placeholder="SpO2" value={form.spo2} onChange={(e) => setForm((s) => ({ ...s, spo2: e.target.value }))} />
             <Input placeholder="Poids" value={form.weightKg} onChange={(e) => setForm((s) => ({ ...s, weightKg: e.target.value }))} />
           </div>
+          <div className="mt-2">
+            <Input placeholder="Note optionnelle" value={form.note} onChange={(e) => setForm((s) => ({ ...s, note: e.target.value }))} />
+          </div>
           <div className="mt-3">
             <Button onClick={submit}>Enregistrer</Button>
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-3 md:grid-cols-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm text-muted-foreground">TA</div>
+            <div className="text-2xl font-semibold">{latest ? `${latest.systolic_bp ?? "-"}/${latest.diastolic_bp ?? "-"}` : "-"}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm text-muted-foreground">FC</div>
+            <div className="text-2xl font-semibold">{latest?.heart_rate ?? "-"}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm text-muted-foreground">Poids</div>
+            <div className="text-2xl font-semibold">{latest?.weight_kg ?? "-"}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-sm text-muted-foreground">SpO2</div>
+            <div className="text-2xl font-semibold">{latest?.spo2 ?? "-"}%</div>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>
@@ -81,8 +124,11 @@ export default function PatientDashboard() {
               <XAxis dataKey="date" hide />
               <YAxis />
               <Tooltip />
+              <Line type="monotone" dataKey="systolic" stroke="#ef4444" dot={false} />
+              <Line type="monotone" dataKey="diastolic" stroke="#f97316" dot={false} />
               <Line type="monotone" dataKey="hr" stroke="hsl(var(--primary))" dot={false} />
               <Line type="monotone" dataKey="spo2" stroke="#60a5fa" dot={false} />
+              <Line type="monotone" dataKey="weight" stroke="#8b5cf6" dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>

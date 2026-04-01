@@ -20,12 +20,17 @@ export default function PatientChatPage() {
     if (!channel) return;
     const res = await apiFetch<{ items: any[] }>(`/api/chat?channel=${encodeURIComponent(channel)}`);
     setItems(res.items);
+    await apiFetch("/api/chat/mark-read", {
+      method: "POST",
+      body: JSON.stringify({ channel })
+    });
   }
 
   React.useEffect(() => {
-    let t: any;
-    load();
-    t = setInterval(load, 2500);
+    load().catch(() => undefined);
+    const t = setInterval(() => {
+      load().catch(() => undefined);
+    }, 2500);
     return () => clearInterval(t);
   }, [channel]);
 

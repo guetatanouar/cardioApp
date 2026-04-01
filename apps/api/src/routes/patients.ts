@@ -76,6 +76,10 @@ patientsRouter.post(
     phone: z.string().optional(),
     email: z.string().email().optional(),
     address: z.string().optional(),
+    emergencyContactName: z.string().optional(),
+    emergencyContactPhone: z.string().optional(),
+    allergies: z.string().optional(),
+    medicalHistory: z.string().optional(),
     pathology: z.string().optional(),
     severityStatus: z.enum(["critique", "surveillance", "stable"]).default("stable")
   });
@@ -89,8 +93,10 @@ patientsRouter.post(
 
   const result = await query<{ id: string }>(
     `INSERT INTO patients (
-      first_name, last_name, date_of_birth, blood_type, phone, email, address, pathology, severity_status
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      first_name, last_name, date_of_birth, blood_type, phone, email, address,
+      emergency_contact_name, emergency_contact_phone, allergies, medical_history,
+      pathology, severity_status
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
     RETURNING id`,
     [
       b.firstName,
@@ -100,6 +106,10 @@ patientsRouter.post(
       b.phone ?? null,
       b.email ?? null,
       b.address ?? null,
+      b.emergencyContactName ?? null,
+      b.emergencyContactPhone ?? null,
+      b.allergies ?? null,
+      b.medicalHistory ?? null,
       b.pathology ?? null,
       b.severityStatus
     ]
@@ -168,6 +178,10 @@ patientsRouter.put(
       phone: z.string().nullable().optional(),
       email: z.string().email().nullable().optional(),
       address: z.string().nullable().optional(),
+      emergencyContactName: z.string().nullable().optional(),
+      emergencyContactPhone: z.string().nullable().optional(),
+      allergies: z.string().nullable().optional(),
+      medicalHistory: z.string().nullable().optional(),
       pathology: z.string().nullable().optional(),
       severityStatus: z.enum(["critique", "surveillance", "stable"]).optional()
     });
@@ -191,6 +205,10 @@ patientsRouter.put(
       phone: "phone",
       email: "email",
       address: "address",
+      emergencyContactName: "emergency_contact_name",
+      emergencyContactPhone: "emergency_contact_phone",
+      allergies: "allergies",
+      medicalHistory: "medical_history",
       pathology: "pathology",
       severityStatus: "severity_status"
     };
