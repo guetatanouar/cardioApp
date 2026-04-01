@@ -1,4 +1,4 @@
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { Router } from "express";
 import multer from "multer";
 import fs from "node:fs/promises";
@@ -33,34 +33,35 @@ patientsRouter.get(
   requireAuth,
   requireRole(["admin", "secretaire"]),
   requirePermission("can_view_patients"),
-  async (req, res) => {
-  const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
-  const page = Math.max(1, Number(req.query.page ?? 1));
-  const pageSize = Math.min(50, Math.max(5, Number(req.query.pageSize ?? 10)));
-  const offset = (page - 1) * pageSize;
+  async (req: Request, res: Response) => {
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const page = Math.max(1, Number(req.query.page ?? 1));
+    const pageSize = Math.min(50, Math.max(5, Number(req.query.pageSize ?? 10)));
+    const offset = (page - 1) * pageSize;
 
-  const where = q
-    ? "WHERE lower(last_name) LIKE lower($1) OR lower(first_name) LIKE lower($1)"
-    : "";
-  const params = q ? [`%${q}%`, pageSize, offset] : [pageSize, offset];
+    const where = q
+      ? "WHERE lower(last_name) LIKE lower($1) OR lower(first_name) LIKE lower($1)"
+      : "";
+    const params = q ? [`%${q}%`, pageSize, offset] : [pageSize, offset];
 
-  const sql =
-    `SELECT id, first_name, last_name, date_of_birth, severity_status, pathology, phone, email ` +
-    `FROM patients ${where} ORDER BY last_name ASC, first_name ASC LIMIT $${q ? 2 : 1} OFFSET $${q ? 3 : 2}`;
+    const sql =
+      `SELECT id, first_name, last_name, date_of_birth, severity_status, pathology, phone, email ` +
+      `FROM patients ${where} ORDER BY last_name ASC, first_name ASC LIMIT $${q ? 2 : 1} OFFSET $${q ? 3 : 2}`;
 
-  const result = await query(sql, params);
-  const countSql = q
-    ? "SELECT count(*)::int as count FROM patients WHERE lower(last_name) LIKE lower($1) OR lower(first_name) LIKE lower($1)"
-    : "SELECT count(*)::int as count FROM patients";
-  const countResult = await query<{ count: number }>(countSql, q ? [`%${q}%`] : []);
+    const result = await query(sql, params);
+    const countSql = q
+      ? "SELECT count(*)::int as count FROM patients WHERE lower(last_name) LIKE lower($1) OR lower(first_name) LIKE lower($1)"
+      : "SELECT count(*)::int as count FROM patients";
+    const countResult = await query<{ count: number }>(countSql, q ? [`%${q}%`] : []);
 
-  res.json({
-    items: result.rows,
-    page,
-    pageSize,
-    total: countResult.rows[0]?.count ?? 0
-  });
-});
+    res.json({
+      items: result.rows,
+      page,
+      pageSize,
+      total: countResult.rows[0]?.count ?? 0
+    });
+  }
+);
 
 patientsRouter.post(
   "/",

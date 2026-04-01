@@ -38,6 +38,8 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
+type HeaderNotification = { id: string; title: string; detail: string };
+
 const staffNav = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/patients", icon: Users, label: "Patients" },
@@ -68,7 +70,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [search, setSearch] = React.useState("");
   const [notifOpen, setNotifOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
-  const [notifications, setNotifications] = React.useState<Array<{ id: string; title: string; detail: string }>>([]);
+  const [notifications, setNotifications] = React.useState<HeaderNotification[]>([]);
   const [chatUnreadCount, setChatUnreadCount] = React.useState(0);
 
   async function refreshHeaderData() {
@@ -242,7 +244,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearch(e.target.value)}
                     placeholder="Rechercher un patient..."
                     className="pl-9"
                   />
@@ -286,7 +288,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <DropdownMenuLabel>Notifications</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="max-h-72 overflow-auto">
-                    {notifications.map((n) => (
+                    {notifications.map((n: HeaderNotification) => (
                       <div key={n.id} className="rounded-md border border-border p-2">
                         <div className="text-sm font-medium">{n.title}</div>
                         <div className="text-xs text-muted-foreground">{n.detail}</div>

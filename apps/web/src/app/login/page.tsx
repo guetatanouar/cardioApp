@@ -151,11 +151,15 @@ export default function LoginPage() {
 
                 <div className="space-y-2">
                   <div className="text-sm">{t("login")}</div>
-                  <Input value={login} onChange={(e) => setLogin(e.target.value)} />
+                  <Input value={login} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLogin(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <div className="text-sm">{t("password")}</div>
-                  <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input
+                    type="password"
+                    value={password}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                  />
                 </div>
 
                 {error ? <div className="text-sm text-red-500">{error}</div> : null}
@@ -172,11 +176,18 @@ export default function LoginPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="text-sm">Identifiant</div>
-                  <Input value={patientUsername} onChange={(e) => setPatientUsername(e.target.value)} />
+                  <Input
+                    value={patientUsername}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPatientUsername(e.target.value)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <div className="text-sm">Mot de passe</div>
-                  <Input type="password" value={patientPassword} onChange={(e) => setPatientPassword(e.target.value)} />
+                  <Input
+                    type="password"
+                    value={patientPassword}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPatientPassword(e.target.value)}
+                  />
                 </div>
 
                 {error ? <div className="text-sm text-red-500">{error}</div> : null}

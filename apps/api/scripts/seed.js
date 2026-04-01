@@ -96,18 +96,18 @@ async function reset() {
 await reset();
 
 const adminId = await upsertUser({
-  fullName: "Dr. Nom du médecin",
-  email: "prenom@cabinet-cardio.fr",
+  fullName: "Dr. Pierre Moreau",
+  email: "p.moreau@cabinet-cardio.fr",
   username: "admin",
   password: "admin123",
   role: "admin"
 });
 
 const secretaireId = await upsertUser({
-  fullName: "Nom secrétaire",
-  email: "secretaire@cabinet-cardio.fr",
+  fullName: "Sophie Dubois",
+  email: "s.dubois@cabinet-cardio.fr",
   username: "secretaire",
-  password: "secre123",
+  password: "sec123",
   role: "secretaire"
 });
 
