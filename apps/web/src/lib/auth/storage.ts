@@ -6,6 +6,8 @@ export type StoredSession = {
   token: string;
   role: AuthRole;
   userId?: string;
+  fullName?: string;
+  email?: string;
 };
 
 const KEY = "cm_session";
