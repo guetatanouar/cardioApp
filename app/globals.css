@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-blue: 217 91% 60%;
+  --primary-purple: 271 81% 56%;
+  --primary-green: 160 84% 39%;
+  --primary-red: 0 84% 60%;
+
+  --success: 160 84% 39%;
+  --warning: 38 92% 50%;
+  --error: 0 84% 60%;
+  --info: 217 91% 60%;
+
+  --gray-50: 220 14% 98%;
+  --gray-100: 220 14% 96%;
+  --gray-200: 220 13% 91%;
+  --gray-300: 220 9% 84%;
+  --gray-400: 220 9% 65%;
+  --gray-500: 220 9% 46%;
+  --gray-600: 217 14% 35%;
+  --gray-700: 217 19% 27%;
+  --gray-800: 215 28% 17%;
+  --gray-900: 221 39% 11%;
+
+  --background: var(--gray-50);
+  --foreground: var(--gray-900);
+  --card: 0 0% 100%;
+  --card-foreground: var(--gray-900);
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--gray-900);
+  --primary: var(--primary-blue);
+  --primary-foreground: 0 0% 100%;
+  --secondary: var(--gray-100);
+  --secondary-foreground: var(--gray-700);
+  --muted: var(--gray-100);
+  --muted-foreground: var(--gray-500);
+  --accent: 217 90% 97%;
+  --accent-foreground: 217 72% 40%;
+  --border: var(--gray-200);
+  --input: var(--gray-200);
+  --ring: var(--primary-blue);
+  --radius: 16px;
+}
+
+.dark {
+  --background: var(--gray-900);
+  --foreground: var(--gray-50);
+  --card: var(--gray-800);
+  --card-foreground: var(--gray-50);
+  --popover: var(--gray-800);
+  --popover-foreground: var(--gray-50);
+  --primary: var(--primary-blue);
+  --primary-foreground: 0 0% 100%;
+  --secondary: var(--gray-800);
+  --secondary-foreground: var(--gray-100);
+  --muted: var(--gray-800);
+  --muted-foreground: var(--gray-300);
+  --accent: 217 33% 22%;
+  --accent-foreground: var(--gray-100);
+  --border: 217 20% 25%;
+  --input: 217 20% 25%;
+  --ring: var(--primary-blue);
+}
+
+.theme-blue {
+  --primary: var(--primary-blue);
+  --ring: var(--primary-blue);
+  --accent: 217 90% 97%;
+  --accent-foreground: 217 72% 40%;
+}
+
+.theme-green {
+  --primary: var(--primary-green);
+  --ring: var(--primary-green);
+  --accent: 160 84% 96%;
+  --accent-foreground: 160 74% 24%;
+}
+
+.theme-purple {
+  --primary: var(--primary-purple);
+  --ring: var(--primary-purple);
+  --accent: 271 95% 97%;
+  --accent-foreground: 271 63% 38%;
+}
+
+.theme-red {
+  --primary: var(--primary-red);
+  --ring: var(--primary-red);
+  --accent: 0 100% 97%;
+  --accent-foreground: 0 72% 42%;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-bold leading-tight;
+  }
+
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+}
