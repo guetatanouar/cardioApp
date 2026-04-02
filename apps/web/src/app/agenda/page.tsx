@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { cn } from "@/lib/cn";
 
 export default function AgendaPage() {
   const [items, setItems] = React.useState<any[]>([]);
@@ -16,9 +17,18 @@ export default function AgendaPage() {
   const [statusFilter, setStatusFilter] = React.useState("all");
   const [typeFilter, setTypeFilter] = React.useState("all");
 
+  const [view, setView] = React.useState<"month" | "week" | "list">("week");
   const [cursorMonth, setCursorMonth] = React.useState(() => {
     const d = new Date();
     d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+  const [cursorWeek, setCursorWeek] = React.useState(() => {
+    const d = new Date();
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff);
     d.setHours(0, 0, 0, 0);
     return d;
   });
@@ -39,6 +49,23 @@ export default function AgendaPage() {
     reason: "",
     notes: ""
   });
+
+  function startOfWeek(d: Date) {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+    date.setDate(diff);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  function endOfWeek(d: Date) {
+    const s = startOfWeek(d);
+    const e = new Date(s);
+    e.setDate(s.getDate() + 6);
+    e.setHours(23, 59, 59, 999);
+    return e;
+  }
 
   function startOfMonth(d: Date) {
     const x = new Date(d);
@@ -68,9 +95,18 @@ export default function AgendaPage() {
   async function loadAppointments() {
     setLoading(true);
     try {
-      const from = startOfMonth(cursorMonth).toISOString();
-      const to = endOfMonth(cursorMonth).toISOString();
-      const params = new URLSearchParams({ from, to });
+      const params = new URLSearchParams();
+      if (view === "week") {
+        const s = startOfWeek(cursorWeek).toISOString();
+        const e = endOfWeek(cursorWeek).toISOString();
+        params.set("from", s);
+        params.set("to", e);
+      } else {
+        const from = startOfMonth(cursorMonth).toISOString();
+        const to = endOfMonth(cursorMonth).toISOString();
+        params.set("from", from);
+        params.set("to", to);
+      }
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (typeFilter !== "all") params.set("type", typeFilter);
 
@@ -100,12 +136,7 @@ export default function AgendaPage() {
   React.useEffect(() => {
     loadAppointments().catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, typeFilter]);
-
-  React.useEffect(() => {
-    loadAppointments().catch(() => undefined);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cursorMonth]);
+  }, [statusFilter, typeFilter, view, cursorMonth, cursorWeek]);
 
   async function saveAppointment(e: React.FormEvent) {
     e.preventDefault();
@@ -182,6 +213,18 @@ export default function AgendaPage() {
     return "border-l-emerald-500";
   }
 
+  const weekDays = React.useMemo(() => {
+    const start = startOfWeek(cursorWeek);
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    });
+  }, [cursorWeek]);
+
+  const hours = Array.from({ length: 12 }).map((_, i) => 8 + i);
+
   const days = React.useMemo(() => {
     const start = startOfGrid(cursorMonth);
     return Array.from({ length: 42 }).map((_, idx) => {
@@ -227,6 +270,25 @@ export default function AgendaPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-xl font-semibold">Agenda</div>
         <div className="flex items-center gap-2">
+          <div className="flex overflow-hidden rounded-md border border-input">
+            {[
+              ["month", "Mois"],
+              ["week", "Semaine"],
+              ["list", "Liste"]
+            ].map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setView(k as any)}
+                className={cn(
+                  "px-3 py-1.5 text-sm",
+                  view === k ? "bg-primary text-primary-foreground" : "bg-background"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-9 rounded-md border border-input bg-transparent px-2 text-sm">
             <option value="all">Tous statuts</option>
             <option value="planifie">Planifié</option>
@@ -245,12 +307,10 @@ export default function AgendaPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+      {view === "month" ? (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>
-              {cursorMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
-            </CardTitle>
+            <CardTitle>{cursorMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</CardTitle>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -300,11 +360,11 @@ export default function AgendaPage() {
                     key={d.toISOString()}
                     type="button"
                     onClick={() => setSelectedDay(new Date(d))}
-                    className={
-                      `h-16 rounded-xl border p-2 text-left transition ` +
-                      `${inMonth ? "bg-background" : "bg-muted/30 text-muted-foreground"} ` +
-                      `${isSelected ? "border-primary ring-1 ring-primary/40" : "border-border hover:bg-accent/30"}`
-                    }
+                    className={cn(
+                      "h-16 rounded-xl border p-2 text-left transition",
+                      inMonth ? "bg-background" : "bg-muted/30 text-muted-foreground",
+                      isSelected ? "border-primary ring-1 ring-primary/40" : "border-border hover:bg-accent/30"
+                    )}
                   >
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-medium">{d.getDate()}</div>
@@ -316,120 +376,163 @@ export default function AgendaPage() {
             </div>
           </CardContent>
         </Card>
-
+      ) : view === "week" ? (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle>{selectedDay.toLocaleDateString(undefined, { weekday: "long", day: "2-digit", month: "long" })}</CardTitle>
-              <div className="text-sm text-muted-foreground">RDV</div>
+            <CardTitle>
+              Semaine du {weekDays[0]?.toLocaleDateString()} au {weekDays[6]?.toLocaleDateString()}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const d = new Date(cursorWeek);
+                  d.setDate(d.getDate() - 7);
+                  setCursorWeek(d);
+                }}
+              >
+                ←
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const d = new Date();
+                  const day = d.getDay();
+                  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                  d.setDate(diff);
+                  d.setHours(0, 0, 0, 0);
+                  setCursorWeek(d);
+                }}
+              >
+                Aujourd'hui
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const d = new Date(cursorWeek);
+                  d.setDate(d.getDate() + 7);
+                  setCursorWeek(d);
+                }}
+              >
+                →
+              </Button>
             </div>
-            <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" onClick={openNewModal}>Nouveau RDV</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>{editingId ? "Modifier RDV" : "Nouveau RDV"}</DialogTitle>
-                </DialogHeader>
-                <form className="space-y-3" onSubmit={saveAppointment}>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <select
-                      className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-                      value={form.patientId}
-                      onChange={(e) => setForm((s) => ({ ...s, patientId: e.target.value }))}
-                      required
-                    >
-                      {patients.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.last_name} {p.first_name}
-                        </option>
-                      ))}
-                    </select>
-                    <Input
-                      type="datetime-local"
-                      value={form.startsAt}
-                      onChange={(e) => setForm((s) => ({ ...s, startsAt: e.target.value }))}
-                      required
-                    />
-                    <Input
-                      type="number"
-                      value={form.durationMinutes}
-                      onChange={(e) => setForm((s) => ({ ...s, durationMinutes: e.target.value }))}
-                      placeholder="Durée (min)"
-                      min={5}
-                      max={240}
-                    />
-                    <select
-                      className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-                      value={form.type}
-                      onChange={(e) => setForm((s) => ({ ...s, type: e.target.value }))}
-                    >
-                      <option value="suivi">Suivi</option>
-                      <option value="urgence">Urgence</option>
-                      <option value="bilan">Bilan</option>
-                      <option value="echographie">Échographie</option>
-                      <option value="consultation">Consultation</option>
-                    </select>
-                    <select
-                      className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-                      value={form.status}
-                      onChange={(e) => setForm((s) => ({ ...s, status: e.target.value }))}
-                    >
-                      <option value="planifie">Planifié</option>
-                      <option value="complete">Terminé</option>
-                      <option value="annule">Annulé</option>
-                      <option value="urgent">Urgent</option>
-                    </select>
-                    <Input value={form.reason} onChange={(e) => setForm((s) => ({ ...s, reason: e.target.value }))} placeholder="Motif" />
-                  </div>
-                  <Input value={form.notes} onChange={(e) => setForm((s) => ({ ...s, notes: e.target.value }))} placeholder="Notes" />
-
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setEditingId(null);
-                        setModalOpen(false);
-                      }}
-                    >
-                      Annuler
-                    </Button>
-                    <Button type="submit">{editingId ? "Mettre à jour" : "Créer RDV"}</Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {apptsForSelectedDay.map((a) => (
-                <button
-                  key={a.id}
-                  type="button"
-                  onClick={() => pickForEdit(a)}
-                  className={`w-full rounded-xl border border-border border-l-4 ${typeClass(a.type)} bg-card p-3 text-left shadow-sm hover:bg-accent/30`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <div className="text-sm font-semibold">{a.last_name} {a.first_name}</div>
-                      <div className="text-xs text-muted-foreground">{a.type} • {a.reason || "-"}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold">{new Date(a.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
-                      <div className="text-xs text-muted-foreground">{a.duration_minutes} min</div>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(a.status)}`}>{a.status}</span>
-                  </div>
-                </button>
+            {loading ? <div className="mb-3 text-sm text-muted-foreground">Chargement...</div> : null}
+            <div className="grid grid-cols-8 gap-1 text-xs">
+              <div className="text-muted-foreground"></div>
+              {weekDays.map((d) => (
+                <div key={d.toISOString()} className={cn("px-2 py-1 text-center font-medium", d.toDateString() === new Date().toDateString() ? "text-primary" : "text-muted-foreground")}>
+                  {d.toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}
+                </div>
               ))}
-              {apptsForSelectedDay.length === 0 ? <div className="py-8 text-sm text-muted-foreground">Aucun rendez-vous</div> : null}
+            </div>
+            <div className="mt-2 space-y-1">
+              {hours.map((h) => (
+                <div key={h} className="grid grid-cols-8 gap-1">
+                  <div className="flex items-center justify-end pr-2 text-xs text-muted-foreground">{h}h</div>
+                  {weekDays.map((d) => {
+                    const cellStart = new Date(d);
+                    cellStart.setHours(h, 0, 0, 0);
+                    const cellEnd = new Date(d);
+                    cellEnd.setHours(h, 59, 59, 999);
+                    const appts = items.filter((a) => {
+                      const t = new Date(a.starts_at);
+                      return t >= cellStart && t <= cellEnd;
+                    });
+                    return (
+                      <button
+                        key={d.toISOString() + h}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDay(new Date(d));
+                          const startsAt = new Date(d);
+                          startsAt.setHours(h, 0, 0, 0);
+                          setForm((s) => ({
+                            ...s,
+                            patientId: s.patientId || patients[0]?.id || "",
+                            startsAt: startsAt.toISOString().slice(0, 16),
+                            durationMinutes: "30",
+                            type: "suivi",
+                            status: "planifie",
+                            reason: "",
+                            notes: ""
+                          }));
+                          setEditingId(null);
+                          setModalOpen(true);
+                        }}
+                        className="relative h-14 rounded-md border border-border bg-muted/30 p-1 text-left hover:bg-accent/30"
+                      >
+                        <div className="flex flex-col gap-0.5">
+                          {appts.slice(0, 2).map((a) => (
+                            <div
+                              key={a.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                pickForEdit(a);
+                              }}
+                              className={cn(
+                                "truncate rounded px-1 text-[10px] font-medium",
+                                a.status === "urgent" ? "bg-red-100 text-red-700" : "bg-primary/10 text-primary"
+                              )}
+                            >
+                              {a.last_name} {a.type}
+                            </div>
+                          ))}
+                          {appts.length > 2 ? <div className="text-[10px] text-muted-foreground">+{appts.length - 2}</div> : null}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
-      </div>
+      ) : (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Liste des rendez-vous</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setCursorMonth((d) => { const x = new Date(d); x.setMonth(x.getMonth() - 1); return x; })}>←</Button>
+              <Button variant="outline" size="sm" onClick={() => setCursorMonth(new Date())}>Aujourd'hui</Button>
+              <Button variant="outline" size="sm" onClick={() => setCursorMonth((d) => { const x = new Date(d); x.setMonth(x.getMonth() + 1); return x; })}>→</Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? <div className="mb-3 text-sm text-muted-foreground">Chargement...</div> : null}
+            <div className="space-y-2">
+              {items
+                .slice()
+                .sort((a, b) => +new Date(a.starts_at) - +new Date(b.starts_at))
+                .map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => pickForEdit(a)}
+                    className={`w-full rounded-xl border border-border border-l-4 ${typeClass(a.type)} bg-card p-3 text-left shadow-sm hover:bg-accent/30`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-semibold">{new Date(a.starts_at).toLocaleDateString()} {new Date(a.starts_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+                        <div className="text-xs text-muted-foreground">{a.last_name} {a.first_name} • {a.type}</div>
+                      </div>
+                      <div className="text-right">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(a.status)}`}>{a.status}</span>
+                        <div className="text-xs text-muted-foreground">{a.duration_minutes} min</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              {items.length === 0 ? <div className="py-8 text-sm text-muted-foreground">Aucun rendez-vous</div> : null}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

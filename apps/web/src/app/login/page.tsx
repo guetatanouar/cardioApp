@@ -40,7 +40,10 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const res = await apiFetch<{ token: string; user: { id: string; role: "admin" | "secretaire"; fullName: string } }>(
+      const res = await apiFetch<{
+        token: string;
+        user: { id: string; role: "admin" | "secretaire"; fullName: string; email: string };
+      }>(
         "/api/auth/login",
         {
           method: "POST",
@@ -48,7 +51,13 @@ export default function LoginPage() {
         }
       );
 
-      setSession({ token: res.token, role: res.user.role, userId: res.user.id, fullName: res.user.fullName });
+      setSession({
+        token: res.token,
+        role: res.user.role,
+        userId: res.user.id,
+        fullName: res.user.fullName,
+        email: res.user.email
+      });
       router.replace("/dashboard");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";

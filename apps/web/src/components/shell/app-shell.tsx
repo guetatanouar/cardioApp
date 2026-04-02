@@ -48,26 +48,24 @@ function applyColorTheme(theme: ColorTheme) {
 }
 
 const staffNav = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Tableau de bord" },
-  { href: "/patients", icon: Users, label: "Patients" },
-  { href: "/agenda", icon: CalendarDays, label: "Agenda" },
-  { href: "/suivi", icon: Activity, label: "Suivi médical" },
-  { href: "/prescriptions", icon: FileText, label: "Prescriptions" },
-  { href: "/chat", icon: MessageSquare, label: "Messagerie" }
+  { href: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
+  { href: "/patients", icon: Users, labelKey: "patients" },
+  { href: "/agenda", icon: CalendarDays, labelKey: "agenda" },
+  { href: "/prescriptions", icon: FileText, labelKey: "prescriptions" },
+  { href: "/chat", icon: MessageSquare, labelKey: "chat" }
 ];
 
 const patientNav = [
-  { href: "/patient", icon: LayoutDashboard, label: "Mes constantes" },
-  { href: "/patient/documents", icon: FileText, label: "Mes documents" },
-  { href: "/patient/chat", icon: MessageSquare, label: "Chat médecin" },
-  { href: "/patient/consultations", icon: Users, label: "Consultations" }
+  { href: "/patient", icon: LayoutDashboard, labelKey: "dashboard" },
+  { href: "/patient/documents", icon: FileText, labelKey: "prescriptions" },
+  { href: "/patient/chat", icon: MessageSquare, labelKey: "chat" }
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { locale, setLocale } = useI18n();
+  const { locale, setLocale, t } = useI18n();
 
   const session = typeof window !== "undefined" ? getSession() : null;
   const isAuthRoute = pathname?.startsWith("/login") || pathname?.startsWith("/patient/login");
@@ -222,7 +220,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   )}
                 >
                   <Icon className="h-4 w-4" />
-                  <span className="flex-1">{item.label}</span>
+                  <span className="flex-1">{t(item.labelKey as any)}</span>
                   {item.href.includes("chat") && chatUnreadCount > 0 ? (
                     <span className="rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-semibold text-white">
                       {chatUnreadCount}
@@ -238,7 +236,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/90 hover:bg-white/10"
             >
               <Settings className="h-4 w-4" />
-              <span>Paramètres</span>
+              <span>{t("settings")}</span>
             </Link>
             <Button
               variant="ghost"
@@ -249,7 +247,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               }}
             >
               <LogOut className="h-4 w-4" />
-              <span>Logout</span>
+              <span>{t("logout")}</span>
             </Button>
           </div>
         </aside>
