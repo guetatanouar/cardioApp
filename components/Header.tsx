@@ -11,11 +11,10 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { cn } from "@/lib/utils";
-import { clearSession, getSession } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
-import { locales } from "@/lib/i18n";
-import { apiFetch } from "@/lib/api";
+import { cn } from "@/lib/cn";
+import { clearSession, getSession } from "@/lib/auth/storage";
+import { useI18n, locales } from "@/lib/i18n/client";
+import { apiFetch } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";

@@ -12,9 +12,9 @@ import {
   Settings,
   LogOut,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { clearSession, getSession } from "@/lib/auth";
-import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/cn";
+import { clearSession, getSession } from "@/lib/auth/storage";
+import { useI18n } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 
 const staffNav = [
