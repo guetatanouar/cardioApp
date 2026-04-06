@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
+import * as VisuallyHiddenPrimitive from "@radix-ui/react-visually-hidden";
 import { X } from "lucide-react";
 
 import { cn } from "@/lib/cn";
@@ -13,6 +14,14 @@ const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
 
 const DialogClose = DialogPrimitive.Close;
+
+const VisuallyHidden = React.forwardRef<
+  React.ElementRef<typeof VisuallyHiddenPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof VisuallyHiddenPrimitive.Root>
+>(({ className, ...props }, ref) => (
+  <VisuallyHiddenPrimitive.Root ref={ref} className={className} {...props} />
+));
+VisuallyHidden.displayName = VisuallyHiddenPrimitive.Root.displayName;
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
@@ -31,8 +40,8 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { title?: string }
+>(({ className, children, title, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
@@ -44,6 +53,7 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
+      {title && <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>}
       <DialogClose className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
@@ -87,5 +97,6 @@ export {
   DialogHeader,
   DialogFooter,
   DialogTitle,
-  DialogDescription
+  DialogDescription,
+  VisuallyHidden
 };

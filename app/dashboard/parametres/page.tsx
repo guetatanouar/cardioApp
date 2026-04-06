@@ -48,7 +48,24 @@ export default function SettingsPage() {
   }
 
   async function togglePermission(userId: string, permKey: string, current: boolean) {
-    const key = permKey.replace(/_([a-z])/g, (_, l) => l.toUpperCase());
+    const permMap: Record<string, string> = {
+      can_view_patients: 'canViewPatients',
+      can_edit_patients: 'canEditPatients',
+      can_delete_patients: 'canDeletePatients',
+      can_view_appointments: 'canViewAppointments',
+      can_edit_appointments: 'canEditAppointments',
+      can_delete_appointments: 'canDeleteAppointments',
+      can_view_chat: 'canViewChat',
+      can_send_chat: 'canSendChat',
+      can_view_prescriptions: 'canViewPrescriptions',
+      can_edit_prescriptions: 'canEditPrescriptions',
+      can_view_vitals: 'canViewVitals',
+      can_edit_vitals: 'canEditVitals',
+      can_view_documents: 'canViewDocuments',
+      can_upload_documents: 'canUploadDocuments',
+      can_view_consultations: 'canViewConsultations'
+    };
+    const key = permMap[permKey] || permKey;
     await apiFetch(`/api/settings/secretaire-permissions/${userId}`, {
       method: "PUT",
       body: JSON.stringify({ [key]: !current })
@@ -66,6 +83,7 @@ export default function SettingsPage() {
     { key: "can_delete_patients", label: "Supprimer patients" },
     { key: "can_view_appointments", label: "Voir agenda" },
     { key: "can_edit_appointments", label: "Modifier agenda" },
+    { key: "can_delete_appointments", label: "Supprimer agenda" },
     { key: "can_view_chat", label: "Voir chat" },
     { key: "can_send_chat", label: "Envoyer messages" },
     { key: "can_view_prescriptions", label: "Voir ordonnances" },

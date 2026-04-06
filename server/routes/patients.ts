@@ -14,15 +14,17 @@ patientsRouter.get('/', authenticateToken, async (req, res) => {
 });
 
 patientsRouter.post('/', authenticateToken, async (req, res) => {
-    const { id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, emergency_contact, allergies, medical_history } = req.body;
+    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status } = req.body;
+    const id = `P${Date.now().toString(36)}${Math.random().toString(36).substr(2, 4)}`;
     try {
         await query(
-            'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, emergency_contact, allergies, medical_history) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
-            [id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, emergency_contact, allergies, medical_history]
+            'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, pathology, severity_status || 'stable']
         );
-        res.status(201).json({ message: 'Patient created' });
+        res.status(201).json({ id, message: 'Patient created' });
     } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+        console.error(err);
+        res.status(500).json({ message: 'Server error', error: (err as Error).message });
     }
 });
 

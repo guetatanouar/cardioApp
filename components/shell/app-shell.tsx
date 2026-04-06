@@ -81,40 +81,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     if (session.role === "patient") {
       const channel = `patient:${session.userId}`;
-      const chat = await apiFetch<{ items: Array<{ id: string; sender_role: string; content: string; is_read: boolean }> }>(
+      const chat = await apiFetch<any[] | { items: Array<{ id: string; sender_role: string; text: string; content: string; is_read: boolean }> }>(
         `/api/chat?channel=${encodeURIComponent(channel)}`
       );
-      const unread = chat.items.filter((m) => !m.is_read && m.sender_role !== "patient").length;
+      const chatItems = Array.isArray(chat) ? chat : (chat as any).items ?? [];
+      const unread = chatItems.filter((m: any) => !m.is_read && m.sender_role !== "patient").length;
       setChatUnreadCount(unread);
       setNotifications(
-        chat.items
-          .filter((m) => m.sender_role !== "patient")
+        chatItems
+          .filter((m: any) => m.sender_role !== "patient")
           .slice(-5)
           .reverse()
-          .map((m) => ({
+          .map((m: any) => ({
             id: m.id,
-            title: "Nouveau message médecin",
-            detail: m.content
+            title: "Nouveau message",
+            detail: m.text || m.content || ""
           }))
       );
       return;
     }
 
-    const summary = await apiFetch<{
-      unreadStaffMessages: number;
-      criticalAlerts: Array<{ patient_id: string; first_name: string; last_name: string; spo2: number | null; heart_rate: number | null }>;
-      appointmentsToday: Array<{ id: string; first_name: string; last_name: string; starts_at: string; status: string }>;
-    }>("/api/dashboard/summary");
+    const [summary, staffChat] = await Promise.all([
+      apiFetch<{
+        unreadStaffMessages: number;
+        criticalAlerts: Array<{ patient_id: string; first_name: string; last_name: string; spo2: number | null; heart_rate: number | null }>;
+        appointmentsToday: Array<{ id: string; first_name: string; last_name: string; starts_at: string; status: string }>;
+      }>("/api/dashboard/summary"),
+      apiFetch<any[] | { items: Array<{ id: string; from_role: string; from_name: string; text: string; content: string; is_read: boolean }> }>("/api/chat?channel=staff")
+    ]);
 
-    setChatUnreadCount(summary.unreadStaffMessages);
+    const chatItems = Array.isArray(staffChat) ? staffChat : (staffChat as any).items ?? [];
+    const unreadMessages = chatItems.filter((m: any) => m.from_role !== session.role && !m.is_read);
+    setChatUnreadCount(unreadMessages.length);
 
-    const alertRows = summary.criticalAlerts.slice(0, 3).map((x) => ({
+    const alertRows = (summary.criticalAlerts || []).slice(0, 3).map((x) => ({
       id: `alert-${x.patient_id}`,
       title: `Alerte: ${x.last_name} ${x.first_name}`,
       detail: `${typeof x.spo2 === "number" ? `SpO2 ${x.spo2}%` : ""} ${typeof x.heart_rate === "number" ? `FC ${x.heart_rate} bpm` : ""}`.trim()
     }));
 
-    const urgentRows = summary.appointmentsToday
+    const urgentRows = (summary.appointmentsToday || [])
       .filter((a) => a.status === "urgent")
       .slice(0, 2)
       .map((a) => ({
@@ -123,13 +129,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         detail: new Date(a.starts_at).toLocaleTimeString()
       }));
 
-    const messageRow = {
-      id: "staff-unread",
-      title: "Messages staff non lus",
-      detail: `${summary.unreadStaffMessages}`
-    };
+    const messageRows = unreadMessages.slice(-3).reverse().map((m: any) => ({
+      id: `msg-${m.id}`,
+      title: `Message de ${m.from_name || m.from_role}`,
+      detail: (m.text || m.content || "").substring(0, 50)
+    }));
 
-    setNotifications([messageRow, ...alertRows, ...urgentRows]);
+    setNotifications([...alertRows, ...messageRows, ...urgentRows]);
   }
 
   React.useEffect(() => {
@@ -167,7 +173,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     timer = setInterval(() => {
       refreshHeaderData().catch(() => undefined);
-    }, 15000);
+    }, 10000);
 
     return () => {
       if (timer) clearInterval(timer);

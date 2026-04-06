@@ -9,7 +9,7 @@ settingsRouter.use(authenticateToken);
 settingsRouter.get('/profile', async (req, res) => {
     try {
         const result = await query(
-            'SELECT full_name as "fullName", email, role FROM users WHERE id = $1',
+            'SELECT name as "fullName", email, role FROM users WHERE id = $1',
             [(req as any).user.id]
         );
         if (result.rows.length === 0) {
@@ -26,7 +26,7 @@ settingsRouter.put('/profile', async (req, res) => {
     try {
         const { fullName, email } = req.body;
         await query(
-            'UPDATE users SET full_name = $1, email = $2 WHERE id = $3',
+            'UPDATE users SET name = $1, email = $2 WHERE id = $3',
             [fullName, email, (req as any).user.id]
         );
         res.json({ success: true });
@@ -60,7 +60,7 @@ settingsRouter.put('/password', async (req, res) => {
 settingsRouter.get('/secretaire-permissions', async (req, res) => {
     try {
         const result = await query(`
-            SELECT u.id as user_id, u.full_name, u.email,
+            SELECT u.id as user_id, u.name as full_name, u.email,
                 COALESCE(p.can_view_patients, false) as can_view_patients,
                 COALESCE(p.can_edit_patients, false) as can_edit_patients,
                 COALESCE(p.can_delete_patients, false) as can_delete_patients,
@@ -79,7 +79,7 @@ settingsRouter.get('/secretaire-permissions', async (req, res) => {
             FROM users u
             LEFT JOIN secretaire_permissions p ON u.id = p.user_id
             WHERE u.role = 'secretaire'
-            ORDER BY u.full_name
+            ORDER BY u.name
         `);
         res.json({ items: result.rows });
     } catch (error) {
@@ -90,47 +90,38 @@ settingsRouter.get('/secretaire-permissions', async (req, res) => {
 
 settingsRouter.put('/secretaire-permissions/:userId', async (req, res) => {
     try {
-        const { userId } = req.params;
-        const permissions = ['can_view_patients', 'can_edit_patients', 'can_delete_patients',
-            'can_view_appointments', 'can_edit_appointments', 'can_delete_appointments',
-            'can_view_chat', 'can_send_chat', 'can_view_prescriptions', 'can_edit_prescriptions',
-            'can_view_vitals', 'can_edit_vitals', 'can_view_documents', 'can_upload_documents',
-            'can_view_consultations'];
-        const updates: string[] = [];
-        const values: any[] = [];
-        let paramIndex = 1;
+        const userId = parseInt(req.params.userId);
+        const permMap: Record<string, string> = {
+            canViewPatients: 'can_view_patients',
+            canEditPatients: 'can_edit_patients',
+            canDeletePatients: 'can_delete_patients',
+            canViewAppointments: 'can_view_appointments',
+            canEditAppointments: 'can_edit_appointments',
+            canDeleteAppointments: 'can_delete_appointments',
+            canViewChat: 'can_view_chat',
+            canSendChat: 'can_send_chat',
+            canViewPrescriptions: 'can_view_prescriptions',
+            canEditPrescriptions: 'can_edit_prescriptions',
+            canViewVitals: 'can_view_vitals',
+            canEditVitals: 'can_edit_vitals',
+            canViewDocuments: 'can_view_documents',
+            canUploadDocuments: 'can_upload_documents',
+            canViewConsultations: 'can_view_consultations'
+        };
 
-        const permissionKeys = ['canViewPatients', 'canEditPatients', 'canDeletePatients',
-            'canViewAppointments', 'canEditAppointments', 'canDeleteAppointments',
-            'canViewChat', 'canSendChat', 'canViewPrescriptions', 'canEditPrescriptions',
-            'canViewVitals', 'canEditVitals', 'canViewDocuments', 'canUploadDocuments',
-            'canViewConsultations'];
-
-        for (let i = 0; i < permissions.length; i++) {
-            if (req.body[permissionKeys[i]] !== undefined) {
-                updates.push(`${permissions[i]} = $${paramIndex}`);
-                values.push(req.body[permissionKeys[i]]);
-                paramIndex++;
-            }
+        const permKey = Object.keys(req.body).find(k => permMap[k]);
+        if (!permKey) {
+            return res.status(400).json({ error: 'No permission key provided' });
         }
 
-        if (updates.length === 0) {
-            return res.status(400).json({ error: 'No permissions to update' });
-        }
+        const dbKey = permMap[permKey];
+        const value = req.body[permKey];
 
-        values.push(userId);
-
-        const insertValues = permissions.map((_, i) => {
-            const key = permissionKeys[i];
-            return req.body[key] !== undefined ? req.body[key] : false;
-        });
-        insertValues.push(userId);
-
-        await query(`
-            INSERT INTO secretaire_permissions (user_id, ${permissions.join(', ')})
-            VALUES ($${paramIndex}, ${permissions.map((_, i) => `$${i + 1}`).join(', ')})
-            ON CONFLICT (user_id) DO UPDATE SET ${updates.join(', ')}
-        `, insertValues);
+        await query(
+            `INSERT INTO secretaire_permissions (user_id, ${dbKey}) VALUES ($1, $2)
+             ON CONFLICT (user_id) DO UPDATE SET ${dbKey} = $2`,
+            [userId, value]
+        );
 
         res.json({ success: true });
     } catch (error) {

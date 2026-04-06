@@ -29,17 +29,19 @@ chatRouter.post('/', authenticateToken, async (req, res) => {
     let patient_id = null;
     let from_role = 'admin';
     let from_name = 'Dr. Moreau';
+    let actualChannel = 'staff';
     
     if (channel && channel.startsWith('patient:')) {
         patient_id = channel.replace('patient:', '');
         from_role = 'staff';
         from_name = 'Dr. Moreau';
+        actualChannel = 'patient';
     }
     
     try {
         await query(
             'INSERT INTO chat_messages (id, channel, patient_id, from_name, from_role, text) VALUES ($1, $2, $3, $4, $5, $6)',
-            [id, channel, patient_id, from_name, from_role, content]
+            [id, actualChannel, patient_id, from_name, from_role, content]
         );
         res.status(201).json({ message: 'Message sent' });
     } catch (err) {
@@ -51,7 +53,11 @@ chatRouter.post('/', authenticateToken, async (req, res) => {
 chatRouter.post('/mark-read', authenticateToken, async (req, res) => {
     const { channel } = req.body;
     try {
-        await query('UPDATE chat_messages SET is_read = TRUE WHERE channel = $1 AND is_read = FALSE', [channel]);
+        let actualChannel = channel;
+        if (channel && channel.startsWith('patient:')) {
+            actualChannel = 'patient';
+        }
+        await query('UPDATE chat_messages SET is_read = TRUE WHERE channel = $1 AND is_read = FALSE', [actualChannel]);
         res.json({ success: true });
     } catch (err) {
         console.error(err);

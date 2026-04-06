@@ -337,7 +337,7 @@ export default function PatientsPage() {
             <DialogTrigger asChild>
               <Button>Nouveau patient</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl p-0">
+            <DialogContent className="max-w-2xl p-0" title="Nouveau patient">
               <div className="rounded-t-2xl bg-gradient-to-r from-indigo-600 to-blue-700 px-6 py-4 text-white">
                 <div className="text-sm opacity-90">1/2</div>
                 <div className="text-lg font-semibold">Nouveau patient</div>
