@@ -14,14 +14,16 @@ vitalsRouter.get('/:id', authenticateToken, async (req, res) => {
 });
 
 vitalsRouter.post('/:id', authenticateToken, async (req, res) => {
-    const { id, recorded_at, systolic, diastolic, heart_rate, weight, sp02, note } = req.body;
+    const { systolic, diastolic, heart_rate, weight, sp02, note } = req.body;
+    const id = `v_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
         await query(
-            'INSERT INTO vital_entries (id, patient_id, recorded_at, systolic, diastolic, heart_rate, weight, sp02, note) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-            [id, req.params.id, recorded_at, systolic, diastolic, heart_rate, weight, sp02, note]
+            'INSERT INTO vital_entries (id, patient_id, systolic, diastolic, heart_rate, weight, sp02, note) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+            [id, req.params.id, systolic, diastolic, heart_rate, weight, sp02, note]
         );
         res.status(201).json({ message: 'Vital entry added' });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 });

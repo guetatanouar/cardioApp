@@ -49,10 +49,11 @@ function applyColorTheme(theme: ColorTheme) {
 
 const staffNav = [
   { href: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
-  { href: "/patients", icon: Users, labelKey: "patients" },
-  { href: "/agenda", icon: CalendarDays, labelKey: "agenda" },
-  { href: "/prescriptions", icon: FileText, labelKey: "prescriptions" },
-  { href: "/chat", icon: MessageSquare, labelKey: "chat" }
+  { href: "/dashboard/patients", icon: Users, labelKey: "patients" },
+  { href: "/dashboard/agenda", icon: CalendarDays, labelKey: "agenda" },
+  { href: "/dashboard/prescriptions", icon: FileText, labelKey: "prescriptions" },
+  { href: "/dashboard/chat", icon: MessageSquare, labelKey: "chat" },
+  { href: "/dashboard/parametres", icon: Settings, labelKey: "settings" }
 ];
 
 const patientNav = [
@@ -232,7 +233,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="space-y-1 p-2">
             <Link
-              href="/parametres"
+              href="/dashboard/parametres"
               className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/90 hover:bg-white/10"
             >
               <Settings className="h-4 w-4" />
@@ -260,7 +261,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   e.preventDefault();
                   const q = search.trim();
                   if (!q) return;
-                  router.push(`/patients?q=${encodeURIComponent(q)}`);
+                  router.push(`/dashboard/patients?q=${encodeURIComponent(q)}`);
                 }}
               >
                 <div className="relative">
@@ -348,8 +349,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <div className="text-xs text-muted-foreground">{session?.role === "patient" ? "Patient" : session?.role === "admin" ? "Cardiologue · Admin" : "Secrétaire · Staff"}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push("/parametres")}>Mon profil</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/parametres")}>Paramètres</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard/parametres")}>Mon profil</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/dashboard/parametres")}>Paramètres</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive"
