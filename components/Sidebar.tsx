@@ -19,10 +19,10 @@ import { Button } from "@/components/ui/button";
 
 const staffNav = [
   { href: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
-  { href: "/patients", icon: Users, labelKey: "patients" },
-  { href: "/agenda", icon: CalendarDays, labelKey: "agenda" },
-  { href: "/prescriptions", icon: FileText, labelKey: "prescriptions" },
-  { href: "/chat", icon: MessageSquare, labelKey: "chat" },
+  { href: "/dashboard/patients", icon: Users, labelKey: "patients" },
+  { href: "/dashboard/agenda", icon: CalendarDays, labelKey: "agenda" },
+  { href: "/dashboard/prescriptions", icon: FileText, labelKey: "prescriptions" },
+  { href: "/dashboard/chat", icon: MessageSquare, labelKey: "chat" },
 ];
 
 export function Sidebar() {
@@ -63,7 +63,7 @@ export function Sidebar() {
       </nav>
       <div className="space-y-1 p-2">
         <Link
-          href="/parametres"
+          href="/dashboard/parametres"
           className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/90 hover:bg-white/10"
         >
           <Settings className="h-4 w-4" />

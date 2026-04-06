@@ -125,7 +125,7 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
               e.preventDefault();
               const q = search.trim();
               if (!q) return;
-              router.push(`/patients?q=${encodeURIComponent(q)}`);
+              router.push(`/dashboard/patients?q=${encodeURIComponent(q)}`);
             }}
           >
             <div className="relative">
@@ -217,11 +217,11 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
               <div className="text-[10px] text-muted-foreground capitalize">{session?.role}</div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push(isPatientPortal ? "/patient" : "/parametres")}>
+            <DropdownMenuItem onClick={() => router.push(isPatientPortal ? "/patient" : "/dashboard/parametres")}>
               Mon profil
             </DropdownMenuItem>
             {!isPatientPortal && (
-              <DropdownMenuItem onClick={() => router.push("/parametres")}>
+              <DropdownMenuItem onClick={() => router.push("/dashboard/parametres")}>
                 Paramètres
               </DropdownMenuItem>
             )}

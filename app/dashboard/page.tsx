@@ -134,10 +134,10 @@ export default function DashboardPage() {
       {offline ? <div className="text-sm text-amber-600">Mode hors ligne: affichage des données de démonstration.</div> : null}
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Link href="/patients" className="rounded-lg border border-border bg-card p-4 text-sm hover:bg-accent/40">Nouveau dossier patient</Link>
-        <Link href="/agenda" className="rounded-lg border border-border bg-card p-4 text-sm hover:bg-accent/40">Planifier un rendez-vous</Link>
-        <Link href="/prescriptions" className="rounded-lg border border-border bg-card p-4 text-sm hover:bg-accent/40">Creer une ordonnance</Link>
-        <Link href="/chat" className="rounded-lg border border-border bg-card p-4 text-sm hover:bg-accent/40">Ouvrir la messagerie</Link>
+        <Link href="/dashboard/patients" className="rounded-lg border border-border bg-card p-4 text-sm hover:bg-accent/40">Nouveau dossier patient</Link>
+        <Link href="/dashboard/agenda" className="rounded-lg border border-border bg-card p-4 text-sm hover:bg-accent/40">Planifier un rendez-vous</Link>
+        <Link href="/dashboard/prescriptions" className="rounded-lg border border-border bg-card p-4 text-sm hover:bg-accent/40">Creer une ordonnance</Link>
+        <Link href="/dashboard/chat" className="rounded-lg border border-border bg-card p-4 text-sm hover:bg-accent/40">Ouvrir la messagerie</Link>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
