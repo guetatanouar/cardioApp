@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS patients (
     emergency_contact TEXT,
     allergies TEXT[] DEFAULT '{}',
     medical_history TEXT[] DEFAULT '{}',
+    severity_status VARCHAR(20) DEFAULT 'stable',
+    pathology VARCHAR(200),
     created_at TIMESTAMP DEFAULT NOW()
 );
 

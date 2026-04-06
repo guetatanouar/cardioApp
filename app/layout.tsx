@@ -5,7 +5,6 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/lib/i18n/client";
-import { AppShell } from "@/components/shell/app-shell";
 import { config } from "@/lib/config";
 
 const inter = Inter({
@@ -29,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <I18nProvider>
-            <AppShell>{children}</AppShell>
+            {children}
           </I18nProvider>
         </ThemeProvider>
       </body>

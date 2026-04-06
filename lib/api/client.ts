@@ -63,7 +63,13 @@ function getMockResponse<T>(path: string): T | null {
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const session = typeof window !== "undefined" ? getSession() : null;
 
-  const headers = new Headers(init?.headers);
+  const headers = new Headers();
+  if (init?.headers) {
+    const h = init.headers;
+    if (h instanceof Headers) h.forEach((v, k) => headers.set(k, v));
+    else if (Array.isArray(h)) h.forEach(([k, v]) => headers.set(k, v));
+    else Object.entries(h as Record<string, string>).forEach(([k, v]) => headers.set(k, v));
+  }
   headers.set("Content-Type", "application/json");
   if (session?.token) headers.set("Authorization", `Bearer ${session.token}`);
 

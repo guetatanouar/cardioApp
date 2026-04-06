@@ -47,7 +47,8 @@ export default function LoginPage() {
         "/api/auth/login",
         {
           method: "POST",
-          body: JSON.stringify({ login, password })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: login, password })
         }
       );
 

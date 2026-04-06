@@ -10,13 +10,17 @@ import { chatRouter } from './routes/chat.js';
 import { prescriptionsRouter } from './routes/prescriptions.js';
 import { consultationsRouter } from './routes/consultations.js';
 import { documentsRouter } from './routes/documents.js';
+import { settingsRouter } from './routes/settings.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
@@ -29,6 +33,7 @@ app.use('/api/chat', chatRouter);
 app.use('/api/prescriptions', prescriptionsRouter);
 app.use('/api/consultations', consultationsRouter);
 app.use('/api/documents', documentsRouter);
+app.use('/api/settings', settingsRouter);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

@@ -92,11 +92,13 @@ export default function PatientsPage() {
   async function load(customQ = q, customPage = page) {
     setLoading(true);
     try {
-      const res = await apiFetch<{ items: PatientListItem[]; total: number }>(
+      const res = await apiFetch<PatientListItem[] | { items: PatientListItem[]; total: number }>(
         `/api/patients?page=${customPage}&pageSize=${pageSize}&q=${encodeURIComponent(customQ)}`
       );
-      setItems(res.items);
-      setTotal(res.total);
+      const items = Array.isArray(res) ? res : (res as any).items ?? [];
+      const total = Array.isArray(res) ? res.length : (res as any).total ?? 0;
+      setItems(items);
+      setTotal(total);
     } finally {
       setLoading(false);
     }
@@ -649,11 +651,11 @@ export default function PatientsPage() {
 
                 const chartData = rows.map((v: any) => ({
                   date: new Date(v.recorded_at).toLocaleDateString(),
-                  systolic: v.systolic_bp,
-                  diastolic: v.diastolic_bp,
+                  systolic: v.systolic,
+                  diastolic: v.diastolic,
                   hr: v.heart_rate,
-                  spo2: v.spo2,
-                  weight: v.weight_kg ? Number(v.weight_kg) : null
+                  spo2: v.sp02,
+                  weight: v.weight ? Number(v.weight) : null
                 }));
 
                 return (

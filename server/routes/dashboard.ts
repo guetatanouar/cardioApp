@@ -25,7 +25,7 @@ dashboardRouter.get('/summary', authenticateToken, async (req, res) => {
             `SELECT v.*, p.first_name, p.last_name, p.severity_status 
              FROM vital_entries v 
              JOIN patients p ON v.patient_id = p.id 
-             WHERE v.spo2 < 94 OR v.heart_rate > 100 
+             WHERE v.sp02 < 94 OR v.heart_rate > 100 
              ORDER BY v.recorded_at DESC LIMIT 10`
         );
 

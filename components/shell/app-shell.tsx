@@ -232,7 +232,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
           <div className="space-y-1 p-2">
             <Link
-              href="/settings"
+              href="/parametres"
               className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/90 hover:bg-white/10"
             >
               <Settings className="h-4 w-4" />
@@ -348,8 +348,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <div className="text-xs text-muted-foreground">{session?.role === "patient" ? "Patient" : session?.role === "admin" ? "Cardiologue · Admin" : "Secrétaire · Staff"}</div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push("/settings")}>Mon profil</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push("/settings")}>Paramètres</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/parametres")}>Mon profil</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push("/parametres")}>Paramètres</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="text-destructive"

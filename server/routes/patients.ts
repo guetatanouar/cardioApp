@@ -28,10 +28,23 @@ patientsRouter.post('/', authenticateToken, async (req, res) => {
 
 patientsRouter.get('/:id', authenticateToken, async (req, res) => {
     try {
-        const result = await query('SELECT * FROM patients WHERE id = $1', [req.params.id]);
-        if (result.rows.length === 0) return res.status(404).json({ message: 'Patient not found' });
-        res.json(result.rows[0]);
+        const patientResult = await query('SELECT * FROM patients WHERE id = $1', [req.params.id]);
+        if (patientResult.rows.length === 0) return res.status(404).json({ message: 'Patient not found' });
+        
+        const [vitalsResult, consultationsResult, documentsResult] = await Promise.all([
+            query('SELECT * FROM vital_entries WHERE patient_id = $1 ORDER BY recorded_at DESC LIMIT 100', [req.params.id]),
+            query('SELECT * FROM consultations WHERE patient_id = $1 ORDER BY created_at DESC', [req.params.id]),
+            query('SELECT * FROM documents WHERE patient_id = $1 ORDER BY created_at DESC', [req.params.id])
+        ]);
+        
+        res.json({
+            patient: patientResult.rows[0],
+            vitals: vitalsResult.rows,
+            consultations: consultationsResult.rows,
+            documents: documentsResult.rows
+        });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 });

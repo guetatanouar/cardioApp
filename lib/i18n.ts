@@ -2,14 +2,14 @@
 
 import * as React from "react";
 
-import type { Locale } from "./messages";
-import { locales, messages } from "./messages";
+import type { Locale } from "./i18n/messages";
+import { locales, messages, getDir } from "./i18n/messages";
 
 const STORAGE_KEY = "cm_locale";
 
 type I18nContextValue = {
   locale: Locale;
-  t: (key: keyof (typeof messages)["fr"]) => string;
+  t: (key: string) => string;
   setLocale: (l: Locale) => void;
 };
 
@@ -25,13 +25,20 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  React.useEffect(() => {
+    document.documentElement.dir = getDir(locale);
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const setLocale = (l: Locale) => {
     setLocaleState(l);
     window.localStorage.setItem(STORAGE_KEY, l);
+    document.documentElement.dir = getDir(l);
+    document.documentElement.lang = l;
   };
 
-  const t = (key: keyof (typeof messages)["fr"]) => {
-    return messages[locale][key] ?? messages.fr[key];
+  const t = (key: string) => {
+    return (messages[locale] as Record<string, string>)[key] ?? (messages.fr as Record<string, string>)[key] ?? key;
   };
 
   return React.createElement(I18nContext.Provider, { value: { locale, t, setLocale } }, children);

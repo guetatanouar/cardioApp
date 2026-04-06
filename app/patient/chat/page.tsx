@@ -30,7 +30,7 @@ export default function PatientChatPage() {
     load().catch(() => undefined);
     const t = setInterval(() => {
       load().catch(() => undefined);
-    }, 2500);
+    }, 2000);
     return () => clearInterval(t);
   }, [channel]);
 

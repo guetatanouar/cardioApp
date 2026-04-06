@@ -4,3 +4,4 @@ apps/*/.next
 apps/*/dist
 *.log
 *.tsbuildinfo
+.next/*

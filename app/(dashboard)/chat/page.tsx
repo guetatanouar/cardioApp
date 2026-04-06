@@ -21,15 +21,17 @@ export default function ChatPage() {
   const [text, setText] = React.useState("");
 
   async function loadPatients() {
-    const res = await apiFetch<{ items: Array<{ id: string; first_name: string; last_name: string }> }>(
+    const res = await apiFetch<any[] | { items: Array<{ id: string; first_name: string; last_name: string }> }>(
       "/api/patients?page=1&pageSize=50"
     );
-    setPatients(res.items);
+    const items = Array.isArray(res) ? res : (res as any).items ?? [];
+    setPatients(items);
   }
 
   async function loadChannel(targetChannel = channel) {
-    const res = await apiFetch<{ items: any[] }>(`/api/chat?channel=${encodeURIComponent(targetChannel)}`);
-    setItems(res.items);
+    const res = await apiFetch<any[] | { items: any[] }>(`/api/chat?channel=${encodeURIComponent(targetChannel)}`);
+    const chatItems = Array.isArray(res) ? res : (res as any).items ?? [];
+    setItems(chatItems);
 
     await apiFetch("/api/chat/mark-read", {
       method: "POST",
@@ -44,8 +46,9 @@ export default function ChatPage() {
     await Promise.all(
       channels.map(async (ch) => {
         try {
-          const res = await apiFetch<{ items: any[] }>(`/api/chat?channel=${encodeURIComponent(ch)}`);
-          const unread = res.items.filter((m) => {
+          const res = await apiFetch<any[] | { items: any[] }>(`/api/chat?channel=${encodeURIComponent(ch)}`);
+          const chatItems = Array.isArray(res) ? res : (res as any).items ?? [];
+          const unread = chatItems.filter((m: any) => {
             if (m.is_read) return false;
             if (ch === "staff") return m.sender_role !== session?.role;
             return m.sender_role === "patient";
@@ -68,7 +71,7 @@ export default function ChatPage() {
     loadChannel(channel).catch(() => undefined);
     const timer = setInterval(() => {
       loadChannel(channel).catch(() => undefined);
-    }, 2500);
+    }, 2000);
 
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -78,7 +81,7 @@ export default function ChatPage() {
     refreshUnread().catch(() => undefined);
     const timer = setInterval(() => {
       refreshUnread().catch(() => undefined);
-    }, 6000);
+    }, 2000);
 
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps

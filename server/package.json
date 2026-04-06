@@ -3,13 +3,12 @@
   "version": "1.0.0",
   "description": "Backend Express for CardioManager",
   "main": "index.ts",
-  "type": "module",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only index.ts",
+    "dev": "node --import tsx --watch index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:migrate": "ts-node-dev server/db/migrate.ts",
-    "db:seed": "ts-node-dev server/db/seed.ts"
+    "db:migrate": "node --import tsx db/migrate.ts",
+    "db:seed": "node --import tsx db/seed.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -29,6 +28,7 @@
     "@types/node": "^18.15.11",
     "@types/pg": "^8.6.6",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.0.4"
   }
 }

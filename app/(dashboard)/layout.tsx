@@ -1,21 +1,36 @@
 "use client";
 
 import * as React from "react";
-import { Sidebar } from "@/components/Sidebar";
-import { Header } from "@/components/Header";
+import { useRouter } from "next/navigation";
+import { getSession } from "@/lib/auth/storage";
+import { AppShell } from "@/components/shell/app-shell";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      <div className="flex flex-1 flex-col">
-        <Header />
-        <main className="flex-1 p-6">{children}</main>
-      </div>
-    </div>
-  );
+  const router = useRouter();
+  const session = typeof window !== "undefined" ? getSession() : null;
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (mounted && !session) {
+      router.replace("/login");
+    }
+  }, [mounted, session, router]);
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
+  if (!session) {
+    return null;
+  }
+
+  return <AppShell>{children}</AppShell>;
 }

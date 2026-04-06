@@ -171,11 +171,19 @@ export default function SettingsPage() {
   const permissionRows: Array<{ key: string; label: string; dbKey: string }> = [
     { key: "canViewPatients", label: "Voir patients", dbKey: "can_view_patients" },
     { key: "canEditPatients", label: "Modifier patients", dbKey: "can_edit_patients" },
+    { key: "canDeletePatients", label: "Supprimer patients", dbKey: "can_delete_patients" },
     { key: "canViewAppointments", label: "Voir agenda", dbKey: "can_view_appointments" },
     { key: "canEditAppointments", label: "Modifier agenda", dbKey: "can_edit_appointments" },
+    { key: "canDeleteAppointments", label: "Supprimer agenda", dbKey: "can_delete_appointments" },
     { key: "canViewChat", label: "Voir chat", dbKey: "can_view_chat" },
+    { key: "canSendChat", label: "Envoyer messages", dbKey: "can_send_chat" },
     { key: "canViewPrescriptions", label: "Voir ordonnances", dbKey: "can_view_prescriptions" },
-    { key: "canEditPrescriptions", label: "Modifier ordonnances", dbKey: "can_edit_prescriptions" }
+    { key: "canEditPrescriptions", label: "Creer/Modifier ordonnances", dbKey: "can_edit_prescriptions" },
+    { key: "canViewVitals", label: "Voir constantes vitales", dbKey: "can_view_vitals" },
+    { key: "canEditVitals", label: "Saisir constantes vitales", dbKey: "can_edit_vitals" },
+    { key: "canViewDocuments", label: "Voir documents", dbKey: "can_view_documents" },
+    { key: "canUploadDocuments", label: "Telecharger documents", dbKey: "can_upload_documents" },
+    { key: "canViewConsultations", label: "Voir consultations", dbKey: "can_view_consultations" }
   ];
 
   return (

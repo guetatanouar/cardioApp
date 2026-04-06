@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Plus, Trash2, Printer, User } from "lucide-react";
+import { FileText, Plus, Trash2, Printer, Download, User } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export default function PrescriptionsPage() {
   const [patients, setPatients] = React.useState<Array<{ id: string; first_name: string; last_name: string; date_of_birth: string }>>([]);
@@ -21,19 +23,21 @@ export default function PrescriptionsPage() {
   ]);
 
   async function loadPatients() {
-    const res = await apiFetch<{ items: Array<{ id: string; first_name: string; last_name: string; date_of_birth: string }> }>(
+    const res = await apiFetch<any[] | { items: Array<{ id: string; first_name: string; last_name: string; date_of_birth: string }> }>(
       "/api/patients?page=1&pageSize=50"
     );
-    setPatients(res.items);
-    if (!patientId && res.items[0]) {
-      setPatientId(res.items[0].id);
+    const items = Array.isArray(res) ? res : (res as any).items ?? [];
+    setPatients(items);
+    if (!patientId && items[0]) {
+      setPatientId(items[0].id);
     }
   }
 
   async function load() {
     if (!patientId) return;
-    const res = await apiFetch<{ items: any[] }>(`/api/prescriptions?patientId=${encodeURIComponent(patientId)}`);
-    setItems(res.items);
+    const res = await apiFetch<any[] | { items: any[] }>(`/api/prescriptions?patientId=${encodeURIComponent(patientId)}`);
+    const rxItems = Array.isArray(res) ? res : (res as any).items ?? [];
+    setItems(rxItems);
   }
 
   React.useEffect(() => {
@@ -68,11 +72,62 @@ export default function PrescriptionsPage() {
     await load();
   }
 
+  const exportPdfPrescription = (p: any) => {
+    const patient = patients.find(pat => pat.id === p.patient_id);
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.setTextColor(59, 130, 246);
+    doc.text("ORDONNANCE MEDICALE", 105, 20, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setTextColor(0);
+    doc.text("Dr. Cabinet de Cardiologie", 20, 35);
+    doc.text("123 Avenue de la Sante", 20, 40);
+    doc.text("Alger, Algerie", 20, 45);
+    doc.text(new Date(p.created_at).toLocaleDateString("fr-DZ"), 190, 35, { align: "right" });
+
+    doc.setDrawColor(59, 130, 246);
+    doc.setLineWidth(0.5);
+    doc.line(20, 50, 190, 50);
+
+    doc.setFillColor(249, 250, 251);
+    doc.rect(20, 55, 170, 20, "F");
+    doc.setFontSize(10);
+    doc.text(`Patient: ${patient?.last_name || ""} ${patient?.first_name || ""}`, 25, 62);
+    doc.text(`Ne(e) le: ${patient ? new Date(patient.date_of_birth).toLocaleDateString() : ""}`, 25, 68);
+
+    autoTable(doc, {
+      startY: 80,
+      head: [["Medicament", "Dosage", "Frequence", "Duree"]],
+      body: p.items.map((item: any) => [item.name, item.dosage, item.frequency, item.duration]),
+      styles: { fontSize: 9, cellPadding: 4 },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+      alternateRowStyles: { fillColor: [249, 250, 251] }
+    });
+
+    let yPos = (doc as any).lastAutoTable.finalY + 10;
+    if (p.general_notes) {
+      doc.setFontSize(10);
+      doc.text("Notes:", 20, yPos);
+      doc.setFontSize(9);
+      const lines = doc.splitTextToSize(p.general_notes, 170);
+      doc.text(lines, 20, yPos + 6);
+      yPos += lines.length * 5 + 10;
+    }
+
+    doc.line(140, yPos + 20, 190, yPos + 20);
+    doc.setFontSize(8);
+    doc.text("Signature et Cachet", 165, yPos + 25, { align: "center" });
+
+    doc.save(`ordonnance_${patient?.last_name || "patient"}_${new Date(p.created_at).toISOString().split("T")[0]}.pdf`);
+  };
+
   const printPrescription = (p: any) => {
     const patient = patients.find(pat => pat.id === p.patient_id);
     const win = window.open("", "_blank");
     if (!win) return;
-    
+
     const itemsHtml = p.items.map((item: any) => `
       <tr>
         <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${item.name}</strong><br/><small>${item.instructions || ""}</small></td>
@@ -103,26 +158,26 @@ export default function PrescriptionsPage() {
           <div class="header">
             <div class="doctor-info">
               DR. CABINET CARDIOLOGIE<br/>
-              123 Avenue de la Santé<br/>
-              Alger, Algérie
+              123 Avenue de la Sante<br/>
+              Alger, Algerie
             </div>
             <div class="date">Alger, le ${new Date(p.created_at).toLocaleDateString()}</div>
           </div>
-          
+
           <div class="patient-info">
             <strong>Patient :</strong> ${patient?.last_name || ""} ${patient?.first_name || ""}<br/>
-            <strong>Né(e) le :</strong> ${patient ? new Date(patient.date_of_birth).toLocaleDateString() : ""}
+            <strong>Ne(e) le :</strong> ${patient ? new Date(patient.date_of_birth).toLocaleDateString() : ""}
           </div>
 
-          <div class="prescription-title">Ordonnance médical</div>
+          <div class="prescription-title">Ordonnance medical</div>
 
           <table>
             <thead>
               <tr>
-                <th>Médicament</th>
+                <th>Medicament</th>
                 <th>Dosage</th>
-                <th>Fréquence</th>
-                <th>Durée</th>
+                <th>Frequence</th>
+                <th>Duree</th>
               </tr>
             </thead>
             <tbody>
@@ -264,6 +319,10 @@ export default function PrescriptionsPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => exportPdfPrescription(p)}>
+                      <Download className="h-4 w-4 mr-2" />
+                      PDF
+                    </Button>
                     <Button variant="outline" size="sm" onClick={() => printPrescription(p)}>
                       <Printer className="h-4 w-4 mr-2" />
                       Imprimer

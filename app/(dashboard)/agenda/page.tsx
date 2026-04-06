@@ -110,20 +110,22 @@ export default function AgendaPage() {
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (typeFilter !== "all") params.set("type", typeFilter);
 
-      const res = await apiFetch<{ items: any[] }>(`/api/appointments?${params.toString()}`);
-      setItems(res.items);
+      const res = await apiFetch<any[] | { items: any[] }>(`/api/appointments?${params.toString()}`);
+      const items = Array.isArray(res) ? res : (res as any).items ?? [];
+      setItems(items);
     } finally {
       setLoading(false);
     }
   }
 
   async function loadPatients() {
-    const res = await apiFetch<{ items: Array<{ id: string; first_name: string; last_name: string }> }>(
+    const res = await apiFetch<any[] | { items: Array<{ id: string; first_name: string; last_name: string }> }>(
       "/api/patients?page=1&pageSize=50"
     );
-    setPatients(res.items);
-    if (!form.patientId && res.items[0]) {
-      setForm((s) => ({ ...s, patientId: res.items[0].id }));
+    const items = Array.isArray(res) ? res : (res as any).items ?? [];
+    setPatients(items);
+    if (!form.patientId && items[0]) {
+      setForm((s) => ({ ...s, patientId: items[0].id }));
     }
   }
 
