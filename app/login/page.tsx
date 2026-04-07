@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Activity, Lock, Mail, User, Shield, Calendar, FileText, MessageSquare, Heart } from "lucide-react";
+import { Activity, Lock, Mail, User, Shield, Heart } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { config } from "@/lib/config";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { t } = useI18n();
+  useI18n();
 
   const [mode, setMode] = React.useState<"staff" | "patient">("staff");
   const [staffProfile, setStaffProfile] = React.useState<"admin" | "secretaire">("admin");
@@ -104,42 +104,21 @@ export default function LoginPage() {
 
         {/* Content */}
         <div className="relative z-10 w-full max-w-md text-center text-white">
-          {/* Logo */}
-          <div className="mb-8 flex items-center justify-center gap-4">
-            <div className="relative">
-              <div className="absolute -left-1/2 -top-1/2 h-[200px] w-[200px] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
-              <div className="relative flex h-40 w-40 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
-                <Heart className="h-24 w-24 text-red-500 fill-red-500" />
+          {/* Logo with Heart */}
+          <div className="mb-12 flex flex-col items-center">
+            <div className="relative mb-6">
+              <div className="absolute -left-1/2 -top-1/2 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
+              <div className="relative flex h-48 w-48 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
+                <Heart className="h-28 w-28 text-red-500 fill-red-500" />
               </div>
             </div>
-          </div>
-
-          <h1 className="mb-3 text-4xl font-bold tracking-tight">CardioManager</h1>
-          <p className="mb-8 text-lg text-white/80">Gestion de cabinet cardiologique</p>
-
-          {/* Features */}
-          <div className="mb-8 grid grid-cols-2 gap-4 text-left">
-            {[
-              { icon: User, label: "25+ Patients", desc: "Dossiers medical" },
-              { icon: Calendar, label: "Agenda", desc: "Rendez-vous" },
-              { icon: FileText, label: "Ordonnances", desc: "Generation PDF" },
-              { icon: MessageSquare, label: "Messagerie", desc: "Chat patient" }
-            ].map((feature, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-xl bg-white/10 p-3 backdrop-blur-sm">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
-                  <feature.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold">{feature.label}</div>
-                  <div className="text-xs text-white/70">{feature.desc}</div>
-                </div>
-              </div>
-            ))}
+            <h1 className="mb-3 text-5xl font-bold tracking-tight">CardioManager</h1>
+            <p className="text-lg text-white/80">Gestion de cabinet cardiologique</p>
           </div>
 
           {/* Security Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm backdrop-blur-sm">
-            <Shield className="h-4 w-4" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-sm backdrop-blur-sm">
+            <Shield className="h-5 w-5" />
             <span>Donnees medicales securisees</span>
           </div>
         </div>

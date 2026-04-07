@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
-import { cn } from "@/lib/cn";
 import { clearSession, getSession } from "@/lib/auth/storage";
 import { useI18n, locales } from "@/lib/i18n/client";
 import { apiFetch } from "@/lib/api/client";
@@ -36,7 +35,7 @@ interface HeaderProps {
 export function Header({ isPatientPortal = false }: HeaderProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
-  const { locale, setLocale, t } = useI18n();
+  const { locale, setLocale } = useI18n();
 
   const session = typeof window !== "undefined" ? getSession() : null;
 

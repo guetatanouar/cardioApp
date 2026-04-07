@@ -18,6 +18,8 @@ export const messages = {
     "nav.prescriptions": "Ordonnances",
     "nav.suivi": "Suivi",
     "nav.parametres": "Paramètres",
+    accueil: "Accueil",
+    documents: "Documents",
     "patients.list": "Liste des patients",
     "patients.create": "Nouveau patient",
     "patients.edit": "Modifier le patient",
