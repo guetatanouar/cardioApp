@@ -18,7 +18,24 @@ authRouter.post('/login', async (req, res) => {
             process.env.JWT_SECRET as string,
             { expiresIn: '8h' }
         );
-        res.json({ token, user: { id: user.id, username: user.username, role: user.role, name: user.name } });
+        
+        let permissions = null;
+        if (user.role === 'secretaire') {
+            const permResult = await query('SELECT * FROM secretaire_permissions WHERE user_id = $1', [user.id]);
+            permissions = permResult.rows[0] || null;
+        }
+        
+        res.json({ 
+            token, 
+            user: { 
+                id: user.id, 
+                username: user.username, 
+                role: user.role, 
+                fullName: user.name, 
+                email: user.email,
+                permissions 
+            } 
+        });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
     }

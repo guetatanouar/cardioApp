@@ -2,11 +2,12 @@ import { Router } from 'express';
 import multer from 'multer';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/permissions.js';
 
 const upload = multer({ dest: 'uploads/' });
 export const documentsRouter = Router();
 
-documentsRouter.get('/:patientId', authenticateToken, async (req, res) => {
+documentsRouter.get('/:patientId', authenticateToken, requirePermission('documents'), async (req, res) => {
     try {
         const result = await query('SELECT * FROM documents WHERE patient_id = $1 ORDER BY created_at DESC', [req.params.patientId]);
         res.json(result.rows);
@@ -15,7 +16,7 @@ documentsRouter.get('/:patientId', authenticateToken, async (req, res) => {
     }
 });
 
-documentsRouter.post('/:patientId', authenticateToken, upload.single('file'), async (req, res) => {
+documentsRouter.post('/:patientId', authenticateToken, requirePermission('documents', 'write'), upload.single('file'), async (req, res) => {
     const { id, name, category, size } = req.body;
     const filePath = req.file?.path;
     try {
@@ -29,7 +30,7 @@ documentsRouter.post('/:patientId', authenticateToken, upload.single('file'), as
     }
 });
 
-documentsRouter.delete('/:id', authenticateToken, async (req, res) => {
+documentsRouter.delete('/:id', authenticateToken, requirePermission('documents', 'write'), async (req, res) => {
     try {
         await query('DELETE FROM documents WHERE id = $1', [req.params.id]);
         res.json({ message: 'Document deleted' });

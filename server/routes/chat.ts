@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/permissions.js';
 
 export const chatRouter = Router();
 
-chatRouter.get('/', authenticateToken, async (req, res) => {
+chatRouter.get('/', authenticateToken, requirePermission('chat'), async (req, res) => {
     const { channel } = req.query;
     try {
         let result;
@@ -23,7 +24,7 @@ chatRouter.get('/', authenticateToken, async (req, res) => {
     }
 });
 
-chatRouter.post('/', authenticateToken, async (req, res) => {
+chatRouter.post('/', authenticateToken, requirePermission('chat', 'send'), async (req, res) => {
     const { channel, content } = req.body;
     const id = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     let patient_id = null;
@@ -50,7 +51,7 @@ chatRouter.post('/', authenticateToken, async (req, res) => {
     }
 });
 
-chatRouter.post('/mark-read', authenticateToken, async (req, res) => {
+chatRouter.post('/mark-read', authenticateToken, requirePermission('chat'), async (req, res) => {
     const { channel } = req.body;
     try {
         let actualChannel = channel;

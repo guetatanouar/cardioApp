@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/permissions.js';
 
 export const appointmentsRouter = Router();
 
-appointmentsRouter.get('/', authenticateToken, async (req, res) => {
+appointmentsRouter.get('/', authenticateToken, requirePermission('appointments'), async (req, res) => {
     try {
         const result = await query(`
             SELECT a.*, p.first_name, p.last_name 
@@ -18,9 +19,9 @@ appointmentsRouter.get('/', authenticateToken, async (req, res) => {
     }
 });
 
-appointmentsRouter.post('/', authenticateToken, async (req, res) => {
+appointmentsRouter.post('/', authenticateToken, requirePermission('appointments', 'write'), async (req, res) => {
     const { patientId, startsAt, durationMinutes, type, status, reason, notes } = req.body;
-    const id = `appt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const id = `a${Date.now().toString(36)}`;
     const date = new Date(startsAt);
     const dateStr = date.toISOString().split('T')[0];
     const timeStr = date.toTimeString().slice(0, 5);
@@ -36,7 +37,7 @@ appointmentsRouter.post('/', authenticateToken, async (req, res) => {
     }
 });
 
-appointmentsRouter.put('/:id', authenticateToken, async (req, res) => {
+appointmentsRouter.put('/:id', authenticateToken, requirePermission('appointments', 'write'), async (req, res) => {
     const { status } = req.body;
     try {
         await query('UPDATE appointments SET status=$1 WHERE id=$2', [status, req.params.id]);
