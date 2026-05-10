@@ -156,7 +156,7 @@ export default function DashboardPage() {
                     </div>
                     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
                       a.status === "complete" ? "bg-green-100 text-green-700" :
-                      a.status === "annule" ? "bg-gray-100 text-gray-700" :
+                      a.status === "cancelled" ? "bg-gray-100 text-gray-700" :
                       a.status === "urgent" ? "bg-red-100 text-red-700" :
                       "bg-blue-100 text-blue-700"
                     }`}>

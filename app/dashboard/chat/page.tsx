@@ -1,15 +1,18 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 
 import { apiFetch } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/storage";
+import { usePagePermission } from "@/lib/auth/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Send, Users } from "lucide-react";
 
 export default function ChatPage() {
+  const hasAccess = usePagePermission("can_view_chat");
   const session = typeof window !== "undefined" ? getSession() : null;
 
   const [patients, setPatients] = React.useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
@@ -74,6 +77,8 @@ export default function ChatPage() {
     }
     return msg.from_role === "staff";
   }
+
+  if (!hasAccess) return null;
 
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4">

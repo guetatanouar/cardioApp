@@ -5,14 +5,19 @@ export type AuthRole = "admin" | "secretaire" | "patient";
 export type SecretairePermissions = {
   can_view_patients: boolean;
   can_edit_patients: boolean;
+  can_delete_patients: boolean;
   can_view_appointments: boolean;
   can_edit_appointments: boolean;
+  can_delete_appointments: boolean;
   can_view_chat: boolean;
+  can_send_chat: boolean;
   can_view_prescriptions: boolean;
   can_edit_prescriptions: boolean;
   can_view_vitals: boolean;
-  can_add_vitals: boolean;
-  can_manage_patient_accounts: boolean;
+  can_edit_vitals: boolean;
+  can_view_documents: boolean;
+  can_upload_documents: boolean;
+  can_view_consultations: boolean;
 };
 
 export type StoredSession = {

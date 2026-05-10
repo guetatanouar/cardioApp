@@ -1,17 +1,20 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 
 import { apiFetch } from "@/lib/api/client";
+import { dispatchNotification } from "@/lib/notifications";
+import { usePagePermission } from "@/lib/auth/usePermissions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { FileText, Plus, Trash2, Printer, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 export default function PrescriptionsPage() {
+  const hasAccess = usePagePermission("can_view_prescriptions");
   const [patients, setPatients] = React.useState<any[]>([]);
   const [patientId, setPatientId] = React.useState("");
   const [items, setItems] = React.useState<any[]>([]);
@@ -60,6 +63,14 @@ export default function PrescriptionsPage() {
         generalNotes,
         items: payloadItems
       })
+    });
+
+    const patient = patients.find(p => p.id === patientId);
+    dispatchNotification({
+      id: `presc-${Date.now()}`,
+      title: "Ordonnance créée",
+      detail: `Pour ${patient?.last_name || ""} ${patient?.first_name || ""}`,
+      type: "success"
     });
 
     setShowNew(false);
@@ -119,6 +130,8 @@ export default function PrescriptionsPage() {
     updated[i] = { ...updated[i], [field]: value };
     setMedicines(updated);
   }
+
+  if (!hasAccess) return null;
 
   return (
     <div className="space-y-4">

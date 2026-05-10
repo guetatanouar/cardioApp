@@ -56,7 +56,8 @@ export default function LoginPage() {
         role: res.user.role,
         userId: res.user.id,
         fullName: res.user.fullName,
-        email: res.user.email
+        email: res.user.email,
+        permissions: res.user.permissions || undefined
       });
       router.replace("/dashboard");
     } catch (err) {
@@ -94,47 +95,89 @@ export default function LoginPage() {
   return (
     <div className="grid min-h-screen grid-cols-1 lg:grid-cols-2">
       {/* Left Panel - Branding */}
-      <div className="relative flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 via-blue-700 to-indigo-900 p-8">
+      <div className="relative flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-blue-900 via-indigo-900 to-[#101E60] p-8 hidden lg:flex">
         {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -left-10 -top-10 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-          <div className="absolute -bottom-10 -right-10 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl" />
-          <div className="absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -left-10 -top-10 h-[500px] w-[500px] rounded-full bg-blue-500/10 blur-[100px]" />
+          <div className="absolute top-1/2 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600/20 blur-[120px]" />
         </div>
 
-        {/* Content */}
-        <div className="relative z-10 w-full max-w-md text-center text-white">
-          {/* Logo with Heart */}
-          <div className="mb-12 flex flex-col items-center">
-            <div className="relative mb-6">
-              <div className="absolute -left-1/2 -top-1/2 h-[300px] w-[300px] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
-              <div className="relative flex h-48 w-48 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
-                <Heart className="h-28 w-28 text-red-500 fill-red-500" />
-              </div>
+        {/* Top Header */}
+        <div className="absolute top-8 left-8 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-600 shadow-lg">
+            <Activity className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <div className="text-lg font-bold text-white leading-tight mt-0.5">CardioManager</div>
+            <div className="text-xs text-white/70">Gestion Cabinet de Cardiologie</div>
+          </div>
+        </div>
+
+        {/* Central Graphic */}
+        <div className="relative z-10 w-full max-w-md text-center text-white mt-12">
+          <div className="relative h-64 flex justify-center items-center mb-16">
+            {/* Heart */}
+            <div className="absolute z-10 animate-heartbeat drop-shadow-[0_0_35px_rgba(239,68,68,0.4)]">
+              <Heart className="h-32 w-32 text-red-500 fill-red-500" />
+              <Activity className="absolute top-1/2 left-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 text-white/90 drop-shadow-md z-20" />
             </div>
-            <h1 className="mb-3 text-5xl font-bold tracking-tight">CardioManager</h1>
-            <p className="text-lg text-white/80">Gestion de cabinet cardiologique</p>
+
+            {/* Concentric Circles */}
+            <div className="absolute top-1/2 left-1/2 h-48 w-48 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10" />
+            <div className="absolute top-1/2 left-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/5" />
+
+            {/* Floating Metrics */}
+            <div className="absolute top-0 right-8 z-20 animate-float rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 py-3 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-transform hover:scale-105 cursor-default">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="text-[10px] uppercase tracking-wider text-white/70">Tension artérielle</div>
+                <div className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              </div>
+              <div className="text-xl font-bold flex items-baseline gap-1 text-white">120/80 <span className="text-xs font-normal text-white/60">mmHg</span></div>
+            </div>
+
+            <div className="absolute top-8 left-8 z-20 animate-float-delayed rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 py-3 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-transform hover:scale-105 cursor-default">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="text-[10px] uppercase tracking-wider text-white/70">Fréquence cardiaque</div>
+                <div className="h-2 w-2 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+              </div>
+              <div className="text-xl font-bold flex items-baseline gap-1 text-white">72 <span className="text-xs font-normal text-white/60">bpm</span></div>
+            </div>
+
+            <div className="absolute bottom-4 left-4 z-20 animate-float rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 py-3 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-transform hover:scale-105 cursor-default">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="text-[10px] uppercase tracking-wider text-white/70">Patients suivis</div>
+                <div className="h-2 w-2 rounded-full bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]" />
+              </div>
+              <div className="text-xl font-bold text-white">248</div>
+            </div>
+
+            <div className="absolute bottom-0 right-12 z-20 animate-float-delayed rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 py-3 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.1)] transition-transform hover:scale-105 cursor-default">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="text-[10px] uppercase tracking-wider text-white/70">RDV aujourd'hui</div>
+                <div className="h-2 w-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.8)]" />
+              </div>
+              <div className="text-xl font-bold text-white">12</div>
+            </div>
           </div>
 
-          {/* Security Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-sm backdrop-blur-sm">
-            <Shield className="h-5 w-5" />
-            <span>Donnees medicales securisees</span>
-          </div>
+          <h1 className="mb-3 text-3xl font-bold tracking-tight text-white drop-shadow-sm">Votre cabinet cardiologique</h1>
+          <p className="text-sm text-white/80 max-w-[280px] mx-auto leading-relaxed">
+            Gérez vos patients, rendez-vous et ordonnances depuis une seule plateforme sécurisée.
+          </p>
         </div>
       </div>
 
       {/* Right Panel - Login Form */}
       <div className="flex items-center justify-center bg-background p-6">
-        <div className="w-full max-w-md">
+        <div className="w-full max-w-[420px]">
           {/* Mobile Logo */}
           <div className="mb-8 flex items-center justify-center gap-3 lg:hidden">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-600 shadow-md">
               <Activity className="h-6 w-6 text-white" />
             </div>
             <div>
               <div className="text-xl font-bold">CardioManager</div>
-              <div className="text-sm text-muted-foreground">Gestion de cabinet</div>
+              <div className="text-sm text-muted-foreground">Gestion Cabinet de Cardiologie</div>
             </div>
           </div>
 

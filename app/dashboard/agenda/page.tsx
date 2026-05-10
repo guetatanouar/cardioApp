@@ -2,8 +2,11 @@
 
 import * as React from "react";
 import { ChevronLeft, ChevronRight, Plus, Clock, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { apiFetch } from "@/lib/api/client";
+import { dispatchNotification } from "@/lib/notifications";
+import { usePagePermission } from "@/lib/auth/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,8 +16,9 @@ import { cn } from "@/lib/cn";
 type Appointment = {
   id: string;
   patient_id: string;
-  starts_at: string;
-  duration_minutes: number;
+  date: string;
+  time: string;
+  duration: number;
   type: string;
   status: string;
   reason: string | null;
@@ -23,9 +27,9 @@ type Appointment = {
 };
 
 export default function AgendaPage() {
+  const hasAccess = usePagePermission("can_view_appointments");
   const [items, setItems] = React.useState<Appointment[]>([]);
   const [patients, setPatients] = React.useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
-  const [loading, setLoading] = React.useState(false);
 
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
@@ -41,18 +45,13 @@ export default function AgendaPage() {
   });
 
   async function loadAppointments() {
-    setLoading(true);
-    try {
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const start = new Date(year, month, 1).toISOString();
-      const end = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
-      const res = await apiFetch<any[] | { items: any[] }>(`/api/appointments?from=${start}&to=${end}`);
-      const appts = Array.isArray(res) ? res : (res as any).items ?? [];
-      setItems(appts);
-    } finally {
-      setLoading(false);
-    }
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const start = new Date(year, month, 1).toISOString();
+    const end = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+    const res = await apiFetch<any[] | { items: any[] }>(`/api/appointments?from=${start}&to=${end}`);
+    const appts = Array.isArray(res) ? res : (res as any).items ?? [];
+    setItems(appts);
   }
 
   async function loadPatients() {
@@ -82,9 +81,17 @@ export default function AgendaPage() {
         startsAt: new Date(startsAt).toISOString(),
         durationMinutes: Number(form.durationMinutes || 30),
         type: form.type,
-        status: "planifie",
+        status: "scheduled",
         reason: form.reason || undefined
       })
+    });
+
+    const patient = patients.find(p => p.id === form.patientId);
+    dispatchNotification({
+      id: `appt-${Date.now()}`,
+      title: "Rendez-vous créé",
+      detail: `${patient?.last_name || ""} ${patient?.first_name || ""} - ${form.date} ${form.time}`,
+      type: "success"
     });
 
     setModalOpen(false);
@@ -102,7 +109,7 @@ export default function AgendaPage() {
   async function cancelAppointment(id: string) {
     await apiFetch(`/api/appointments/${id}`, {
       method: "PUT",
-      body: JSON.stringify({ status: "annule" })
+      body: JSON.stringify({ status: "cancelled" })
     });
     await loadAppointments();
   }
@@ -134,7 +141,7 @@ export default function AgendaPage() {
 
   function getAppointmentsForDay(day: number) {
     return items.filter((a) => {
-      const apptDate = new Date(a.starts_at);
+      const apptDate = new Date(a.date);
       return apptDate.getDate() === day &&
              apptDate.getMonth() === currentDate.getMonth() &&
              apptDate.getFullYear() === currentDate.getFullYear();
@@ -143,7 +150,7 @@ export default function AgendaPage() {
 
   function getAppointmentsForDate(date: Date) {
     return items.filter((a) => {
-      const apptDate = new Date(a.starts_at);
+      const apptDate = new Date(a.date);
       return apptDate.toDateString() === date.toDateString();
     });
   }
@@ -158,14 +165,21 @@ export default function AgendaPage() {
 
   function statusBadge(status: string) {
     if (status === "complete") return "bg-green-100 text-green-700";
-    if (status === "annule") return "bg-gray-100 text-gray-500 line-through";
+    if (status === "cancelled") return "bg-gray-100 text-gray-500 line-through";
     if (status === "urgent") return "bg-red-100 text-red-700";
     return "bg-blue-100 text-blue-700";
   }
 
+  function statusLabel(status: string) {
+    if (status === "complete") return "Terminé";
+    if (status === "cancelled") return "Annulé";
+    if (status === "scheduled") return "Prévu";
+    return status;
+  }
+
   function statusBadgeDot(status: string) {
     if (status === "complete") return "bg-green-500";
-    if (status === "annule") return "bg-gray-400";
+    if (status === "cancelled") return "bg-gray-400";
     if (status === "urgent") return "bg-red-500";
     return "bg-blue-500";
   }
@@ -176,6 +190,8 @@ export default function AgendaPage() {
   const todayString = today.toDateString();
   const monthNames = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
   const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+  if (!hasAccess) return null;
 
   return (
     <div className="flex gap-6 h-[calc(100vh-8rem)]">
@@ -361,16 +377,15 @@ export default function AgendaPage() {
               selectedAppointments.length > 0 ? (
                 <div className="space-y-2">
                   {selectedAppointments.map((a) => {
-                    const apptDate = new Date(a.starts_at);
                     return (
                       <div key={a.id} className="rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors">
                         <div className="flex items-start gap-3">
                           <div className={cn("w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0", statusBadgeDot(a.status))} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">{apptDate.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</span>
+                              <span className="text-sm font-medium">{a.time}</span>
                               <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", statusBadge(a.status))}>
-                                {a.status}
+                                {statusLabel(a.status)}
                               </span>
                             </div>
                             <div className="flex items-center gap-1 mt-1 text-sm">
@@ -385,7 +400,7 @@ export default function AgendaPage() {
                             )}
                           </div>
                         </div>
-                        {a.status !== "annule" && a.status !== "complete" && (
+                        {a.status !== "cancelled" && a.status !== "complete" && (
                           <button
                             type="button"
                             className="mt-2 text-xs text-red-600 hover:text-red-700 hover:underline"
@@ -413,7 +428,7 @@ export default function AgendaPage() {
                   <>
                     <p className="text-xs text-muted-foreground mb-3">{items.length} rendez-vous ce mois</p>
                     {items.slice(0, 10).map((a) => {
-                      const apptDate = new Date(a.starts_at);
+                      const apptDate = new Date(a.date);
                       return (
                         <button
                           key={a.id}

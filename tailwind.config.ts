@@ -40,6 +40,24 @@ const config: Config = {
       boxShadow: {
         card: "0 14px 35px -18px rgba(17, 24, 39, 0.32)",
         modal: "0 22px 55px -24px rgba(17, 24, 39, 0.45)"
+      },
+      keyframes: {
+        heartbeat: {
+          "0%, 100%": { transform: "scale(1)" },
+          "14%": { transform: "scale(1.1)" },
+          "28%": { transform: "scale(1)" },
+          "42%": { transform: "scale(1.1)" },
+          "70%": { transform: "scale(1)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" },
+        }
+      },
+      animation: {
+        heartbeat: "heartbeat 1.5s ease-in-out infinite",
+        float: "float 6s ease-in-out infinite",
+        "float-delayed": "float 6s ease-in-out 3s infinite",
       }
     }
   },

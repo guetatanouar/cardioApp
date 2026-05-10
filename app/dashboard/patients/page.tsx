@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Line,
   LineChart,
@@ -11,7 +12,9 @@ import {
   YAxis
 } from "recharts";
 
-import { apiFetch, apiUpload } from "@/lib/api/client";
+import { apiFetch } from "@/lib/api/client";
+import { dispatchNotification } from "@/lib/notifications";
+import { usePagePermission } from "@/lib/auth/usePermissions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +40,7 @@ type PatientDetailRes = {
 };
 
 export default function PatientsPage() {
+  const hasAccess = usePagePermission("can_view_patients");
   const searchParams = useSearchParams();
   const [q, setQ] = React.useState(searchParams.get("q") ?? "");
   const [severityFilter, setSeverityFilter] = React.useState<"all" | "critique" | "surveillance" | "stable">("all");
@@ -66,9 +70,11 @@ export default function PatientsPage() {
   const [accountError, setAccountError] = React.useState<string | null>(null);
   const [accountForm, setAccountForm] = React.useState({ username: "", password: "" });
   const [resetPassword, setResetPassword] = React.useState("");
+  const [accountSaving, setAccountSaving] = React.useState(false);
 
-  const [newConsultation, setNewConsultation] = React.useState({ reason: "", exam: "", diagnosis: "", treatment: "", note: "" });
+  const [newConsultation, setNewConsultation] = React.useState({ date: new Date().toISOString().split('T')[0], reason: "", exam: "", diagnosis: "", treatment: "", note: "" });
   const [consultationSaving, setConsultationSaving] = React.useState(false);
+  const [consultationError, setConsultationError] = React.useState<string | null>(null);
 
   const [docFile, setDocFile] = React.useState<File | null>(null);
   const [docCategory, setDocCategory] = React.useState("Analyse");
@@ -146,7 +152,7 @@ export default function PatientsPage() {
     setChatItems([]);
     setChatText("");
     setChatUnread(0);
-    setNewConsultation({ reason: "", exam: "", diagnosis: "", treatment: "", note: "" });
+    setNewConsultation({ date: new Date().toISOString().split('T')[0], reason: "", exam: "", diagnosis: "", treatment: "", note: "" });
     setDocFile(null);
     setResetPassword("");
     loadDetail(selectedId).catch(() => undefined);
@@ -173,6 +179,25 @@ export default function PatientsPage() {
       method: "POST",
       body: JSON.stringify({ channel })
     });
+  }
+
+  async function sendMessage() {
+    if (!chatText.trim() || !selectedId) return;
+    const text = chatText.trim();
+    setChatText("");
+    setChatLoading(true);
+    try {
+      await apiFetch("/api/chat", {
+        method: "POST",
+        body: JSON.stringify({
+          channel: `patient:${selectedId}`,
+          text
+        })
+      });
+      await loadChat(selectedId);
+    } finally {
+      setChatLoading(false);
+    }
   }
 
   React.useEffect(() => {
@@ -219,6 +244,18 @@ export default function PatientsPage() {
   const filteredItems = (items || []).filter((p) => {
     if (severityFilter !== "all" && p.severity_status !== severityFilter) return false;
     if (pathologyFilter.trim() && !(p.pathology ?? "").toLowerCase().includes(pathologyFilter.trim().toLowerCase())) return false;
+    if (q.trim()) {
+      const search = q.toLowerCase();
+      const searchable = [
+        p.first_name,
+        p.last_name,
+        p.phone,
+        p.email,
+        p.pathology,
+        p.id
+      ].filter(Boolean).join(" ").toLowerCase();
+      if (!searchable.includes(search)) return false;
+    }
     return true;
   });
 
@@ -245,6 +282,13 @@ export default function PatientsPage() {
       await apiFetch("/api/patients", {
         method: "POST",
         body: JSON.stringify(payload)
+      });
+
+      dispatchNotification({
+        id: `patient-created-${Date.now()}`,
+        title: "Patient créé",
+        detail: `${createForm.lastName} ${createForm.firstName}`,
+        type: "success"
       });
 
       setShowCreate(false);
@@ -296,6 +340,8 @@ export default function PatientsPage() {
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  if (!hasAccess) return null;
 
   return (
     <div className="space-y-4">
@@ -566,9 +612,10 @@ export default function PatientsPage() {
                     <div className="space-y-3">
                       {(detail.consultations || []).map((c: any) => (
                         <div key={c.id} className="rounded-xl border border-border p-3">
-                          <div className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString()}</div>
+                          <div className="text-xs text-muted-foreground">{new Date(c.date).toLocaleDateString("fr-FR")}</div>
                           <div className="mt-1 font-medium text-sm">{c.motif ?? "—"}</div>
-                          <div className="text-sm text-muted-foreground">{c.diagnostic ?? ""}</div>
+                          {c.diagnostic && <div className="text-sm text-muted-foreground">{c.diagnostic}</div>}
+                          {c.traitement && <div className="text-xs text-blue-600 mt-1">Traitement: {c.traitement}</div>}
                         </div>
                       ))}
                       {!detail.consultations?.length ? <div className="text-sm text-muted-foreground">Aucune consultation</div> : null}
@@ -581,42 +628,74 @@ export default function PatientsPage() {
                     <CardTitle className="text-base">Nouvelle consultation</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <Input
-                      placeholder="Motif"
-                      value={newConsultation.reason}
-                      onChange={(e) => setNewConsultation((s) => ({ ...s, reason: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Examen"
-                      value={newConsultation.exam}
-                      onChange={(e) => setNewConsultation((s) => ({ ...s, exam: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Diagnostic"
-                      value={newConsultation.diagnosis}
-                      onChange={(e) => setNewConsultation((s) => ({ ...s, diagnosis: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Traitement"
-                      value={newConsultation.treatment}
-                      onChange={(e) => setNewConsultation((s) => ({ ...s, treatment: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Note"
-                      value={newConsultation.note}
-                      onChange={(e) => setNewConsultation((s) => ({ ...s, note: e.target.value }))}
-                    />
-
-                    <div className="flex justify-end">
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Date</label>
+                      <Input
+                        type="date"
+                        value={newConsultation.date}
+                        onChange={(e) => setNewConsultation((s) => ({ ...s, date: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Motif</label>
+                      <textarea
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[60px] resize-none"
+                        placeholder="Motif de la consultation"
+                        value={newConsultation.reason}
+                        onChange={(e) => setNewConsultation((s) => ({ ...s, reason: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Examen</label>
+                      <textarea
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[60px] resize-none"
+                        placeholder="Résultats de l'examen"
+                        value={newConsultation.exam}
+                        onChange={(e) => setNewConsultation((s) => ({ ...s, exam: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Diagnostic</label>
+                      <textarea
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[60px] resize-none"
+                        placeholder="Diagnostic"
+                        value={newConsultation.diagnosis}
+                        onChange={(e) => setNewConsultation((s) => ({ ...s, diagnosis: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Traitement</label>
+                      <textarea
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[60px] resize-none"
+                        placeholder="Traitement prescrit"
+                        value={newConsultation.treatment}
+                        onChange={(e) => setNewConsultation((s) => ({ ...s, treatment: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Note optionnelle</label>
+                      <textarea
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[40px] resize-none"
+                        placeholder="Note"
+                        value={newConsultation.note}
+                        onChange={(e) => setNewConsultation((s) => ({ ...s, note: e.target.value }))}
+                      />
+                    </div>
+                    {consultationError && (
+                      <div className="text-sm text-destructive">{consultationError}</div>
+                    )}
+                    <div className="flex justify-end pt-2">
                       <Button
-                        disabled={consultationSaving}
+                        disabled={consultationSaving || !newConsultation.reason.trim()}
                         onClick={async () => {
                           if (!selectedId) return;
                           setConsultationSaving(true);
+                          setConsultationError(null);
                           try {
                             await apiFetch(`/api/patients/${selectedId}/consultations`, {
                               method: "POST",
                               body: JSON.stringify({
+                                date: newConsultation.date,
                                 motif: newConsultation.reason || undefined,
                                 examen: newConsultation.exam || undefined,
                                 diagnostic: newConsultation.diagnosis || undefined,
@@ -624,14 +703,22 @@ export default function PatientsPage() {
                                 note: newConsultation.note || undefined
                               })
                             });
-                            setNewConsultation({ reason: "", exam: "", diagnosis: "", treatment: "", note: "" });
+                            dispatchNotification({
+                              id: `consult-${Date.now()}`,
+                              title: "Consultation ajoutée",
+                              detail: newConsultation.reason || "Nouvelle consultation",
+                              type: "success"
+                            });
+                            setNewConsultation({ date: new Date().toISOString().split('T')[0], reason: "", exam: "", diagnosis: "", treatment: "", note: "" });
                             await loadDetail(selectedId);
+                          } catch {
+                            setConsultationError("Erreur lors de l'ajout de la consultation");
                           } finally {
                             setConsultationSaving(false);
                           }
                         }}
                       >
-                        Ajouter
+                        {consultationSaving ? "Ajout..." : "Ajouter"}
                       </Button>
                     </div>
                   </CardContent>
@@ -724,21 +811,182 @@ export default function PatientsPage() {
                 </CardContent>
               </Card>
             ) : tab === "messages" ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Messagerie patient</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground">Ouvrez la messagerie generale pour contacter ce patient</div>
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Messagerie avec {detail?.patient?.first_name} {detail?.patient?.last_name}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col gap-3 max-h-96 overflow-y-auto mb-4">
+                      {chatItems.length === 0 ? (
+                        <div className="text-sm text-muted-foreground text-center py-8">
+                          Aucun message. Commencez la conversation.
+                        </div>
+                      ) : (
+                        chatItems.map((m: any) => (
+                          <div
+                            key={m.id}
+                            className={cn(
+                              "rounded-lg p-3 max-w-[80%]",
+                              m.from_role === "patient" ? "bg-blue-100 text-blue-900 ml-auto" : "bg-gray-100 text-gray-900 mr-auto"
+                            )}
+                          >
+                            <div className="text-xs font-medium mb-1">{m.from_name}</div>
+                            <div className="text-sm">{m.text || m.content}</div>
+                            <div className="text-[10px] text-muted-foreground mt-1">
+                              {new Date(m.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Tapez votre message..."
+                        value={chatText}
+                        onChange={(e) => setChatText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && chatText.trim()) {
+                            sendMessage();
+                          }
+                        }}
+                      />
+                      <Button onClick={sendMessage} disabled={!chatText.trim() || chatLoading}>
+                        Envoyer
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             ) : (
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Acces patient</CardTitle>
+                  <CardTitle className="text-base">Accès patient</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground">Aucun compte patient configure</div>
+                <CardContent className="space-y-4">
+                  {accountLoading ? (
+                    <div className="text-sm text-muted-foreground">Chargement...</div>
+                  ) : account ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between rounded-lg border border-border p-4">
+                        <div>
+                          <div className="font-medium">Compte actif</div>
+                          <div className="text-sm text-muted-foreground">Nom d'utilisateur: {account.username}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              setAccountSaving(true);
+                              try {
+                                await apiFetch(`/api/settings/patient-accounts/${selectedId}`, {
+                                  method: "PUT",
+                                  body: JSON.stringify({ isActive: !account.is_active })
+                                });
+                                await loadAccount(selectedId!);
+                              } finally {
+                                setAccountSaving(false);
+                              }
+                            }}
+                            disabled={accountSaving}
+                          >
+                            {account.is_active ? "Désactiver" : "Activer"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="text-sm font-medium">Réinitialiser le mot de passe</div>
+                        <Input
+                          type="password"
+                          placeholder="Nouveau mot de passe"
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                        />
+                        <Button
+                          size="sm"
+                          disabled={!resetPassword.trim() || accountSaving}
+                          onClick={async () => {
+                            if (!resetPassword.trim()) return;
+                            setAccountSaving(true);
+                            try {
+                              await apiFetch(`/api/settings/patient-accounts/${selectedId}`, {
+                                method: "PUT",
+                                body: JSON.stringify({ password: resetPassword })
+                              });
+                              setResetPassword("");
+                              alert("Mot de passe réinitialisé avec succès");
+                            } catch {
+                              setAccountError("Erreur lors de la réinitialisation");
+                            } finally {
+                              setAccountSaving(false);
+                            }
+                          }}
+                        >
+                          Réinitialiser
+                        </Button>
+                      </div>
+
+                      <div className="rounded-lg bg-blue-50 p-4 text-sm">
+                        <div className="font-medium text-blue-900 mb-2">Portail patient</div>
+                        <div className="text-blue-700">Le patient peut accéder à son espace sur:</div>
+                        <div className="text-blue-800 font-mono mt-1">/patient/login</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="text-sm text-muted-foreground">Ce patient n'a pas encore de compte d'accès.</div>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">Nom d'utilisateur</label>
+                          <Input
+                            placeholder="jdupont"
+                            value={accountForm.username}
+                            onChange={(e) => setAccountForm((s) => ({ ...s, username: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">Mot de passe initial</label>
+                          <Input
+                            type="password"
+                            placeholder="Mot de passe"
+                            value={accountForm.password}
+                            onChange={(e) => setAccountForm((s) => ({ ...s, password: e.target.value }))}
+                          />
+                        </div>
+                        {accountError && (
+                          <div className="text-sm text-destructive">{accountError}</div>
+                        )}
+                        <Button
+                          disabled={!accountForm.username.trim() || !accountForm.password.trim() || accountSaving}
+                          onClick={async () => {
+                            if (!selectedId) return;
+                            setAccountSaving(true);
+                            setAccountError(null);
+                            try {
+                              await apiFetch("/api/settings/patient-accounts", {
+                                method: "POST",
+                                body: JSON.stringify({
+                                  patientId: selectedId,
+                                  username: accountForm.username,
+                                  password: accountForm.password
+                                })
+                              });
+                              await loadAccount(selectedId);
+                              setAccountForm({ username: "", password: "" });
+                            } catch {
+                              setAccountError("Erreur lors de la création du compte");
+                            } finally {
+                              setAccountSaving(false);
+                            }
+                          }}
+                        >
+                          {accountSaving ? "Création..." : "Créer le compte"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
