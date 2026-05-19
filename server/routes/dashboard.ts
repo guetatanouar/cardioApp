@@ -50,7 +50,12 @@ dashboardRouter.get('/summary', authenticateToken, async (req, res) => {
             appointmentsUrgent: appointmentsUrgent.rows[0].count,
             appointmentsToday: appointmentsToday.rows.map(a => ({
                 ...a,
-                starts_at: `${a.date.toISOString().split('T')[0]}T${a.time}:00`
+                date: a.date instanceof Date
+                    ? `${a.date.getFullYear()}-${String(a.date.getMonth() + 1).padStart(2, '0')}-${String(a.date.getDate()).padStart(2, '0')}`
+                    : a.date,
+                starts_at: `${a.date instanceof Date
+                    ? `${a.date.getFullYear()}-${String(a.date.getMonth() + 1).padStart(2, '0')}-${String(a.date.getDate()).padStart(2, '0')}`
+                    : a.date}T${a.time}:00`
             })),
             unreadStaffMessages: unreadMessages.rows[0].count,
             criticalAlerts: criticalAlerts.rows,

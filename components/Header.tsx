@@ -156,13 +156,13 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
         )}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        {/* Language selector (FR) styled as a squircle */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2 h-9">
-              <span className="text-base leading-none">{locale === "fr" ? "🇫🇷" : locale === "en" ? "🇬🇧" : "🇸🇦"}</span>
-              <ChevronDown className="h-4 w-4 opacity-70" />
-            </Button>
+            <button className="flex h-9 w-9 items-center justify-center rounded-xl border border-input bg-background text-xs font-bold text-foreground shadow-sm transition-all hover:bg-accent hover:text-accent-foreground focus:outline-none active:scale-95">
+              {locale.toUpperCase()}
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-44">
             <DropdownMenuLabel>Langue</DropdownMenuLabel>
@@ -176,20 +176,27 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button variant="outline" size="sm" className="h-9 w-9 p-0" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+        {/* Theme Toggle styled consistently */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-9 w-9 p-0 rounded-xl hover:bg-accent active:scale-95 transition-all" 
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </Button>
 
+        {/* Notification Bell with red badge */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2 h-9 relative">
-              <Bell className="h-4 w-4" />
+            <button className="relative flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-accent transition-all focus:outline-none active:scale-95">
+              <Bell className="h-5 w-5 stroke-[1.8]" />
               {notifications.length > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-medium text-white">
+                <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background">
                   {notifications.length}
                 </span>
               )}
-            </Button>
+            </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel className="flex items-center justify-between">
@@ -216,14 +223,15 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
+        {/* User Avatar with Initials (DP) styled as a blue circle */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-md border border-input bg-background hover:bg-accent px-2 h-9 transition-colors">
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">{initials}</AvatarFallback>
+            <button className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-all focus:outline-none active:scale-95">
+              <Avatar className="h-9 w-9">
+                <AvatarFallback className="text-xs font-bold bg-[#3B82F6] text-white flex items-center justify-center w-full h-full rounded-full select-none tracking-wide">
+                  {initials}
+                </AvatarFallback>
               </Avatar>
-              <span className="text-xs font-medium hidden sm:inline">{shortName}</span>
-              <ChevronDown className="h-3 w-3 opacity-50" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

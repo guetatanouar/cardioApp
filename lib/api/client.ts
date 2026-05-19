@@ -23,8 +23,8 @@ const mockData: Record<string, any> = {
   },
   "/api/appointments": {
     items: [
-      { id: "1", patient_id: "1", first_name: "Ahmed", last_name: "Benali", starts_at: new Date().toISOString(), duration_minutes: 30, type: "consultation", status: "planifie", reason: "Contrôle routine", notes: "" },
-      { id: "2", patient_id: "2", first_name: "Fatima", last_name: "Zohra", starts_at: new Date(Date.now() + 3600000).toISOString(), duration_minutes: 45, type: "suivi", status: "planifie", reason: "Suivi diabète", notes: "" }
+      { id: "1", patient_id: "1", first_name: "Ahmed", last_name: "Benali", starts_at: new Date().toISOString(), duration_minutes: 30, type: "consultation", status: "scheduled", reason: "Contrôle routine", notes: "" },
+      { id: "2", patient_id: "2", first_name: "Fatima", last_name: "Zohra", starts_at: new Date(Date.now() + 3600000).toISOString(), duration_minutes: 45, type: "suivi", status: "scheduled", reason: "Suivi diabète", notes: "" }
     ]
   },
   "/api/chat": {
@@ -73,6 +73,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   headers.set("Content-Type", "application/json");
   if (session?.token) headers.set("Authorization", `Bearer ${session.token}`);
 
+  const isMutation = init?.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(init.method.toUpperCase());
+
   try {
     const res = await fetch(`${config.api.baseUrl}${path}`, {
       ...init,
@@ -81,16 +83,21 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
     if (!res.ok) {
       const text = await res.text();
+      if (isMutation) {
+        console.error(`[API ERROR] ${init?.method} ${path} returned ${res.status}:`, text);
+      }
       throw new Error(text || `HTTP_${res.status}`);
     }
 
     return (await res.json()) as T;
   } catch (e) {
-    // Return mock data if available (offline mode)
-    const mock = getMockResponse<T>(path);
-    if (mock !== null) {
-      console.warn(`[OFFLINE] Using mock data for ${path}`);
-      return mock;
+    // Return mock data only for GET requests (offline mode)
+    if (!isMutation) {
+      const mock = getMockResponse<T>(path);
+      if (mock !== null) {
+        console.warn(`[OFFLINE] Using mock data for ${path}`);
+        return mock;
+      }
     }
     throw e;
   }

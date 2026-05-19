@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS patient_accounts (
     patient_id VARCHAR(20) UNIQUE NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
     username VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    active BOOLEAN DEFAULT TRUE,
+    is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT NOW()
 );
 
@@ -110,12 +110,25 @@ CREATE TABLE IF NOT EXISTS prescriptions (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+DROP TABLE IF EXISTS secretaire_permissions CASCADE;
+
 CREATE TABLE IF NOT EXISTS secretaire_permissions (
-    id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    permission VARCHAR(100) NOT NULL,
-    granted BOOLEAN DEFAULT FALSE,
-    UNIQUE(user_id, permission)
+    user_id INT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    can_view_patients BOOLEAN DEFAULT FALSE,
+    can_edit_patients BOOLEAN DEFAULT FALSE,
+    can_delete_patients BOOLEAN DEFAULT FALSE,
+    can_view_appointments BOOLEAN DEFAULT FALSE,
+    can_edit_appointments BOOLEAN DEFAULT FALSE,
+    can_delete_appointments BOOLEAN DEFAULT FALSE,
+    can_view_chat BOOLEAN DEFAULT FALSE,
+    can_send_chat BOOLEAN DEFAULT FALSE,
+    can_view_prescriptions BOOLEAN DEFAULT FALSE,
+    can_edit_prescriptions BOOLEAN DEFAULT FALSE,
+    can_view_vitals BOOLEAN DEFAULT FALSE,
+    can_edit_vitals BOOLEAN DEFAULT FALSE,
+    can_view_documents BOOLEAN DEFAULT FALSE,
+    can_upload_documents BOOLEAN DEFAULT FALSE,
+    can_view_consultations BOOLEAN DEFAULT FALSE
 );
 `;
 

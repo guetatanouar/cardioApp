@@ -6,12 +6,14 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   CalendarDays,
+  ChevronDown,
   FileText,
   Heart,
   Home,
   LogOut,
   MessageSquare,
   Settings,
+  Search,
   Users
 } from "lucide-react";
 
@@ -22,6 +24,7 @@ import { getDir } from "@/lib/i18n/messages";
 import { apiFetch } from "@/lib/api/client";
 import { addNotificationListener } from "@/lib/notifications";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -49,8 +52,76 @@ const patientNav = [
   { href: "/patient/chat", icon: MessageSquare, labelKey: "chat" }
 ];
 
+const renderFlag = (lang: string) => {
+  if (lang === "fr") {
+    return (
+      <svg viewBox="0 0 30 30" className="h-4 w-4 rounded-full overflow-hidden shadow-sm border border-slate-100 flex-shrink-0">
+        <rect x="0" y="0" width="10" height="30" fill="#002654" />
+        <rect x="10" y="0" width="10" height="30" fill="#FFFFFF" />
+        <rect x="20" y="0" width="10" height="30" fill="#ED2939" />
+      </svg>
+    );
+  }
+  if (lang === "en") {
+    return (
+      <svg viewBox="0 0 30 30" className="h-4 w-4 rounded-full overflow-hidden shadow-sm border border-slate-100 flex-shrink-0">
+        <rect width="30" height="30" fill="#012169" />
+        <path d="M0 0 L30 30 M30 0 L0 30" stroke="#ffffff" strokeWidth="3" />
+        <path d="M0 0 L30 30 M30 0 L0 30" stroke="#C8102E" strokeWidth="1.8" />
+        <path d="M15 0 V30 M0 15 H30" stroke="#ffffff" strokeWidth="6" />
+        <path d="M15 0 V30 M0 15 H30" stroke="#C8102E" strokeWidth="3.6" />
+      </svg>
+    );
+  }
+  if (lang === "ar") {
+    return (
+      <svg viewBox="0 0 30 30" className="h-4 w-4 rounded-full overflow-hidden shadow-sm border border-slate-100 flex-shrink-0">
+        <rect width="30" height="30" fill="#006C35" />
+        <path d="M8 11 C10 9, 12 9, 14 11 C16 13, 18 9, 22 11" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        <path d="M8 14 C10 12, 12 12, 14 14 C16 16, 18 12, 22 14" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+        <path d="M7 17 H23 M9 16 V18" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round" />
+      </svg>
+    );
+  }
+  return null;
+};
+
+const getHeaderTitleInfo = (pathname: string) => {
+  if (pathname.includes("/dashboard/agenda")) {
+    return { title: "Agenda", subtitle: "Gestion des rendez-vous" };
+  }
+  if (pathname.includes("/dashboard/patients")) {
+    return { title: "Patients", subtitle: "Suivi et dossiers médicaux" };
+  }
+  if (pathname.includes("/dashboard/prescriptions")) {
+    return { title: "Prescriptions", subtitle: "Gestion des ordonnances" };
+  }
+  if (pathname.includes("/dashboard/chat")) {
+    return { title: "Messagerie", subtitle: "Discussions d'équipe" };
+  }
+  if (pathname.includes("/dashboard/parametres")) {
+    return { title: "Paramètres", subtitle: "Configuration du cabinet" };
+  }
+  if (pathname === "/dashboard") {
+    return { title: "Accueil", subtitle: "Tableau de bord général" };
+  }
+  if (pathname.includes("/patient/documents")) {
+    return { title: "Mes Documents", subtitle: "Consultez vos ordonnances" };
+  }
+  if (pathname.includes("/patient/chat")) {
+    return { title: "Mon Cardiologue", subtitle: "Discutez en direct avec le cabinet" };
+  }
+  if (pathname.includes("/patient")) {
+    return { title: "Espace Patient", subtitle: "Suivi de votre santé" };
+  }
+  return { title: "CardioManager", subtitle: "Cabinet de cardiologie" };
+};
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const headerInfo = React.useMemo(() => {
+    return getHeaderTitleInfo(pathname || "");
+  }, [pathname]);
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
 
@@ -71,6 +142,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [notifications, setNotifications] = React.useState<HeaderNotification[]>([]);
   const [chatUnreadCount, setChatUnreadCount] = React.useState(0);
+  const [search, setSearch] = React.useState("");
 
   async function refreshHeaderData() {
     if (!session || isAuthRoute) return;
@@ -284,12 +356,46 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         <div className={cn("flex flex-1 flex-col", isRTL ? "pr-60" : "pl-60")}>
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/50 bg-background/95 px-6 backdrop-blur">
-            <div className="flex items-center gap-2">
+            {/* Left side: Page Title and Subtitle */}
+            <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
+              <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">
+                {headerInfo.title}
+              </h1>
+              <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-medium leading-none">
+                {headerInfo.subtitle}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Search Box on the Right */}
+              {!isPatientRoute && !isAuthRoute && (
+                <form
+                  className="w-48 sm:w-64 md:w-80"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const q = search.trim();
+                    if (!q) return;
+                    router.push(`/dashboard/patients?q=${encodeURIComponent(q)}`);
+                  }}
+                >
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Rechercher un patient..."
+                      className="pl-9 h-9 w-full bg-slate-50 border-slate-200 text-sm focus-visible:bg-background rounded-full transition-all focus:border-blue-400"
+                    />
+                  </div>
+                </form>
+              )}
+              {/* Language Selector (Pill with Flag & Chevron) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="h-9 px-3 gap-1">
-                    <span className="text-lg">{locale === "fr" ? "🇫🇷" : locale === "en" ? "🇬🇧" : "🇸🇦"}</span>
-                  </Button>
+                  <button className="flex h-8 items-center justify-center gap-1 rounded-full bg-slate-100 pl-1.5 pr-2 text-foreground transition-all hover:bg-slate-200 focus:outline-none active:scale-95">
+                    {renderFlag(locale)}
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-auto">
                   <div className="flex gap-1 p-1">
@@ -297,46 +403,47 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       type="button"
                       onClick={() => { setLocale("fr"); }}
                       className={cn(
-                        "rounded-md p-2 transition-colors",
+                        "rounded-md p-2 transition-colors flex items-center justify-center",
                         locale === "fr" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted"
                       )}
                     >
-                      <span className="text-xl">🇫🇷</span>
+                      {renderFlag("fr")}
                     </button>
                     <button
                       type="button"
                       onClick={() => { setLocale("en"); }}
                       className={cn(
-                        "rounded-md p-2 transition-colors",
+                        "rounded-md p-2 transition-colors flex items-center justify-center",
                         locale === "en" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted"
                       )}
                     >
-                      <span className="text-xl">🇬🇧</span>
+                      {renderFlag("en")}
                     </button>
                     <button
                       type="button"
                       onClick={() => { setLocale("ar"); }}
                       className={cn(
-                        "rounded-md p-2 transition-colors",
+                        "rounded-md p-2 transition-colors flex items-center justify-center",
                         locale === "ar" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted"
                       )}
                     >
-                      <span className="text-xl">🇸🇦</span>
+                      {renderFlag("ar")}
                     </button>
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* Notification Bell with red badge */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 w-9 p-0 relative">
-                    <Bell className="h-5 w-5" />
+                  <button className="relative flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-accent transition-all focus:outline-none active:scale-95">
+                    <Bell className="h-5 w-5 stroke-[1.8]" />
                     {totalNotif > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-medium text-white">
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background">
                         {totalNotif}
                       </span>
                     )}
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
                   <DropdownMenuLabel className="flex items-center justify-between">
@@ -363,11 +470,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
+              {/* User Avatar with Initials (DP) styled as a blue circle */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Avatar className="h-8 w-8 cursor-pointer">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">{initials || "U"}</AvatarFallback>
-                  </Avatar>
+                  <button className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-all focus:outline-none active:scale-95">
+                    <Avatar className="h-9 w-9">
+                      <AvatarFallback className="text-xs font-bold bg-[#3B82F6] text-white flex items-center justify-center w-full h-full rounded-full select-none tracking-wide">
+                        {initials || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
