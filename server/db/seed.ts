@@ -10,16 +10,19 @@ async function seed() {
         const secPass = await bcrypt.hash('sec123', 10);
 
         await query(
-            `INSERT INTO users (username, email, password, name, role, initials, title)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `INSERT INTO users (username, email, password, name, role, initials, title, phone, address, rpps, specialty, first_name, last_name)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
              ON CONFLICT (username) DO UPDATE SET email = $2, name = $4`,
-            ['admin', 'p.moreau@cabinet-cardio.fr', adminPass, 'Dr. Pierre Moreau', 'admin', 'PM', 'Cardiologue']
+            ['admin', 'p.moreau@cabinet-cardio.fr', adminPass, 'Dr. Pierre Moreau', 'admin', 'PM', 'Cardiologue',
+             '01 23 45 67 89', '12 rue de la Paix, 75001 Paris', '12345678901', 'Cardiologue',
+             'Kamel', 'Hadj']
         );
         await query(
-            `INSERT INTO users (username, email, password, name, role, initials, title)
-             VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `INSERT INTO users (username, email, password, name, role, initials, title, phone, address, rpps, specialty, first_name, last_name)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
              ON CONFLICT (username) DO UPDATE SET email = $2, name = $4`,
-            ['secretaire', 's.dubois@cabinet-cardio.fr', secPass, 'Sophie Dubois', 'secretaire', 'SD', 'Secrétaire médicale']
+            ['secretaire', 's.dubois@cabinet-cardio.fr', secPass, 'Sophie Dubois', 'secretaire', 'SD', 'Secrétaire médicale',
+             null, null, null, null, 'Sophie', 'Dubois']
         );
 
         // Seed Patients

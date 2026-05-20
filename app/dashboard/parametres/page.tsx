@@ -14,6 +14,12 @@ type Profile = {
   fullName: string;
   email: string;
   role: string;
+  phone?: string;
+  address?: string;
+  rpps?: string;
+  specialty?: string;
+  first_name?: string;
+  last_name?: string;
 };
 
 type Secretaire = {
@@ -67,6 +73,12 @@ export default function SettingsPage() {
 
   const [fullName, setFullName] = React.useState("");
   const [email, setEmail] = React.useState("");
+  const [firstName, setFirstName] = React.useState("");
+  const [lastName, setLastName] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+  const [address, setAddress] = React.useState("");
+  const [rpps, setRpps] = React.useState("");
+  const [specialty, setSpecialty] = React.useState("");
   const [saving, setSaving] = React.useState(false);
 
   const [currentPassword, setCurrentPassword] = React.useState("");
@@ -104,6 +116,16 @@ export default function SettingsPage() {
           setProfile(p);
           setFullName(p.fullName);
           setEmail(p.email);
+          setFirstName(p.first_name || "");
+          setLastName(p.last_name || "");
+          setPhone(p.phone || "");
+          setAddress(p.address || "");
+          setRpps(p.rpps || "");
+          setSpecialty(p.specialty || "");
+          setPhone(p.phone || "");
+          setAddress(p.address || "");
+          setRpps(p.rpps || "");
+          setSpecialty(p.specialty || "");
         }
         if (tab === "secretaire" && isAdmin) {
           const res = await apiFetch<{ items: Secretaire[] }>("/api/settings/secretaire-permissions");
@@ -124,7 +146,7 @@ export default function SettingsPage() {
       await apiFetch("/api/settings/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email }),
+        body: JSON.stringify({ fullName, email, firstName, lastName, phone, address, rpps, specialty }),
       });
       dispatchNotification({ id: "profile-saved", title: "Profil mis à jour", type: "success" });
     } catch (error: any) {
@@ -242,6 +264,44 @@ export default function SettingsPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Téléphone cabinet</label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Adresse cabinet</label>
+                <textarea
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-2">RPPS</label>
+                  <input
+                    type="text"
+                    value={rpps}
+                    onChange={(e) => setRpps(e.target.value)}
+                    className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-2">Spécialité</label>
+                  <input
+                    type="text"
+                    value={specialty}
+                    onChange={(e) => setSpecialty(e.target.value)}
+                    className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-2">Rôle</label>

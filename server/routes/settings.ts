@@ -10,7 +10,8 @@ settingsRouter.use(authenticateToken);
 settingsRouter.get('/profile', async (req, res) => {
     try {
         const result = await query(
-            'SELECT name as "fullName", email, role FROM users WHERE id = $1',
+            `SELECT name as "fullName", email, role, phone, address, rpps, specialty, first_name, last_name
+             FROM users WHERE id = $1`,
             [(req as any).user.id]
         );
         if (result.rows.length === 0) {
@@ -25,10 +26,10 @@ settingsRouter.get('/profile', async (req, res) => {
 
 settingsRouter.put('/profile', async (req, res) => {
     try {
-        const { fullName, email } = req.body;
+        const { fullName, email, phone, address, rpps, specialty, firstName, lastName } = req.body;
         await query(
-            'UPDATE users SET name = $1, email = $2 WHERE id = $3',
-            [fullName, email, (req as any).user.id]
+            `UPDATE users SET name = $1, email = $2, phone = $3, address = $4, rpps = $5, specialty = $6, first_name = $7, last_name = $8 WHERE id = $9`,
+            [fullName, email, phone || null, address || null, rpps || null, specialty || null, firstName || null, lastName || null, (req as any).user.id]
         );
         res.json({ success: true });
     } catch (error) {
