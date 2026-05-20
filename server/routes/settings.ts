@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
+import bcrypt from 'bcryptjs';
 
 export const settingsRouter = Router();
 
@@ -39,7 +40,6 @@ settingsRouter.put('/profile', async (req, res) => {
 settingsRouter.put('/password', async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        const bcrypt = await import('bcryptjs');
         const userResult = await query('SELECT password FROM users WHERE id = $1', [(req as any).user.id]);
         if (userResult.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
@@ -108,14 +108,16 @@ settingsRouter.put('/secretaire-permissions/:userId', async (req, res) => {
             canUploadDocuments: 'can_upload_documents',
             canViewConsultations: 'can_view_consultations'
         };
+        const dbColumns = Object.values(permMap);
+        const knownKeys = new Set([...Object.keys(permMap), ...dbColumns]);
 
-        const permKey = Object.keys(req.body).find(k => permMap[k]);
-        if (!permKey) {
-            return res.status(400).json({ error: 'No permission key provided' });
+        const bodyKey = Object.keys(req.body).find(k => knownKeys.has(k));
+        if (!bodyKey) {
+            return res.status(400).json({ error: 'No valid permission key provided' });
         }
 
-        const dbKey = permMap[permKey];
-        const value = req.body[permKey];
+        const dbKey = permMap[bodyKey] || bodyKey;
+        const value = req.body[bodyKey];
 
         await query(
             `INSERT INTO secretaire_permissions (user_id, ${dbKey}) VALUES ($1, $2)
@@ -147,7 +149,6 @@ settingsRouter.get('/patient-accounts/:patientId', async (req, res) => {
 settingsRouter.post('/patient-accounts', async (req, res) => {
     try {
         const { patientId, username, password } = req.body;
-        const bcrypt = await import('bcryptjs');
         const hashed = await bcrypt.hash(password, 10);
         await query(
             'INSERT INTO patient_accounts (patient_id, username, password) VALUES ($1, $2, $3)',
@@ -165,7 +166,6 @@ settingsRouter.put('/patient-accounts/:patientId', async (req, res) => {
         const { patientId } = req.params;
         const { isActive, password } = req.body;
         if (password) {
-            const bcrypt = await import('bcryptjs');
             const hashed = await bcrypt.hash(password, 10);
             await query('UPDATE patient_accounts SET is_active = $1, password = $2 WHERE patient_id = $3', [isActive, hashed, patientId]);
         } else {

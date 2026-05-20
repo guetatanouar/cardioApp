@@ -1,306 +1,433 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
+import { User, Shield, Users, Bell, Palette, Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
+import { dispatchNotification } from "@/lib/notifications";
 import { getSession } from "@/lib/auth/storage";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { useI18n } from "@/lib/i18n/client";
-import { cn } from "@/lib/cn";
+import { useI18n, locales } from "@/lib/i18n/client";
+import { useTheme } from "next-themes";
 
-type ColorTheme = "blue" | "green" | "purple" | "red";
+type Tab = "profil" | "securite" | "notifications" | "apparence" | "secretaire";
 
-function applyColorTheme(theme: ColorTheme) {
-  if (typeof document === "undefined") return;
-  const root = document.documentElement;
-  root.classList.remove("theme-blue", "theme-green", "theme-purple", "theme-red");
-  root.classList.add(`theme-${theme}`);
-}
+type Profile = {
+  fullName: string;
+  email: string;
+  role: string;
+};
+
+type Secretaire = {
+  user_id: number;
+  full_name: string;
+  email: string;
+  can_view_patients: boolean;
+  can_edit_patients: boolean;
+  can_delete_patients: boolean;
+  can_view_appointments: boolean;
+  can_edit_appointments: boolean;
+  can_delete_appointments: boolean;
+  can_view_chat: boolean;
+  can_send_chat: boolean;
+  can_view_prescriptions: boolean;
+  can_edit_prescriptions: boolean;
+  can_view_vitals: boolean;
+  can_edit_vitals: boolean;
+  can_view_documents: boolean;
+  can_upload_documents: boolean;
+  can_view_consultations: boolean;
+};
+
+const permLabels: Record<string, string> = {
+  can_view_patients: "Voir patients",
+  can_edit_patients: "Modifier patients",
+  can_delete_patients: "Supprimer patients",
+  can_view_appointments: "Voir RDV",
+  can_edit_appointments: "Créer/Modifier RDV",
+  can_delete_appointments: "Annuler RDV",
+  can_view_chat: "Voir chat",
+  can_send_chat: "Envoyer messages",
+  can_view_prescriptions: "Voir prescriptions",
+  can_edit_prescriptions: "Modifier prescriptions",
+  can_view_vitals: "Voir constantes",
+  can_edit_vitals: "Ajouter constantes",
+  can_view_documents: "Voir documents",
+  can_upload_documents: "Uploader documents",
+  can_view_consultations: "Voir consultations",
+};
 
 export default function SettingsPage() {
-  const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const session = getSession();
+  const isAdmin = session?.role === "admin";
   const { locale, setLocale } = useI18n();
-  const [profile, setProfile] = React.useState({ fullName: "", email: "", role: "" });
-  const [permissions, setPermissions] = React.useState<any[]>([]);
+  const { theme, setTheme } = useTheme();
+
+  const [tab, setTab] = React.useState<Tab>("profil");
+  const [profile, setProfile] = React.useState<Profile | null>(null);
   const [loading, setLoading] = React.useState(true);
-  const [colorTheme, setColorTheme] = React.useState<ColorTheme>("blue");
 
-  React.useEffect(() => {
-    const session = getSession();
-    if (session?.role === "secretaire") {
-      router.replace("/dashboard");
-    }
-  }, [router]);
+  const [fullName, setFullName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
 
-  React.useEffect(() => {
-    const stored = window.localStorage.getItem("cardio-color-theme") as ColorTheme | null;
-    if (stored && ["blue", "green", "purple", "red"].includes(stored)) {
-      setColorTheme(stored);
-    }
-  }, []);
+  const [currentPassword, setCurrentPassword] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
+  const [confirmPassword, setConfirmPassword] = React.useState("");
+  const [changingPwd, setChangingPwd] = React.useState(false);
+
+  const [secretaires, setSecretaires] = React.useState<Secretaire[]>([]);
+  const [permSaving, setPermSaving] = React.useState<Record<string, boolean>>({});
+
+  const notifDefaults: Record<string, boolean> = {
+    rappelRdv: true,
+    urgentPatient: true,
+    nouveauPatient: false,
+    nouveauMessage: true,
+  };
+  const [notifPrefs, setNotifPrefs] = React.useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return notifDefaults;
+    const saved = localStorage.getItem("cm_notif_prefs");
+    return saved ? { ...notifDefaults, ...JSON.parse(saved) } : notifDefaults;
+  });
+
+  const notifLabels: Record<string, string> = {
+    rappelRdv: "Rappel de rendez-vous",
+    urgentPatient: "Alerte patient urgent",
+    nouveauPatient: "Nouveau patient inscrit",
+    nouveauMessage: "Nouveau message chat",
+  };
 
   React.useEffect(() => {
     async function load() {
-      setLoading(true);
       try {
-        const [profileRes, permRes] = await Promise.all([
-          apiFetch<{ fullName: string; email: string; role: string }>("/api/settings/profile"),
-          apiFetch<any[] | { items: any[] }>("/api/settings/secretaire-permissions")
-        ]);
-        setProfile(profileRes);
-        const perms = Array.isArray(permRes) ? permRes : (permRes as any).items ?? [];
-        setPermissions(perms);
+        if (tab === "profil" || tab === "securite") {
+          const p = await apiFetch<Profile>("/api/settings/profile");
+          setProfile(p);
+          setFullName(p.fullName);
+          setEmail(p.email);
+        }
+        if (tab === "secretaire" && isAdmin) {
+          const res = await apiFetch<{ items: Secretaire[] }>("/api/settings/secretaire-permissions");
+          setSecretaires(res.items);
+        }
       } catch (e) {
         console.error(e);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     }
     load();
-  }, []);
+  }, [tab, isAdmin]);
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const data = new FormData(form);
-    await apiFetch("/api/settings/profile", {
-      method: "PUT",
-      body: JSON.stringify({
-        fullName: data.get("fullName"),
-        email: data.get("email")
-      })
+    setSaving(true);
+    try {
+      await apiFetch("/api/settings/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, email }),
+      });
+      dispatchNotification({ id: "profile-saved", title: "Profil mis à jour", type: "success" });
+    } catch (error: any) {
+      dispatchNotification({ id: "profile-error", title: "Erreur", detail: error?.message, type: "error" });
+    }
+    setSaving(false);
+  }
+
+  async function changePassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      dispatchNotification({ id: "pwd-match", title: "Les mots de passe ne correspondent pas", type: "error" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      dispatchNotification({ id: "pwd-length", title: "Minimum 6 caractères", type: "error" });
+      return;
+    }
+    setChangingPwd(true);
+    try {
+      await apiFetch("/api/settings/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      dispatchNotification({ id: "pwd-saved", title: "Mot de passe modifié", type: "success" });
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      dispatchNotification({ id: "pwd-error", title: "Erreur", detail: error?.message, type: "error" });
+    }
+    setChangingPwd(false);
+  }
+
+  async function togglePerm(secId: number, permKey: string, value: boolean) {
+    const id = `perm-${secId}-${permKey}`;
+    setPermSaving((s) => ({ ...s, [id]: true }));
+    try {
+      await apiFetch(`/api/settings/secretaire-permissions/${secId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [permKey]: value }),
+      });
+      setSecretaires((prev) =>
+        prev.map((s) => (s.user_id === secId ? { ...s, [permKey]: value } : s))
+      );
+    } catch (error: any) {
+      dispatchNotification({ id: "perm-error", title: "Erreur", detail: error?.message, type: "error" });
+    }
+    setPermSaving((s) => ({ ...s, [id]: false }));
+  }
+
+  function toggleNotifPref(key: string) {
+    setNotifPrefs((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem("cm_notif_prefs", JSON.stringify(next));
+      return next;
     });
-    alert("Profil enregistré");
   }
 
-  async function togglePermission(userId: string, permKey: string, current: boolean) {
-    const permMap: Record<string, string> = {
-      can_view_patients: 'canViewPatients',
-      can_edit_patients: 'canEditPatients',
-      can_delete_patients: 'canDeletePatients',
-      can_view_appointments: 'canViewAppointments',
-      can_edit_appointments: 'canEditAppointments',
-      can_delete_appointments: 'canDeleteAppointments',
-      can_view_chat: 'canViewChat',
-      can_send_chat: 'canSendChat',
-      can_view_prescriptions: 'canViewPrescriptions',
-      can_edit_prescriptions: 'canEditPrescriptions',
-      can_view_vitals: 'canViewVitals',
-      can_edit_vitals: 'canEditVitals',
-      can_view_documents: 'canViewDocuments',
-      can_upload_documents: 'canUploadDocuments',
-      can_view_consultations: 'canViewConsultations'
-    };
-    const key = permMap[permKey] || permKey;
-    await apiFetch(`/api/settings/secretaire-permissions/${userId}`, {
-      method: "PUT",
-      body: JSON.stringify({ [key]: !current })
-    });
-    setPermissions((prev) =>
-      prev.map((u) =>
-        u.user_id === userId ? { ...u, [permKey]: !current } : u
-      )
-    );
-  }
-
-  function handleColorTheme(color: ColorTheme) {
-    setColorTheme(color);
-    applyColorTheme(color);
-    window.localStorage.setItem("cardio-color-theme", color);
-  }
-
-  const permissionRows = [
-    { key: "can_view_patients", label: "Voir patients" },
-    { key: "can_edit_patients", label: "Modifier patients" },
-    { key: "can_delete_patients", label: "Supprimer patients" },
-    { key: "can_view_appointments", label: "Voir agenda" },
-    { key: "can_edit_appointments", label: "Modifier agenda" },
-    { key: "can_delete_appointments", label: "Supprimer agenda" },
-    { key: "can_view_chat", label: "Voir chat" },
-    { key: "can_send_chat", label: "Envoyer messages" },
-    { key: "can_view_prescriptions", label: "Voir ordonnances" },
-    { key: "can_edit_prescriptions", label: "Créer/Modifier ordonnances" },
-    { key: "can_view_vitals", label: "Voir constantes vitales" },
-    { key: "can_edit_vitals", label: "Saisir constantes vitales" },
-    { key: "can_view_documents", label: "Voir documents" },
-    { key: "can_upload_documents", label: "Télécharger documents" },
-    { key: "can_view_consultations", label: "Voir consultations" }
+  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
+    { key: "profil", label: "Profil médecin", icon: <User size={18} /> },
+    { key: "notifications", label: "Notifications", icon: <Bell size={18} /> },
+    { key: "apparence", label: "Apparence", icon: <Palette size={18} /> },
+    { key: "securite", label: "Sécurité", icon: <Shield size={18} /> },
   ];
-
-  if (loading) {
-    return <div className="p-4">Chargement...</div>;
+  if (isAdmin) {
+    tabs.push({ key: "secretaire", label: "Accès secrétariat", icon: <Users size={18} /> });
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Apparence</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <h3 className="text-sm font-medium mb-3">Thème</h3>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setTheme("light")}
-                className={cn(
-                  "flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all",
-                  theme === "light" ? "border-primary" : "border-border hover:border-muted-foreground/30"
-                )}
-              >
-                <div className="w-12 h-8 rounded bg-white border shadow-sm flex items-center justify-center">
-                  <div className="w-8 h-1 bg-gray-300 rounded" />
-                </div>
-                <span className="text-xs">Clair</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTheme("dark")}
-                className={cn(
-                  "flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all",
-                  theme === "dark" ? "border-primary" : "border-border hover:border-muted-foreground/30"
-                )}
-              >
-                <div className="w-12 h-8 rounded bg-slate-800 border border-slate-700 shadow-sm flex items-center justify-center">
-                  <div className="w-8 h-1 bg-slate-600 rounded" />
-                </div>
-                <span className="text-xs">Sombre</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTheme("system")}
-                className={cn(
-                  "flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all",
-                  theme === "system" ? "border-primary" : "border-border hover:border-muted-foreground/30"
-                )}
-              >
-                <div className="w-12 h-8 rounded bg-gradient-to-r from-white to-slate-800 border shadow-sm flex items-center justify-center">
-                  <div className="w-8 h-1 bg-gradient-to-r from-gray-300 to-slate-600 rounded" />
-                </div>
-                <span className="text-xs">Système</span>
-              </button>
-            </div>
+    <div className="min-h-screen bg-[#f7f7f7] flex">
+ <div className="w-[230px] h-fit bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">    <div className="space-y-2">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition ${
+                tab === t.key
+                  ? "bg-gray-100 text-black font-medium"
+                  : "text-gray-500 hover:bg-gray-50"
+              }`}
+            >
+              {t.icon}
+              <span>{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 p-10">
+        {loading ? (
+          <div className="flex items-center justify-center h-40">
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
-
-          <Separator />
-
-          <div>
-            <h3 className="text-sm font-medium mb-3">Couleur d&apos;accent</h3>
-            <div className="flex gap-3">
-              {[
-                { color: "blue" as ColorTheme, hex: "#3b82f6", label: "Bleu" },
-                { color: "green" as ColorTheme, hex: "#22c55e", label: "Vert" },
-                { color: "purple" as ColorTheme, hex: "#a855f7", label: "Violet" },
-                { color: "red" as ColorTheme, hex: "#ef4444", label: "Rouge" }
-              ].map(({ color, hex, label }) => (
+        ) : tab === "profil" ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-4xl">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Profil médecin</h2>
+            <form onSubmit={saveProfile} className="space-y-6">
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Nom complet</label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Rôle</label>
+                <input
+                  type="text"
+                  value={profile?.role === "admin" ? "Administrateur" : "Secrétaire"}
+                  readOnly
+                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none bg-gray-50 text-gray-500"
+                />
+              </div>
+              <div className="flex justify-end pt-6">
                 <button
-                  key={color}
-                  type="button"
-                  onClick={() => handleColorTheme(color)}
-                  className={cn(
-                    "flex flex-col items-center gap-2 rounded-lg border-2 p-3 transition-all",
-                    colorTheme === color ? "border-primary" : "border-border hover:border-muted-foreground/30"
-                  )}
+                  type="submit"
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-medium transition flex items-center gap-2"
                 >
-                  <div
-                    className="w-8 h-8 rounded-full shadow-sm"
-                    style={{ backgroundColor: hex }}
-                  />
-                  <span className="text-xs">{label}</span>
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Enregistrer
                 </button>
+              </div>
+            </form>
+          </div>
+        ) : tab === "securite" ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-4xl">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Sécurité</h2>
+            <form onSubmit={changePassword} className="space-y-6">
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Mot de passe actuel</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Nouveau mot de passe</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-2">Confirmer le mot de passe</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex justify-end pt-6">
+                <button
+                  type="submit"
+                  disabled={changingPwd}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-medium transition flex items-center gap-2"
+                >
+                  {changingPwd && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Modifier le mot de passe
+                </button>
+              </div>
+            </form>
+          </div>
+        ) : tab === "notifications" ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-4xl">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Notifications</h2>
+            <div className="space-y-6">
+              {Object.keys(notifLabels).map((key) => (
+                <div key={key} className="flex items-center justify-between py-2">
+                  <span className="text-sm text-gray-700">{notifLabels[key]}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleNotifPref(key)}
+                    className={`relative w-14 h-8 rounded-full transition flex items-center ${
+                      notifPrefs[key] ? "bg-blue-600" : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition ${
+                        notifPrefs[key] ? "left-7" : "left-1"
+                      }`}
+                    />
+                  </button>
+                </div>
               ))}
+              <p className="text-xs text-gray-400 pt-4 border-t border-gray-100">
+                Les préférences sont sauvegardées dans ce navigateur.
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Langue</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-3">
-            {[
-              { code: "fr", label: "Français", flag: "🇫🇷" },
-              { code: "en", label: "English", flag: "🇬🇧" },
-              { code: "ar", label: "العربية", flag: "🇸🇦" }
-            ].map(({ code, label, flag }) => (
-              <button
-                key={code}
-                type="button"
-                onClick={() => setLocale(code as "fr" | "en" | "ar")}
-                className={cn(
-                  "flex items-center gap-2 rounded-lg border-2 px-4 py-3 transition-all",
-                  locale === code ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"
-                )}
-              >
-                <span className="text-2xl">{flag}</span>
-                <span className="text-sm font-medium">{label}</span>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Mon profil</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={saveProfile}>
-            <div className="grid gap-4 md:grid-cols-2">
+        ) : tab === "apparence" ? (
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-4xl">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Apparence</h2>
+            <div className="space-y-8">
               <div>
-                <label className="text-sm">Nom complet</label>
-                <Input name="fullName" defaultValue={profile.fullName} />
-              </div>
-              <div>
-                <label className="text-sm">Email</label>
-                <Input name="email" type="email" defaultValue={profile.email} />
-              </div>
-            </div>
-            <Button type="submit">Enregistrer</Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <Separator />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Permissions secrétaire</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {permissions.map((user) => (
-              <div key={user.user_id} className="space-y-2">
-                <div className="font-medium">{user.full_name}</div>
-                <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
-                  {permissionRows.map(({ key, label }) => (
-                    <div key={key} className="flex items-center justify-between rounded-lg border border-border p-2">
-                      <span className="text-sm">{label}</span>
-                      <Switch
-                        checked={user[key] || false}
-                        onCheckedChange={() => togglePermission(user.user_id, key, user[key])}
-                      />
-                    </div>
+                <label className="block text-sm text-gray-600 mb-3">Thème</label>
+                <div className="flex gap-3">
+                  {["light", "dark"].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTheme(t)}
+                      className={`flex-1 h-12 rounded-xl border-2 transition font-medium text-sm ${
+                        theme === t
+                          ? "border-blue-600 bg-blue-50 text-blue-700"
+                          : "border-gray-200 text-gray-500 hover:border-gray-300"
+                      }`}
+                    >
+                      {t === "light" ? "Clair" : "Sombre"}
+                    </button>
                   ))}
                 </div>
-                <Separator />
               </div>
-            ))}
-            {permissions.length === 0 && (
-              <div className="text-sm text-muted-foreground">Aucun secrétaire configuré</div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-3">Langue</label>
+                <div className="flex gap-3">
+                  {locales.map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setLocale(l)}
+                      className={`flex-1 h-12 rounded-xl border-2 transition font-medium text-sm ${
+                        locale === l
+                          ? "border-blue-600 bg-blue-50 text-blue-700"
+                          : "border-gray-200 text-gray-500 hover:border-gray-300"
+                      }`}
+                    >
+                      {{ fr: "Français", en: "English", ar: "العربية" }[l]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : tab === "secretaire" && isAdmin ? (
+          <div className="space-y-6 max-w-4xl">
+            <h2 className="text-2xl font-semibold text-gray-800">Accès secrétariat</h2>
+            {secretaires.length === 0 ? (
+              <p className="text-gray-500">Aucun compte secrétaire trouvé.</p>
+            ) : (
+              secretaires.map((sec) => (
+                <div key={sec.user_id} className="bg-white rounded-2xl border border-gray-200 p-8">
+                  <h3 className="text-lg font-semibold text-gray-800 mb-1">{sec.full_name}</h3>
+                  <p className="text-sm text-gray-400 mb-6">{sec.email}</p>
+                  <div className="space-y-3">
+                    {Object.keys(permLabels).map((key) => {
+                      const permKey = key as keyof Secretaire;
+                      const id = `perm-${sec.user_id}-${key}`;
+                      const saving = permSaving[id];
+                      return (
+                        <div key={key} className="flex items-center justify-between py-1">
+                          <span className="text-sm text-gray-700">{permLabels[key]}</span>
+                          <button
+                            type="button"
+                            disabled={saving}
+                            onClick={() => togglePerm(sec.user_id, key, !sec[permKey])}
+                            className={`relative w-14 h-8 rounded-full transition flex items-center ${
+                              saving ? "opacity-50" : sec[permKey] ? "bg-blue-600" : "bg-gray-300"
+                            }`}
+                          >
+                            {saving ? (
+                              <Loader2 className="h-4 w-4 animate-spin mx-auto text-white" />
+                            ) : (
+                              <span
+                                className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition ${
+                                  sec[permKey] ? "left-7" : "left-1"
+                                }`}
+                              />
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
             )}
           </div>
-        </CardContent>
-      </Card>
+        ) : null}
+      </div>
     </div>
   );
 }

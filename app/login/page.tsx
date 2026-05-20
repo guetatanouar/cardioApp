@@ -30,7 +30,7 @@ export default function LoginPage() {
 
   React.useEffect(() => {
     setLogin(staffProfile);
-    setPassword("");
+    setPassword(staffProfile === "secretaire" ? "sec123" : "admin123");
   }, [staffProfile]);
 
   async function onSubmitStaff(e: React.FormEvent) {
@@ -269,7 +269,7 @@ export default function LoginPage() {
                           type="password"
                           value={password}
                           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                          placeholder="••••••••"
+                          placeholder={staffProfile === "admin" ? "admin123" : "sec123"}
                         />
                       </div>
                     </div>
