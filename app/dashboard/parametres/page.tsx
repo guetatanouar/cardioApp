@@ -1,5 +1,4 @@
 "use client";
-
 import * as React from "react";
 import { User, Shield, Users, Bell, Palette, Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
@@ -122,10 +121,6 @@ export default function SettingsPage() {
           setAddress(p.address || "");
           setRpps(p.rpps || "");
           setSpecialty(p.specialty || "");
-          setPhone(p.phone || "");
-          setAddress(p.address || "");
-          setRpps(p.rpps || "");
-          setSpecialty(p.specialty || "");
         }
         if (tab === "secretaire" && isAdmin) {
           const res = await apiFetch<{ items: Secretaire[] }>("/api/settings/secretaire-permissions");
@@ -143,11 +138,22 @@ export default function SettingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
+      const derivedFullName = `${firstName} ${lastName}`.trim() || email;
       await apiFetch("/api/settings/profile", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, firstName, lastName, phone, address, rpps, specialty }),
+        body: JSON.stringify({ fullName: derivedFullName, email, firstName, lastName, phone, address, rpps, specialty }),
       });
+      const fresh = await apiFetch<Profile>("/api/settings/profile");
+      setProfile(fresh);
+      setFullName(fresh.fullName);
+      setEmail(fresh.email);
+      setFirstName(fresh.first_name || "");
+      setLastName(fresh.last_name || "");
+      setPhone(fresh.phone || "");
+      setAddress(fresh.address || "");
+      setRpps(fresh.rpps || "");
+      setSpecialty(fresh.specialty || "");
       dispatchNotification({ id: "profile-saved", title: "Profil mis à jour", type: "success" });
     } catch (error: any) {
       dispatchNotification({ id: "profile-error", title: "Erreur", detail: error?.message, type: "error" });
@@ -220,7 +226,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-[#f7f7f7] flex">
- <div className="w-[230px] h-fit bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">    <div className="space-y-2">
+ <div className="w-[230px] h-fit bg-white border border-gray-200 rounded-2xl p-4 shadow-sm"><div className="space-y-2">
           {tabs.map((t) => (
             <button
               key={t.key}
@@ -238,23 +244,34 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="flex-1 p-10">
+      <div className="flex-1 p-8">
         {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+         <div className="flex items-center justify-center h-30">
+  <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
           </div>
         ) : tab === "profil" ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-4xl">
             <h2 className="text-2xl font-semibold text-gray-800 mb-8">Profil médecin</h2>
-            <form onSubmit={saveProfile} className="space-y-6">
-              <div>
-                <label className="block text-sm text-gray-600 mb-2">Nom complet</label>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <form onSubmit={saveProfile} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-2">Prénom</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-2">Nom</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-2">Email</label>
@@ -262,7 +279,7 @@ export default function SettingsPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -271,7 +288,7 @@ export default function SettingsPage() {
                   type="text"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -280,7 +297,7 @@ export default function SettingsPage() {
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   rows={2}
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -290,7 +307,7 @@ export default function SettingsPage() {
                     type="text"
                     value={rpps}
                     onChange={(e) => setRpps(e.target.value)}
-                    className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
@@ -299,7 +316,7 @@ export default function SettingsPage() {
                     type="text"
                     value={specialty}
                     onChange={(e) => setSpecialty(e.target.value)}
-                    className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
@@ -335,7 +352,7 @@ export default function SettingsPage() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
-                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -346,7 +363,7 @@ export default function SettingsPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -356,7 +373,7 @@ export default function SettingsPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="w-full h-12 rounded-xl border border-gray-200 px-4 outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div className="flex justify-end pt-6">
