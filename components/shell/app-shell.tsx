@@ -38,7 +38,7 @@ import {
 type HeaderNotification = { id: string; title: string; detail: string };
 
 const allStaffNav = [
-  { href: "/dashboard", icon: Home, labelKey: "accueil", permKey: undefined },
+  { href: "/dashboard", icon: Home, labelKey: "Tableau de bord", permKey: undefined },
   { href: "/dashboard/patients", icon: Users, labelKey: "patients", permKey: "can_view_patients" },
   { href: "/dashboard/agenda", icon: CalendarDays, labelKey: "agenda", permKey: "can_view_appointments" },
   { href: "/dashboard/prescriptions", icon: FileText, labelKey: "prescriptions", permKey: "can_view_prescriptions" },
@@ -47,7 +47,7 @@ const allStaffNav = [
 ];
 
 const patientNav = [
-  { href: "/patient", icon: Home, labelKey: "accueil" },
+  { href: "/patient", icon: Home, labelKey: "Tableau de bord" },
   { href: "/patient/documents", icon: FileText, labelKey: "documents" },
   { href: "/patient/chat", icon: MessageSquare, labelKey: "chat" }
 ];
@@ -103,7 +103,7 @@ const getHeaderTitleInfo = (pathname: string) => {
     return { title: "Paramètres", subtitle: "Configuration du cabinet" };
   }
   if (pathname === "/dashboard") {
-    return { title: "Accueil", subtitle: "Tableau de bord général" };
+    return { title: "Tableau de bord", subtitle: "Tableau de bord général" };
   }
   if (pathname.includes("/patient/documents")) {
     return { title: "Mes Documents", subtitle: "Consultez vos ordonnances" };

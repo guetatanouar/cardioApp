@@ -2,11 +2,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Users, Calendar, AlertTriangle, Clock, FileText, MessageSquare, Plus, Heart } from "lucide-react";
+import {
+  Users,
+  Calendar,
+  AlertTriangle,
+  FileText,
+  Heart,
+} from "lucide-react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api/client";
-import { getSession } from "@/lib/auth/storage";
 
 type DashboardSummary = {
   patientsTotal: number;
@@ -14,6 +19,7 @@ type DashboardSummary = {
   appointmentsUrgent: number;
   appointmentsPlanned: number;
   appointmentsCompleted: number;
+  newPatientsThisMonth: number;
   appointmentsToday: {
     id: string;
     starts_at: string;
@@ -25,6 +31,7 @@ type DashboardSummary = {
     first_name: string;
     last_name: string;
     severity_status: "critique" | "surveillance" | "stable";
+    pathology: string | null;
   }[];
   unreadStaffMessages: number;
   criticalAlerts: {
@@ -36,40 +43,33 @@ type DashboardSummary = {
     spo2: number | null;
     heart_rate: number | null;
   }[];
-  recentActivity: {
-    id: string;
-    event_at: string;
-    event_type: "consultation" | "document";
-    patient_id: string;
-    first_name: string;
-    last_name: string;
-    label: string;
-  }[];
 };
 
 export default function DashboardPage() {
   const [summary, setSummary] = React.useState<DashboardSummary | null>(null);
-  const session = getSession();
 
   React.useEffect(() => {
     async function load() {
       try {
-        const res = await apiFetch<DashboardSummary>("/api/dashboard/summary");
+        const res = await apiFetch<DashboardSummary>(
+          "/api/dashboard/summary"
+        );
         setSummary(res);
       } catch {
         setSummary({
-          patientsTotal: 25,
-          appointmentsCountToday: 8,
-          appointmentsUrgent: 2,
-          appointmentsPlanned: 5,
-          appointmentsCompleted: 45,
+          patientsTotal: 312,
+          appointmentsCountToday: 12,
+          appointmentsUrgent: 3,
+          appointmentsPlanned: 28,
+          appointmentsCompleted: 284,
+          newPatientsThisMonth: 8,
           appointmentsToday: [],
           unreadStaffMessages: 3,
           criticalAlerts: [],
-          recentActivity: []
         });
       }
     }
+
     load();
   }, []);
 
@@ -77,153 +77,243 @@ export default function DashboardPage() {
   const alerts = summary?.criticalAlerts ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Bienvenue, {session?.fullName?.split(" ")[0] || "Docteur"}</h1>
-          <p className="text-sm text-muted-foreground">
-            {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#f7f7f7] p-6">
+      {/* STATS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card className="rounded-2xl border-none shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Total Patients</p>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Link href="/dashboard/patients" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white shadow-lg transition-transform hover:scale-[1.02]">
-          <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10" />
-          <Users className="h-8 w-8" />
-          <div className="mt-3 text-lg font-semibold">Patients</div>
-          <div className="text-sm text-white/80">{summary?.patientsTotal ?? 0} total</div>
-        </Link>
+              <h2 className="text-3xl font-bold mt-1">
+                {summary?.patientsTotal ?? 0}
+              </h2>
 
-        <Link href="/dashboard/agenda" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-4 text-white shadow-lg transition-transform hover:scale-[1.02]">
-          <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10" />
-          <Calendar className="h-8 w-8" />
-          <div className="mt-3 text-lg font-semibold">Agenda</div>
-          <div className="text-sm text-white/80">{summary?.appointmentsCountToday ?? 0} RDV aujourd'hui</div>
-        </Link>
-
-        <Link href="/dashboard/prescriptions" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 p-4 text-white shadow-lg transition-transform hover:scale-[1.02]">
-          <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10" />
-          <FileText className="h-8 w-8" />
-          <div className="mt-3 text-lg font-semibold">Ordonnances</div>
-          <div className="text-sm text-white/80">Créer nouvelle</div>
-        </Link>
-
-        <Link href="/dashboard/chat" className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 p-4 text-white shadow-lg transition-transform hover:scale-[1.02]">
-          <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10" />
-          <MessageSquare className="h-8 w-8" />
-          <div className="mt-3 text-lg font-semibold">Messages</div>
-          <div className="text-sm text-white/80">{summary?.unreadStaffMessages ?? 0} non lus</div>
-        </Link>
-      </div>
-
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        <Link href="/dashboard/patients?new=1" className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-md whitespace-nowrap">
-          <Plus className="h-4 w-4" />
-          Nouveau Patient
-        </Link>
-        <Link href="/dashboard/agenda?new=1" className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-md whitespace-nowrap">
-          <Plus className="h-4 w-4" />
-          Nouveau RDV
-        </Link>
-      </div>
-
-      <Card>
-        <CardHeader className="border-b pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Calendar className="h-5 w-5 text-blue-600" />
-            Rendez-vous du jour
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {appointments.length > 0 ? (
-            <div className="divide-y divide-border/50">
-              {appointments.slice(0, 5).map((a) => (
-                <Link key={a.id} href={`/dashboard/patients/${a.patient_id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50 transition-colors">
-                  <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{a.last_name} {a.first_name}</div>
-                    <div className="text-sm text-muted-foreground truncate">
-                      {a.type} {a.reason && `• ${a.reason}`}
-                    </div>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="flex items-center gap-1 text-sm font-medium">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      {new Date(a.starts_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                    </div>
-                    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                      a.status === "complete" ? "bg-green-100 text-green-700" :
-                      a.status === "cancelled" ? "bg-gray-100 text-gray-700" :
-                      a.status === "urgent" ? "bg-red-100 text-red-700" :
-                      "bg-blue-100 text-blue-700"
-                    }`}>
-                      {a.status}
-                    </span>
-                  </div>
-                </Link>
-              ))}
+              <p className="text-xs text-green-600 mt-1">+8 ce mois</p>
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Calendar className="mb-2 h-10 w-10 text-muted-foreground/50" />
-              <p className="text-sm text-muted-foreground">Aucun rendez-vous prévu</p>
-              <Link href="/dashboard/agenda?new=1" className="mt-2 text-sm font-medium text-indigo-600 hover:underline">
-                Planifier un rendez-vous
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {alerts.length > 0 && (
-        <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20">
-          <CardHeader className="border-b pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg text-red-600">
-              <AlertTriangle className="h-5 w-5" />
-              Alertes critiques
-              <span className="ml-auto rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                {alerts.length}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-red-200/50">
-              {alerts.slice(0, 4).map((a) => (
-                <div key={a.patient_id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
-                    <Heart className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">{a.last_name} {a.first_name}</div>
-                    <div className="flex gap-2 mt-1">
-                      {typeof a.spo2 === "number" && (
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          a.spo2 < 94 ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
-                        }`}>
-                          SpO2: {a.spo2}%
-                        </span>
-                      )}
-                      {typeof a.heart_rate === "number" && (
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                          a.heart_rate > 100 ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"
-                        }`}>
-                          FC: {a.heart_rate} bpm
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <Link href={`/dashboard/patients/${a.patient_id}`} className="text-xs font-medium text-indigo-600 hover:underline">
-                    Voir
-                  </Link>
-                </div>
-              ))}
+            <div className="bg-indigo-100 p-3 rounded-xl">
+              <Users className="h-5 w-5 text-indigo-600" />
             </div>
           </CardContent>
         </Card>
-      )}
+
+        <Card className="rounded-2xl border-none shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">RDV aujourd'hui</p>
+
+              <h2 className="text-3xl font-bold mt-1">
+                {summary?.appointmentsCountToday ?? 0}
+              </h2>
+
+              <p className="text-xs text-gray-500">3 restants</p>
+            </div>
+
+            <div className="bg-green-100 p-3 rounded-xl">
+              <Calendar className="h-5 w-5 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-none shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Cas urgents</p>
+
+              <h2 className="text-3xl font-bold mt-1 text-red-600">
+                {summary?.appointmentsUrgent ?? 0}
+              </h2>
+
+              <p className="text-xs text-red-500">À traiter</p>
+            </div>
+
+            <div className="bg-red-100 p-3 rounded-xl">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-none shadow-sm">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">
+                Consultations / mois
+              </p>
+
+              <h2 className="text-3xl font-bold mt-1">
+                {summary?.appointmentsCompleted ?? 0}
+              </h2>
+
+              <p className="text-xs text-indigo-600">
+                +12% vs mois dernier
+              </p>
+            </div>
+
+            <div className="bg-purple-100 p-3 rounded-xl">
+              <FileText className="h-5 w-5 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* MAIN CONTENT */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* LEFT */}
+        <div className="xl:col-span-2">
+          <Card className="rounded-2xl border-none shadow-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="font-semibold text-lg">
+                  Rendez-vous du jour
+                </h2>
+
+                <Link
+                  href="/dashboard/agenda"
+                  className="text-sm text-indigo-600 font-medium"
+                >
+                  Voir tous →
+                </Link>
+              </div>
+
+              <div className="space-y-4">
+                {appointments.length > 0 ? (
+                  appointments.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex items-center justify-between border-b pb-4"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="text-sm font-semibold text-gray-600 w-[80px]">
+                          {new Date(a.starts_at).toLocaleTimeString(
+                            "fr-FR",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}{" "}
+                          <span className="text-gray-400 font-normal">
+                            {a.duration_minutes}min
+                          </span>
+                        </div>
+                        <span className="text-blue-500 mx-1">|</span>
+
+                        <div>
+                          <h3 className="font-medium text-gray-800">
+                            {a.first_name} {a.last_name}
+                          </h3>
+
+                          <p className="text-sm text-gray-500">
+                            {a.pathology}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            a.type === "urgence"
+                              ? "bg-red-100 text-red-700"
+                              : a.type === "suivi"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {a.type}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-10 text-gray-500">
+                    Aucun rendez-vous prévu
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* RIGHT */}
+        <div className="space-y-6">
+          {/* ALERTS */}
+          <Card className="rounded-2xl border-none overflow-hidden shadow-sm">
+            <div className="bg-red-600 px-5 py-4 text-white font-semibold flex items-center gap-2">
+              <Heart className="h-5 w-5" />
+              Alertes patients
+            </div>
+
+            <CardContent className="p-0">
+              {alerts.length > 0 ? (
+                alerts.map((a) => (
+                  <div
+                    key={a.patient_id}
+                    className="px-5 py-4 border-b bg-red-50"
+                  >
+                    <div className="font-medium text-red-700">
+                      {a.first_name} {a.last_name}
+                    </div>
+
+                    <div className="text-sm text-red-500 mt-1">
+                      {typeof a.spo2 === "number" &&
+                        `SpO2 ${a.spo2}%`}
+
+                      {typeof a.heart_rate === "number" &&
+                        ` • FC ${a.heart_rate} bpm`}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="p-5 text-sm text-gray-500">
+                  Aucune alerte critique
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* WEEK STATS */}
+          <Card className="rounded-2xl border-none shadow-sm">
+            <CardContent className="p-5">
+              <h2 className="font-semibold mb-4">
+                Cette semaine
+              </h2>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">
+                    RDV planifiés
+                  </span>
+
+                  <span className="font-semibold">
+                    {summary?.appointmentsPlanned ?? 0}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">
+                    Nouveaux patients
+                  </span>
+
+                  <span className="font-semibold">
+                    {summary?.newPatientsThisMonth ?? 0}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">
+                    Consultations terminées
+                  </span>
+
+                  <span className="font-semibold text-green-600">
+                    {summary?.appointmentsCompleted ?? 0}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+        </div>
+      </div>
     </div>
   );
 }

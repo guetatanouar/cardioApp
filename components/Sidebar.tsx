@@ -42,7 +42,7 @@ export function Sidebar() {
         </div>
         <div className="leading-tight">
           <div className="text-base font-bold tracking-tight">CardioManager</div>
-          <div className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Cabinet Médical</div>
+          <div className="text-[10px] uppercase tracking-wider text-white/50 font-medium">Tableau de bord</div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar">

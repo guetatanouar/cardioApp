@@ -7,8 +7,11 @@ export const dashboardRouter = Router();
 dashboardRouter.get('/summary', authenticateToken, async (req, res) => {
     try {
         const patientsCount = await query('SELECT count(*)::int as count FROM patients');
+        const newPatients = await query(
+            "SELECT count(*)::int as count FROM patients WHERE created_at >= date_trunc('month', CURRENT_DATE)"
+        );
         const appointmentsToday = await query(
-            `SELECT a.*, p.first_name, p.last_name, p.severity_status 
+            `SELECT a.*, p.first_name, p.last_name, p.severity_status, p.pathology
              FROM appointments a 
              JOIN patients p ON a.patient_id = p.id 
              WHERE a.date = CURRENT_DATE 
@@ -17,6 +20,12 @@ dashboardRouter.get('/summary', authenticateToken, async (req, res) => {
         const appointmentsCountToday = appointmentsToday.rows.length;
         const appointmentsUrgent = await query(
             'SELECT count(*)::int as count FROM appointments WHERE date = CURRENT_DATE AND status = \'urgent\''
+        );
+        const appointmentsPlanned = await query(
+            "SELECT count(*)::int as count FROM appointments WHERE date >= CURRENT_DATE"
+        );
+        const appointmentsCompleted = await query(
+            "SELECT count(*)::int as count FROM appointments WHERE status = 'completed' AND date >= date_trunc('month', CURRENT_DATE)"
         );
         const unreadMessages = await query(
             'SELECT count(*)::int as count FROM chat_messages WHERE channel = \'staff\' AND is_read = FALSE'
@@ -46,10 +55,14 @@ dashboardRouter.get('/summary', authenticateToken, async (req, res) => {
 
         res.json({
             patientsTotal: patientsCount.rows[0].count,
+            newPatientsThisMonth: newPatients.rows[0].count,
             appointmentsCountToday,
             appointmentsUrgent: appointmentsUrgent.rows[0].count,
+            appointmentsPlanned: appointmentsPlanned.rows[0].count,
+            appointmentsCompleted: appointmentsCompleted.rows[0].count,
             appointmentsToday: appointmentsToday.rows.map(a => ({
                 ...a,
+                duration_minutes: a.duration,
                 date: a.date instanceof Date
                     ? `${a.date.getFullYear()}-${String(a.date.getMonth() + 1).padStart(2, '0')}-${String(a.date.getDate()).padStart(2, '0')}`
                     : a.date,

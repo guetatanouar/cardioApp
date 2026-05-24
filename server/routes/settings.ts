@@ -138,15 +138,20 @@ settingsRouter.get('/patient-accounts/:patientId', async (req, res) => {
 settingsRouter.post('/patient-accounts', async (req, res) => {
     try {
         const { patientId, username, password } = req.body;
+        if (!patientId || !username || !password) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
         const hashed = await bcrypt.hash(password, 10);
         await query(
-            'INSERT INTO patient_accounts (patient_id, username, password) VALUES ($1, $2, $3)',
+            `INSERT INTO patient_accounts (patient_id, username, password) VALUES ($1, $2, $3)
+             ON CONFLICT (patient_id) DO UPDATE SET username = $2, password = $3, is_active = TRUE`,
             [patientId, username, hashed]
         );
         res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating patient account:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        const detail = error?.detail || error?.message || 'Internal server error';
+        res.status(500).json({ error: detail });
     }
 });
 
@@ -156,7 +161,11 @@ settingsRouter.put('/patient-accounts/:patientId', async (req, res) => {
         const { isActive, password } = req.body;
         if (password) {
             const hashed = await bcrypt.hash(password, 10);
-            await query('UPDATE patient_accounts SET is_active = $1, password = $2 WHERE patient_id = $3', [isActive, hashed, patientId]);
+            if (isActive !== undefined) {
+                await query('UPDATE patient_accounts SET is_active = $1, password = $2 WHERE patient_id = $3', [isActive, hashed, patientId]);
+            } else {
+                await query('UPDATE patient_accounts SET password = $1 WHERE patient_id = $2', [hashed, patientId]);
+            }
         } else {
             await query('UPDATE patient_accounts SET is_active = $1 WHERE patient_id = $2', [isActive, patientId]);
         }
