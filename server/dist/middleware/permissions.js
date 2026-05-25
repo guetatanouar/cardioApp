@@ -23,9 +23,14 @@ function requirePermission(resource, action = 'read') {
     return async (req, res, next) => {
         const user = req.user;
         if (!user)
-            return res.sendStatus(401);
+            return res.status(401).json({ error: 'Non authentifié' });
+        // Admin always passes
         if (user.role === 'admin')
             return next();
+        // Only secretaries need row-level permission checks
+        if (user.role !== 'secretaire') {
+            return res.status(403).json({ error: 'Accès refusé' });
+        }
         const permKey = action === 'read' ? resource : `${resource}:${action}`;
         const dbKey = permMap[permKey] || permMap[resource];
         if (!dbKey)

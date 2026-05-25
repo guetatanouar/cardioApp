@@ -93,7 +93,7 @@ const getHeaderTitleInfo = (pathname: string) => {
     return { title: "Patients", subtitle: "Suivi et dossiers médicaux" };
   }
   if (pathname.includes("/dashboard/prescriptions")) {
-    return { title: "Prescriptions", subtitle: "Gestion des ordonnances" };
+    return { title: "Suivi médical", subtitle: "Constantes vitales et évolution" };
   }
   if (pathname.includes("/dashboard/chat")) {
     return { title: "Messagerie", subtitle: "Discussions d'équipe" };

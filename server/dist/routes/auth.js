@@ -42,7 +42,7 @@ exports.authRouter.post('/login', async (req, res) => {
 exports.authRouter.post('/patient-login', async (req, res) => {
     const { username, password } = req.body;
     try {
-        const result = await (0, pool_js_1.query)('SELECT * FROM patient_accounts WHERE username = $1 AND active = TRUE', [username]);
+        const result = await (0, pool_js_1.query)('SELECT * FROM patient_accounts WHERE username = $1 AND active IS NOT FALSE', [username]);
         const account = result.rows[0];
         if (!account || !(await bcryptjs_1.default.compare(password, account.password))) {
             return res.status(401).json({ message: 'Invalid credentials' });

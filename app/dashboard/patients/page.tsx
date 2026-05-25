@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/navigation";
 import {
   Line,
   LineChart,
@@ -20,6 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
+import { FileText, Plus, Trash2, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 type PatientListItem = {
   id: string;
@@ -37,6 +39,7 @@ type PatientDetailRes = {
   vitals: any[];
   consultations: any[];
   documents: any[];
+  prescriptions: any[];
 };
 
 export default function PatientsPage() {
@@ -53,7 +56,7 @@ export default function PatientsPage() {
   const [loading, setLoading] = React.useState(false);
 
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
-  const [tab, setTab] = React.useState<"dossier" | "consultations" | "vitals" | "documents" | "messages" | "access">("dossier");
+  const [tab, setTab] = React.useState<"dossier" | "consultations" | "vitals" | "documents" | "messages" | "access" | "ordonnances">("dossier");
   const [detail, setDetail] = React.useState<PatientDetailRes | null>(null);
   const [detailLoading, setDetailLoading] = React.useState(false);
   const [detailError, setDetailError] = React.useState<string | null>(null);
@@ -533,6 +536,7 @@ export default function PatientsPage() {
                   ["consultations", "Consultations"],
                   ["vitals", "Vitaux"],
                   ["documents", "Documents"],
+                  ["ordonnances", "Ordonnances"],
                   ["messages", "Messagerie"],
                   ["access", "Acces patient"]
                 ] as const
@@ -810,6 +814,13 @@ export default function PatientsPage() {
                   <div className="text-sm text-muted-foreground">Aucun document</div>
                 </CardContent>
               </Card>
+            ) : tab === "ordonnances" ? (
+              <PrescriptionsTab
+                patientId={selectedId!}
+                patient={detail?.patient}
+                prescriptions={detail?.prescriptions || []}
+                onRefresh={() => selectedId && loadDetail(selectedId)}
+              />
             ) : tab === "messages" ? (
               <div className="space-y-4">
                 <Card>
@@ -993,6 +1004,213 @@ export default function PatientsPage() {
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
+  patientId: string;
+  patient: any;
+  prescriptions: any[];
+  onRefresh: () => void;
+}) {
+  const [showNew, setShowNew] = React.useState(false);
+  const [generalNotes, setGeneralNotes] = React.useState("");
+  const [medicines, setMedicines] = React.useState([
+    { name: "", dosage: "", frequency: "", duration: "", instructions: "" }
+  ]);
+
+  async function createPrescription(e: React.FormEvent) {
+    e.preventDefault();
+    const payloadItems = medicines.filter((m) => m.name && m.dosage && m.frequency && m.duration);
+    if (payloadItems.length === 0) return;
+
+    await apiFetch("/api/prescriptions", {
+      method: "POST",
+      body: JSON.stringify({
+        patientId,
+        generalNotes,
+        items: payloadItems
+      })
+    });
+
+    dispatchNotification({
+      id: `presc-${Date.now()}`,
+      title: "Ordonnance créée",
+      detail: `Pour ${patient?.last_name || ""} ${patient?.first_name || ""}`,
+      type: "success"
+    });
+
+    setShowNew(false);
+    setGeneralNotes("");
+    setMedicines([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
+    onRefresh();
+  }
+
+  function addMedicine() {
+    setMedicines([...medicines, { name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
+  }
+
+  function removeMedicine(i: number) {
+    setMedicines(medicines.filter((_, idx) => idx !== i));
+  }
+
+  function updateMedicine(i: number, field: string, value: string) {
+    const updated = [...medicines];
+    updated[i] = { ...updated[i], [field]: value };
+    setMedicines(updated);
+  }
+
+  function exportPdfPrescription(p: any) {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.setTextColor(59, 130, 246);
+    doc.text("ORDONNANCE MEDICALE", 105, 20, { align: "center" });
+
+    doc.setFontSize(10);
+    doc.setTextColor(0);
+    doc.text("Dr. Cabinet de Cardiologie", 20, 35);
+    doc.text("123 Avenue de la Sante", 20, 40);
+    doc.text("Alger, Algerie", 20, 45);
+    doc.text(new Date(p.date).toLocaleDateString("fr-DZ"), 190, 35, { align: "right" });
+
+    doc.setDrawColor(59, 130, 246);
+    doc.setLineWidth(0.5);
+    doc.line(20, 50, 190, 50);
+
+    doc.setFillColor(249, 250, 251);
+    doc.rect(20, 55, 170, 20, "F");
+    doc.setFontSize(10);
+    doc.text(`Patient: ${patient?.last_name || ""} ${patient?.first_name || ""}`, 25, 62);
+    doc.text(`Ne(e) le: ${patient ? new Date(patient.date_of_birth).toLocaleDateString() : ""}`, 25, 68);
+
+    const meds = typeof p.medications === 'string' ? JSON.parse(p.medications) : (p.medications || []);
+    autoTable(doc, {
+      startY: 80,
+      head: [["Medicament", "Dosage", "Frequence", "Duree"]],
+      body: meds.map((item: any) => [item.name, item.dosage, item.frequency, item.duration]),
+      styles: { fontSize: 9, cellPadding: 4 },
+      headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+      alternateRowStyles: { fillColor: [249, 250, 251] }
+    });
+
+    doc.save(`ordonnance_${patient?.last_name || "patient"}.pdf`);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Ordonnances</h2>
+        <Button size="sm" onClick={() => setShowNew(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle ordonnance
+        </Button>
+      </div>
+
+      <Card>
+        <CardContent>
+          <div className="space-y-3">
+            {(prescriptions || []).map((p) => {
+              const meds = typeof p.medications === 'string' ? JSON.parse(p.medications) : (p.medications || []);
+              return (
+                <div key={p.id} className="flex items-center justify-between rounded-lg border border-border p-4">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-8 w-8 text-primary" />
+                    <div>
+                      <div className="font-medium">{new Date(p.date).toLocaleDateString()}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {meds.length} medicament(s){p.doctor_name ? ` - ${p.doctor_name}` : ""}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => exportPdfPrescription(p)}>
+                      <Download className="mr-1 h-4 w-4" />
+                      PDF
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {(prescriptions || []).length === 0 && (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                Aucune ordonnance
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {showNew && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Nouvelle ordonnance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-4" onSubmit={createPrescription}>
+                <div>
+                  <label className="text-sm">Medicaments</label>
+                  <div className="mt-2 space-y-2">
+                    {medicines.map((med, i) => (
+                      <div key={i} className="grid gap-2 md:grid-cols-5">
+                        <Input
+                          placeholder="Nom"
+                          value={med.name}
+                          onChange={(e) => updateMedicine(i, "name", e.target.value)}
+                          required
+                        />
+                        <Input
+                          placeholder="Dosage"
+                          value={med.dosage}
+                          onChange={(e) => updateMedicine(i, "dosage", e.target.value)}
+                          required
+                        />
+                        <Input
+                          placeholder="Frequence"
+                          value={med.frequency}
+                          onChange={(e) => updateMedicine(i, "frequency", e.target.value)}
+                          required
+                        />
+                        <Input
+                          placeholder="Duree"
+                          value={med.duration}
+                          onChange={(e) => updateMedicine(i, "duration", e.target.value)}
+                          required
+                        />
+                        {medicines.length > 1 && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeMedicine(i)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={addMedicine}>
+                      <Plus className="mr-1 h-4 w-4" />
+                      Ajouter medicament
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm">Notes generales</label>
+                  <Input
+                    value={generalNotes}
+                    onChange={(e) => setGeneralNotes(e.target.value)}
+                    placeholder="Notes additionnelles..."
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setShowNew(false)}>Annuler</Button>
+                  <Button type="submit">Creer ordonnance</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

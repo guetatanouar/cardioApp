@@ -32,16 +32,18 @@ exports.patientsRouter.get('/:id', auth_js_1.authenticateToken, (0, permissions_
         const patientResult = await (0, pool_js_1.query)('SELECT * FROM patients WHERE id = $1', [req.params.id]);
         if (patientResult.rows.length === 0)
             return res.status(404).json({ message: 'Patient not found' });
-        const [vitalsResult, consultationsResult, documentsResult] = await Promise.all([
+        const [vitalsResult, consultationsResult, documentsResult, prescriptionsResult] = await Promise.all([
             (0, pool_js_1.query)('SELECT * FROM vital_entries WHERE patient_id = $1 ORDER BY recorded_at DESC LIMIT 100', [req.params.id]),
             (0, pool_js_1.query)('SELECT * FROM consultations WHERE patient_id = $1 ORDER BY created_at DESC', [req.params.id]),
-            (0, pool_js_1.query)('SELECT * FROM documents WHERE patient_id = $1 ORDER BY created_at DESC', [req.params.id])
+            (0, pool_js_1.query)('SELECT * FROM documents WHERE patient_id = $1 ORDER BY created_at DESC', [req.params.id]),
+            (0, pool_js_1.query)('SELECT * FROM prescriptions WHERE patient_id = $1 ORDER BY date DESC', [req.params.id])
         ]);
         res.json({
             patient: patientResult.rows[0],
             vitals: vitalsResult.rows,
             consultations: consultationsResult.rows,
-            documents: documentsResult.rows
+            documents: documentsResult.rows,
+            prescriptions: prescriptionsResult.rows
         });
     }
     catch (err) {

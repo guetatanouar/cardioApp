@@ -126,13 +126,18 @@ exports.settingsRouter.get('/patient-accounts/:patientId', async (req, res) => {
 exports.settingsRouter.post('/patient-accounts', async (req, res) => {
     try {
         const { patientId, username, password } = req.body;
+        if (!patientId || !username || !password) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
         const hashed = await bcryptjs_1.default.hash(password, 10);
-        await (0, pool_js_1.query)('INSERT INTO patient_accounts (patient_id, username, password) VALUES ($1, $2, $3)', [patientId, username, hashed]);
+        await (0, pool_js_1.query)(`INSERT INTO patient_accounts (patient_id, username, password) VALUES ($1, $2, $3)
+             ON CONFLICT (patient_id) DO UPDATE SET username = $2, password = $3, is_active = TRUE`, [patientId, username, hashed]);
         res.json({ success: true });
     }
     catch (error) {
         console.error('Error creating patient account:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        const detail = error?.detail || error?.message || 'Internal server error';
+        res.status(500).json({ error: detail });
     }
 });
 exports.settingsRouter.put('/patient-accounts/:patientId', async (req, res) => {
@@ -141,7 +146,12 @@ exports.settingsRouter.put('/patient-accounts/:patientId', async (req, res) => {
         const { isActive, password } = req.body;
         if (password) {
             const hashed = await bcryptjs_1.default.hash(password, 10);
-            await (0, pool_js_1.query)('UPDATE patient_accounts SET is_active = $1, password = $2 WHERE patient_id = $3', [isActive, hashed, patientId]);
+            if (isActive !== undefined) {
+                await (0, pool_js_1.query)('UPDATE patient_accounts SET is_active = $1, password = $2 WHERE patient_id = $3', [isActive, hashed, patientId]);
+            }
+            else {
+                await (0, pool_js_1.query)('UPDATE patient_accounts SET password = $1 WHERE patient_id = $2', [hashed, patientId]);
+            }
         }
         else {
             await (0, pool_js_1.query)('UPDATE patient_accounts SET is_active = $1 WHERE patient_id = $2', [isActive, patientId]);
