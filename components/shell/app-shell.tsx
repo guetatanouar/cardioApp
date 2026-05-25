@@ -9,7 +9,7 @@ import {
   ChevronDown,
   FileText,
   Heart,
-  Home,
+  LayoutDashboard,
   LogOut,
   MessageSquare,
   Settings,
@@ -38,16 +38,15 @@ import {
 type HeaderNotification = { id: string; title: string; detail: string };
 
 const allStaffNav = [
-  { href: "/dashboard", icon: Home, labelKey: "Tableau de bord", permKey: undefined },
+  { href: "/dashboard", icon: LayoutDashboard, labelKey: "Tableau de bord", permKey: undefined },
   { href: "/dashboard/patients", icon: Users, labelKey: "patients", permKey: "can_view_patients" },
   { href: "/dashboard/agenda", icon: CalendarDays, labelKey: "agenda", permKey: "can_view_appointments" },
   { href: "/dashboard/prescriptions", icon: FileText, labelKey: "prescriptions", permKey: "can_view_prescriptions" },
-  { href: "/dashboard/chat", icon: MessageSquare, labelKey: "chat", permKey: "can_view_chat" },
-  { href: "/dashboard/parametres", icon: Settings, labelKey: "settings", permKey: "is_admin" }
+  { href: "/dashboard/chat", icon: MessageSquare, labelKey: "chat", permKey: "can_view_chat" }
 ];
 
 const patientNav = [
-  { href: "/patient", icon: Home, labelKey: "Tableau de bord" },
+  { href: "/patient", icon: LayoutDashboard, labelKey: "Tableau de bord" },
   { href: "/patient/documents", icon: FileText, labelKey: "documents" },
   { href: "/patient/chat", icon: MessageSquare, labelKey: "chat" }
 ];
@@ -324,8 +323,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     active ? "bg-white/20 text-white font-medium" : "text-white/80 hover:bg-white/10 hover:text-white"
                   )}
                 >
-                  <span>{t(item.labelKey as any)}</span>
                   <Icon className="h-5 w-5" />
+                  <span>{t(item.labelKey as any)}</span>
                   {item.href.includes("chat") && chatUnreadCount > 0 ? (
                     <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-medium text-white">
                       {chatUnreadCount}
@@ -336,7 +335,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
 
-          <div className="border-t border-blue-700/50 p-3">
+          <div className="border-t border-blue-700/50 p-3 space-y-1">
+            {session?.role !== "patient" && (
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full text-white/80 hover:bg-white/10 hover:text-white",
+                  isRTL ? "justify-end flex-row-reverse" : "justify-start"
+                )}
+                onClick={() => router.push("/dashboard/parametres")}
+              >
+                <Settings className={cn("h-4 w-4", isRTL ? "ml-2" : "mr-2")} />
+                {t("settings")}
+              </Button>
+            )}
             <Button
               variant="ghost"
               className={cn(

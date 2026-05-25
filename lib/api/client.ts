@@ -83,6 +83,16 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
     if (!res.ok) {
       const text = await res.text();
+
+      // Session expirée → rediriger vers la page de connexion
+      if (res.status === 401) {
+        const { clearSession } = await import("@/lib/auth/storage");
+        clearSession();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+      }
+
       if (isMutation) {
         console.error(`[API ERROR] ${init?.method} ${path} returned ${res.status}:`, text);
       }
@@ -118,6 +128,16 @@ export async function apiUpload<T>(path: string, form: FormData, init?: RequestI
 
     if (!res.ok) {
       const text = await res.text();
+
+      // Session expirée → rediriger vers la page de connexion
+      if (res.status === 401) {
+        const { clearSession } = await import("@/lib/auth/storage");
+        clearSession();
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
+      }
+
       throw new Error(text || `HTTP_${res.status}`);
     }
 

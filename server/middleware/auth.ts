@@ -5,10 +5,15 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) return res.sendStatus(401);
+    if (!token) return res.status(401).json({ error: 'Token manquant' });
 
     jwt.verify(token, process.env.JWT_SECRET as string, (err: any, user: any) => {
-        if (err) return res.sendStatus(403);
+        if (err) {
+            if (err.name === 'TokenExpiredError') {
+                return res.status(401).json({ error: 'Session expirée, veuillez vous reconnecter' });
+            }
+            return res.status(403).json({ error: 'Token invalide' });
+        }
         (req as any).user = user;
         next();
     });

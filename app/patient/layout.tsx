@@ -24,6 +24,13 @@ export default function PatientLayout({
     }
   }, [mounted, session, router]);
 
+  // Redirect staff to their own area
+  React.useEffect(() => {
+    if (mounted && session && (session.role === "admin" || session.role === "secretaire")) {
+      router.replace("/dashboard");
+    }
+  }, [mounted, session, router]);
+
   if (!mounted) {
     return <div className="min-h-screen bg-background" />;
   }

@@ -35,8 +35,8 @@ export function Sidebar() {
   if (session?.role === "patient") return null;
 
   return (
-    <aside className="hidden w-64 flex-col bg-[#0b1120] border-r border-[#1e293b] text-white md:flex transition-all duration-300">
-      <div className="flex items-center gap-3 p-5 border-b border-white/5 bg-[#0b1120]">
+    <aside className="hidden w-64 flex-col bg-gradient-to-b from-blue-600 to-blue-800 border-r border-blue-700 text-white md:flex transition-all duration-300">
+      <div className="flex items-center gap-3 p-5 border-b border-blue-700/50 bg-transparent">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]">
           <Activity className="h-6 w-6 text-white" />
         </div>

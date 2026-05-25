@@ -22,8 +22,13 @@ const permMap: Record<string, string> = {
 export function requirePermission(resource: string, action: 'read' | 'write' | 'delete' = 'read') {
   return async (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user;
-    if (!user) return res.sendStatus(401);
+    if (!user) return res.status(401).json({ error: 'Non authentifié' });
+    // Admin always passes
     if (user.role === 'admin') return next();
+    // Only secretaries need row-level permission checks
+    if (user.role !== 'secretaire') {
+      return res.status(403).json({ error: 'Accès refusé' });
+    }
 
     const permKey = action === 'read' ? resource : `${resource}:${action}`;
     const dbKey = permMap[permKey] || permMap[resource];
