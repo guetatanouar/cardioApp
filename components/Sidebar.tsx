@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Users,
   CalendarDays,
+  HeartPulse,
   FileText,
   MessageSquare,
   Settings,
@@ -22,6 +23,7 @@ const staffNav = [
   { href: "/dashboard", icon: LayoutDashboard, labelKey: "dashboard" },
   { href: "/dashboard/patients", icon: Users, labelKey: "patients" },
   { href: "/dashboard/agenda", icon: CalendarDays, labelKey: "agenda" },
+  { href: "/dashboard/suive", icon: HeartPulse, labelKey: "suivi", permKey: "can_view_suive" },
   { href: "/dashboard/prescriptions", icon: FileText, labelKey: "prescriptions" },
   { href: "/dashboard/chat", icon: MessageSquare, labelKey: "chat" },
 ];
