@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
 
 import { apiFetch } from "@/lib/api/client";
 import { dispatchNotification } from "@/lib/notifications";
 import { usePagePermission } from "@/lib/auth/usePermissions";
+import { useI18n } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,11 +48,14 @@ function parseAppointmentDateTime(a: any) {
 
 export default function AgendaPage() {
   const hasAccess = usePagePermission("can_view_appointments");
+  const { t } = useI18n();
+  const searchParams = useSearchParams();
   const [items, setItems] = React.useState<Appointment[]>([]);
   const [patients, setPatients] = React.useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
 
   const [currentDate, setCurrentDate] = React.useState(new Date());
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState(searchParams.get("q") ?? "");
 
   const [modalOpen, setModalOpen] = React.useState(false);
   const [form, setForm] = React.useState({
@@ -226,7 +231,7 @@ export default function AgendaPage() {
   }
 
   function getAppointmentsForDay(day: number) {
-    return items.filter((a) => {
+    return filteredItems.filter((a) => {
       const { dateStr, apptDate } = parseAppointmentDateTime(a);
       if (!dateStr) return false;
 
@@ -239,7 +244,7 @@ export default function AgendaPage() {
   }
 
   function getAppointmentsForDate(date: Date) {
-    return items.filter((a) => {
+    return filteredItems.filter((a) => {
       const { dateStr, apptDate } = parseAppointmentDateTime(a);
       if (!dateStr) return false;
 
@@ -283,6 +288,14 @@ export default function AgendaPage() {
   }
 
   const calendarDays = getMonthCalendar();
+  const filteredItems = React.useMemo(
+    () => searchQuery
+      ? items.filter((a) =>
+          `${a.last_name} ${a.first_name}`.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : items,
+    [items, searchQuery]
+  );
   const selectedAppointments = selectedDate ? getAppointmentsForDate(selectedDate) : [];
   const today = new Date();
   const todayString = today.toDateString();
@@ -293,6 +306,19 @@ export default function AgendaPage() {
 
   return (
     <div className="flex flex-col gap-5">
+      {searchQuery && (
+        <div className="flex items-center gap-2 px-1">
+          <span className="text-sm text-muted-foreground">Recherche:</span>
+          <span className="text-sm font-medium">{searchQuery}</span>
+          <button
+            onClick={() => setSearchQuery("")}
+            className="text-xs text-blue-600 hover:underline ml-2"
+          >
+            Effacer
+          </button>
+          <span className="text-xs text-muted-foreground ml-auto">{filteredItems.length} résultat(s)</span>
+        </div>
+      )}
       <div className="flex gap-5 h-[calc(100vh-6rem)] justify-center -mt-5">
         <div className="flex-1 max-w-4xl h-[550px]">
           <Card className="h-full">
@@ -396,7 +422,7 @@ export default function AgendaPage() {
                 </CardTitle>
                 <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-xs" onClick={() => setModalOpen(true)}>
                   <Plus className="h-3 w-3 mr-1" />
-                  Nouveau RDV
+                  {t("newAppointment")}
                 </Button>
               </div>
             </CardHeader>
@@ -458,14 +484,14 @@ export default function AgendaPage() {
                                 className="text-[10px] font-bold text-green-600 hover:text-green-800 uppercase tracking-widest hover:underline"
                                 onClick={() => completeAppointment(a.id)}
                               >
-                                Terminer
+                                {t("complete")}
                               </button>
                               <button
                                 type="button"
                                 className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-widest hover:underline"
                                 onClick={() => cancelAppointment(a.id)}
                               >
-                                Annuler le RDV
+                                {t("cancel")}
                               </button>
                             </div>
                           )}
@@ -478,16 +504,16 @@ export default function AgendaPage() {
                     <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
                       <Clock className="h-6 w-6 text-muted-foreground" />
                     </div>
-                    <p className="text-sm text-muted-foreground">Aucun rendez-vous</p>
-                    <p className="text-xs text-muted-foreground mt-1">ce jour</p>
+                    <p className="text-sm text-muted-foreground">{t("noAppointments")}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t("today")}</p>
                   </div>
                 )
               ) : (
                 <div className="space-y-2">
-                  {items.length > 0 ? (
+                  {filteredItems.length > 0 ? (
                     <>
-                      <p className="text-xs text-muted-foreground mb-3">{items.length} rendez-vous ce mois</p>
-                      {items.slice(0, 10).map((a) => {
+                      <p className="text-xs text-muted-foreground mb-3">{filteredItems.length} rendez-vous ce mois</p>
+                      {filteredItems.slice(0, 10).map((a) => {
                         const { apptDate } = parseAppointmentDateTime(a);
                         return (
 
@@ -518,7 +544,7 @@ export default function AgendaPage() {
                       <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
                         <Clock className="h-6 w-6 text-muted-foreground" />
                       </div>
-                      <p className="text-sm text-muted-foreground">Aucun rendez-vous</p>
+                      <p className="text-sm text-muted-foreground">{t("noAppointments")}</p>
                       <p className="text-xs text-muted-foreground mt-1">ce mois</p>
                     </div>
                   )}
@@ -531,7 +557,7 @@ export default function AgendaPage() {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 w-full max-w-4xl -mt-16 ml-1">
         <div className="rounded-xl border bg-white p-3 shadow-sm flex items-center gap-4">
           <div className="text-2xl font-bold text-blue-600">
-            {items.length}
+            {filteredItems.length}
           </div>
           <p className="text-xs font-medium text-muted-foreground">
             Total RDV
@@ -540,7 +566,7 @@ export default function AgendaPage() {
 
         <div className="rounded-xl border bg-white p-3 shadow-sm flex items-center gap-4">
           <div className="text-2xl font-bold text-green-600">
-            {items.filter(a => a.status === "complete").length}
+            {filteredItems.filter(a => a.status === "complete").length}
           </div>
           <p className="text-xs font-medium text-muted-foreground">
             Terminés
@@ -549,7 +575,7 @@ export default function AgendaPage() {
 
         <div className="rounded-xl border bg-white p-3 shadow-sm flex items-center gap-4">
           <div className="text-2xl font-bold text-red-600">
-            {items.filter(a => a.type === "urgence" || a.status === "urgent").length}
+            {filteredItems.filter(a => a.type === "urgence" || a.status === "urgent").length}
           </div>
           <p className="text-xs font-medium text-muted-foreground">
             Urgences
@@ -558,7 +584,7 @@ export default function AgendaPage() {
 
         <div className="rounded-xl border bg-white p-3 shadow-sm flex items-center gap-4">
           <div className="text-2xl font-bold text-orange-500">
-            {items.filter(a => a.status === "scheduled").length}
+            {filteredItems.filter(a => a.status === "scheduled").length}
           </div>
           <p className="text-xs font-medium text-muted-foreground">
             Planifiés
@@ -569,11 +595,11 @@ export default function AgendaPage() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nouveau rendez-vous</DialogTitle>
+            <DialogTitle>{t("newAppointment")}</DialogTitle>
           </DialogHeader>
           <form className="space-y-4" onSubmit={saveAppointment}>
             <div>
-              <label className="text-sm font-medium">Patient</label>
+              <label className="text-sm font-medium">{t("patient")}</label>
               <select
                 value={form.patientId}
                 onChange={(e) => setForm((s) => ({ ...s, patientId: e.target.value }))}
@@ -587,7 +613,7 @@ export default function AgendaPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Date</label>
+                <label className="text-sm font-medium">{t("date")}</label>
                 <Input
                   type="date"
                   value={form.date}
@@ -596,7 +622,7 @@ export default function AgendaPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium">Heure</label>
+                <label className="text-sm font-medium">{t("time")}</label>
                 <Input
                   type="time"
                   value={form.time}
@@ -607,7 +633,7 @@ export default function AgendaPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium">Type</label>
+                <label className="text-sm font-medium">{t("type")}</label>
                 <select
                   value={form.type}
                   onChange={(e) => setForm((s) => ({ ...s, type: e.target.value }))}
@@ -621,7 +647,7 @@ export default function AgendaPage() {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium">Durée (min)</label>
+                <label className="text-sm font-medium">{t("duration")} (min)</label>
                 <Input
                   type="number"
                   value={form.durationMinutes}
@@ -632,7 +658,7 @@ export default function AgendaPage() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Motif</label>
+              <label className="text-sm font-medium">{t("motif")}</label>
               <Input
                 value={form.reason}
                 onChange={(e) => setForm((s) => ({ ...s, reason: e.target.value }))}
@@ -640,8 +666,8 @@ export default function AgendaPage() {
               />
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>Annuler</Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Créer</Button>
+              <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>{t("cancel")}</Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">{t("save")}</Button>
             </div>
           </form>
         </DialogContent>

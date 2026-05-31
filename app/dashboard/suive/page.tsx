@@ -6,6 +6,7 @@ import {
 } from "recharts";
 
 import { apiFetch } from "@/lib/api/client";
+import { useI18n } from "@/lib/i18n/client";
 
 interface Patient {
   id: string;
@@ -33,6 +34,7 @@ function formatMonth(d: string) {
 }
 
 export default function MedicalDashboard() {
+  const { t } = useI18n();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -97,7 +99,7 @@ export default function MedicalDashboard() {
     <div className="flex min-h-screen bg-[#f6f6f3]">
       <main className="flex-1 p-6">
         <div className="bg-white rounded-2xl p-4 border mb-5">
-          <p className="text-sm text-gray-500 mb-3">Sélectionner un patient</p>
+          <p className="text-sm text-gray-500 mb-3">{t("selectPatient")}</p>
           <div className="flex flex-wrap gap-2">
             {filtered.map((p) => (
               <button
@@ -113,36 +115,36 @@ export default function MedicalDashboard() {
               </button>
             ))}
             {filtered.length === 0 && (
-              <span className="text-sm text-gray-400">Aucun patient trouvé</span>
+              <span className="text-sm text-gray-400">{t("noPatientFound")}</span>
             )}
           </div>
         </div>
 
         <div className="grid grid-cols-4 gap-4 mb-6">
           <StatCard
-            title="Tension artérielle"
+            title={t("bloodPressure")}
             value={latest ? `${latest.systolic ?? "—"}/${latest.diastolic ?? "—"}` : "—"}
             unit="mmHg"
           />
           <StatCard
-            title="Fréquence cardiaque"
+            title={t("heartRate")}
             value={latest?.heart_rate != null ? String(latest.heart_rate) : "—"}
             unit="bpm"
           />
           <StatCard
-            title="Poids"
+            title={t("weight")}
             value={latest?.weight != null ? String(latest.weight) : "—"}
             unit="kg"
           />
           <StatCard
-            title="Saturation O₂"
+            title={t("oxygenSat")}
             value={latest?.sp02 != null ? String(latest.sp02) : "—"}
             unit="%"
           />
         </div>
 
         <div className="bg-white rounded-2xl border p-5 mb-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-4">Évolution de la tension artérielle</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-4">{t("bloodPressureEvolution")}</h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={tensionData.length ? tensionData : [{ date: "—", systolique: 0, diastolique: 0 }]}>
@@ -158,7 +160,7 @@ export default function MedicalDashboard() {
 
         <div className="grid grid-cols-2 gap-5">
           <div className="bg-white rounded-2xl border p-5">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Fréquence cardiaque</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-4">{t("heartRateEvolution")}</h3>
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={fcData.length ? fcData : [{ date: "—", frequence: 0 }]}>
@@ -171,7 +173,7 @@ export default function MedicalDashboard() {
             </div>
           </div>
           <div className="bg-white rounded-2xl border p-5">
-            <h3 className="text-sm font-medium text-gray-700 mb-4">Évolution du poids</h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-4">{t("weightEvolution")}</h3>
             <div className="h-[220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={poidsData.length ? poidsData : [{ date: "—", poids: 0 }]}>

@@ -8,10 +8,14 @@ import {
   AlertTriangle,
   FileText,
   Heart,
+  Search,
+  X,
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { apiFetch } from "@/lib/api/client";
+import { useI18n } from "@/lib/i18n/client";
 
 type DashboardSummary = {
   patientsTotal: number;
@@ -46,7 +50,9 @@ type DashboardSummary = {
 };
 
 export default function DashboardPage() {
+  const { t } = useI18n();
   const [summary, setSummary] = React.useState<DashboardSummary | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
   React.useEffect(() => {
     async function load() {
@@ -76,20 +82,46 @@ export default function DashboardPage() {
   const appointments = summary?.appointmentsToday ?? [];
   const alerts = summary?.criticalAlerts ?? [];
 
+  const filteredAppointments = searchQuery
+    ? appointments.filter((a) =>
+        `${a.last_name} ${a.first_name}`.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : appointments;
+
+  const filteredAlerts = searchQuery
+    ? alerts.filter((a) =>
+        `${a.last_name} ${a.first_name}`.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : alerts;
+
   return (
     <div className="min-h-screen bg-[#f7f7f7] p-6">
+      <div className="relative mb-4 max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder={t("searchPatient")}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 pr-8"
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+            <X className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
+      </div>
       {/* STATS */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card className="rounded-2xl border-none shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Total Patients</p>
+              <p className="text-sm text-gray-500">{t("totalPatients")}</p>
 
               <h2 className="text-3xl font-bold mt-1">
                 {summary?.patientsTotal ?? 0}
               </h2>
 
-              <p className="text-xs text-green-600 mt-1">+8 ce mois</p>
+              <p className="text-xs text-green-600 mt-1">+8 {t("thisMonth")}</p>
             </div>
 
             <div className="bg-indigo-100 p-3 rounded-xl">
@@ -101,13 +133,13 @@ export default function DashboardPage() {
         <Card className="rounded-2xl border-none shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">RDV aujourd'hui</p>
+              <p className="text-sm text-gray-500">{t("appointmentsTodayShort")}</p>
 
               <h2 className="text-3xl font-bold mt-1">
                 {summary?.appointmentsCountToday ?? 0}
               </h2>
 
-              <p className="text-xs text-gray-500">3 restants</p>
+              <p className="text-xs text-gray-500">3 {t("remaining")}</p>
             </div>
 
             <div className="bg-green-100 p-3 rounded-xl">
@@ -119,13 +151,13 @@ export default function DashboardPage() {
         <Card className="rounded-2xl border-none shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">Cas urgents</p>
+              <p className="text-sm text-gray-500">{t("urgentCases")}</p>
 
               <h2 className="text-3xl font-bold mt-1 text-red-600">
                 {summary?.appointmentsUrgent ?? 0}
               </h2>
 
-              <p className="text-xs text-red-500">À traiter</p>
+              <p className="text-xs text-red-500">{t("toTreat")}</p>
             </div>
 
             <div className="bg-red-100 p-3 rounded-xl">
@@ -137,16 +169,14 @@ export default function DashboardPage() {
         <Card className="rounded-2xl border-none shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-500">
-                Consultations / mois
-              </p>
+              <p className="text-sm text-gray-500">{t("consultationsPerMonth")}</p>
 
               <h2 className="text-3xl font-bold mt-1">
                 {summary?.appointmentsCompleted ?? 0}
               </h2>
 
               <p className="text-xs text-indigo-600">
-                +12% vs mois dernier
+                +12% {t("vsLastMonth")}
               </p>
             </div>
 
@@ -165,20 +195,20 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-semibold text-lg">
-                  Rendez-vous du jour
+                  {t("todaysAppointments")}
                 </h2>
 
                 <Link
                   href="/dashboard/agenda"
                   className="text-sm text-indigo-600 font-medium"
                 >
-                  Voir tous →
+                  {t("seeAll")} →
                 </Link>
               </div>
 
               <div className="space-y-4">
-                {appointments.length > 0 ? (
-                  appointments.map((a) => (
+                {filteredAppointments.length > 0 ? (
+                  filteredAppointments.map((a) => (
                     <div
                       key={a.id}
                       className="flex items-center justify-between border-b pb-4"
@@ -226,7 +256,7 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <div className="text-center py-10 text-gray-500">
-                    Aucun rendez-vous prévu
+                    {t("noAppointments")}
                   </div>
                 )}
               </div>
@@ -240,12 +270,12 @@ export default function DashboardPage() {
           <Card className="rounded-2xl border-none overflow-hidden shadow-sm">
             <div className="bg-red-600 px-5 py-4 text-white font-semibold flex items-center gap-2">
               <Heart className="h-5 w-5" />
-              Alertes patients
+              {t("patientAlerts")}
             </div>
 
             <CardContent className="p-0">
-              {alerts.length > 0 ? (
-                alerts.map((a) => (
+              {filteredAlerts.length > 0 ? (
+                filteredAlerts.map((a) => (
                   <div
                     key={a.patient_id}
                     className="px-5 py-4 border-b bg-red-50"
@@ -265,7 +295,7 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <div className="p-5 text-sm text-gray-500">
-                  Aucune alerte critique
+                  {t("noAlerts")}
                 </div>
               )}
             </CardContent>
@@ -274,14 +304,14 @@ export default function DashboardPage() {
           {/* WEEK STATS */}
           <Card className="rounded-2xl border-none shadow-sm">
             <CardContent className="p-5">
-              <h2 className="font-semibold mb-4">
-                Cette semaine
-              </h2>
+                <h2 className="font-semibold mb-4">
+                  {t("thisWeek")}
+                </h2>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">
-                    RDV planifiés
+                    {t("scheduledAppointments")}
                   </span>
 
                   <span className="font-semibold">
@@ -291,7 +321,7 @@ export default function DashboardPage() {
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">
-                    Nouveaux patients
+                    {t("newPatientsThisMonth")}
                   </span>
 
                   <span className="font-semibold">
@@ -301,7 +331,7 @@ export default function DashboardPage() {
 
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">
-                    Consultations terminées
+                    {t("completedConsultations")}
                   </span>
 
                   <span className="font-semibold text-green-600">

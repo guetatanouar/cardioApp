@@ -8,13 +8,12 @@ import {
   CalendarDays,
   ChevronDown,
   FileText,
-  Heart,
   HeartPulse,
   LayoutDashboard,
   LogOut,
   MessageSquare,
   Settings,
-  Search,
+  UserCircle,
   Users
 } from "lucide-react";
 
@@ -25,7 +24,6 @@ import { getDir } from "@/lib/i18n/messages";
 import { apiFetch } from "@/lib/api/client";
 import { addNotificationListener } from "@/lib/notifications";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -39,6 +37,7 @@ import {
 type HeaderNotification = { id: string; title: string; detail: string };
 
 const allStaffNav = [
+  { href: "/dashboard/profil", icon: UserCircle, labelKey: "profile", permKey: undefined },
   { href: "/dashboard", icon: LayoutDashboard, labelKey: "Tableau de bord", permKey: undefined },
   { href: "/dashboard/patients", icon: Users, labelKey: "patients", permKey: "can_view_patients" },
   { href: "/dashboard/agenda", icon: CalendarDays, labelKey: "agenda", permKey: "can_view_appointments" },
@@ -146,7 +145,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [notifications, setNotifications] = React.useState<HeaderNotification[]>([]);
   const [chatUnreadCount, setChatUnreadCount] = React.useState(0);
-  const [search, setSearch] = React.useState("");
 
   async function refreshHeaderData() {
     if (!session || isAuthRoute) return;
@@ -302,76 +300,87 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <div className={cn("flex", isRTL && "flex-row-reverse")}>
         <aside className={cn(
-          "fixed inset-y-0 z-50 w-60 bg-gradient-to-b from-blue-600 to-blue-800 border-blue-700",
-          isRTL ? "right-0 border-l" : "left-0 border-r"
+          "fixed inset-y-0 z-50 w-[250px] bg-[#2f3b8f] flex flex-col justify-between",
+          isRTL ? "right-0 border-l border-white/10" : "left-0 border-r border-white/10"
         )}>
-          <div className={cn("flex h-16 items-center gap-2 border-b border-blue-700/50 px-4", isRTL && "flex-row-reverse")}>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm">
-              <Heart className="h-5 w-5 text-red-500 fill-red-500" />
+          <div>
+            <div className="p-5 border-b border-white/10">
+              <div className="bg-white rounded-lg p-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold">
+                  C
+                </div>
+                <div>
+                  <h2 className="text-[#2f3b8f] font-bold text-sm">CareMManager</h2>
+                  <p className="text-gray-500 text-xs">Medical Dashboard</p>
+                </div>
+              </div>
             </div>
-            <div className={cn("leading-tight", isRTL && "text-right")}>
-              <div className="text-sm font-semibold text-white">{t("appName")}</div>
-              <div className="text-xs text-white/70">{t("cabinetCardio")}</div>
-            </div>
-          </div>
-          <nav className="flex-1 space-y-1 p-3">
-            {navItems.map((item) => {
-              const active = pathname === item.href || pathname?.startsWith(item.href + "/");
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
-                    isRTL ? "flex-row-reverse" : "",
-                    active ? "bg-white/20 text-white font-medium" : "text-white/80 hover:bg-white/10 hover:text-white"
-                  )}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span>{t(item.labelKey as any)}</span>
-                  {item.href.includes("chat") && chatUnreadCount > 0 ? (
-                    <span className="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-medium text-white">
-                      {chatUnreadCount}
-                    </span>
-                  ) : null}
-                </Link>
-              );
-            })}
-          </nav>
 
-          <div className="border-t border-blue-700/50 p-3 space-y-1">
+            <nav className="mt-6 px-4 space-y-2">
+              {navItems.map((item) => {
+                const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                const Icon = item.icon;
+                const isDashboard = item.href === "/dashboard";
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all",
+                      isRTL ? "flex-row-reverse" : "",
+                      isDashboard
+                        ? "text-white/70 hover:bg-white/10"
+                        : active
+                          ? "bg-white text-[#2f3b8f] font-semibold"
+                          : "text-white hover:bg-white/10"
+                    )}
+                  >
+                    <Icon className={cn("h-5 w-5", isDashboard ? "text-white/50" : active ? "text-[#2f3b8f]" : "text-white/70")} />
+                    <span>{t(item.labelKey as any)}</span>
+                    {item.href.includes("chat") && chatUnreadCount > 0 ? (
+                      <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-medium text-white">
+                        {chatUnreadCount}
+                      </span>
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          <div className="p-4 border-t border-white/10 space-y-2">
             {session?.role !== "patient" && (
-              <Button
-                variant="ghost"
+              <button
                 className={cn(
-                  "w-full text-white/80 hover:bg-white/10 hover:text-white",
-                  isRTL ? "justify-end flex-row-reverse" : "justify-start"
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all",
+                  isRTL ? "flex-row-reverse" : "",
+                  pathname === "/dashboard/parametres" || pathname?.startsWith("/dashboard/parametres/")
+                    ? "bg-white text-[#2f3b8f] font-semibold"
+                    : "text-white hover:bg-white/10"
                 )}
                 onClick={() => router.push("/dashboard/parametres")}
               >
-                <Settings className={cn("h-4 w-4", isRTL ? "ml-2" : "mr-2")} />
-                {t("settings")}
-              </Button>
+                <Settings className="h-5 w-5 text-white/70" />
+                <span>{t("settings")}</span>
+              </button>
             )}
-            <Button
-              variant="ghost"
+            <button
               className={cn(
-                "w-full text-white/80 hover:bg-white/10 hover:text-white",
-                isRTL ? "justify-end flex-row-reverse" : "justify-start"
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all text-white hover:bg-white/10",
+                isRTL ? "flex-row-reverse" : ""
               )}
               onClick={() => {
                 clearSession();
                 router.replace("/login");
               }}
             >
-              <LogOut className={cn("h-4 w-4", isRTL ? "ml-2" : "mr-2")} />
-              {t("logout")}
-            </Button>
+              <LogOut className="h-5 w-5 text-white/70" />
+              <span>{t("logout")}</span>
+            </button>
           </div>
         </aside>
 
-        <div className={cn("flex flex-1 flex-col", isRTL ? "pr-60" : "pl-60")}>
+        <div className={cn("flex flex-1 flex-col", isRTL ? "pr-[250px]" : "pl-[250px]")}>
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/50 bg-background/95 px-6 backdrop-blur">
             {/* Left side: Page Title and Subtitle */}
             <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
@@ -384,28 +393,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Search Box on the Right */}
-              {!isPatientRoute && !isAuthRoute && (
-                <form
-                  className="w-48 sm:w-64 md:w-80"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const q = search.trim();
-                    if (!q) return;
-                    router.push(`/dashboard/patients?q=${encodeURIComponent(q)}`);
-                  }}
-                >
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Rechercher un patient..."
-                      className="pl-9 h-9 w-full bg-slate-50 border-slate-200 text-sm focus-visible:bg-background rounded-full transition-all focus:border-blue-400"
-                    />
-                  </div>
-                </form>
-              )}
               {/* Language Selector (Pill with Flag & Chevron) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -449,7 +436,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
-
               {/* Notification Bell with red badge */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
