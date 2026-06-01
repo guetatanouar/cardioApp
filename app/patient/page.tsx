@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Line, LineChart, ResponsiveContainer, Tooltip } from "recharts";
-import { Heart, Activity, Scale, Wind, Plus, FileText, MessageSquare } from "lucide-react";
+import { Heart, Activity, Scale, Wind, Plus, FileText, MessageSquare, User } from "lucide-react";
 import Link from "next/link";
 
 import { apiFetch } from "@/lib/api/client";
@@ -67,113 +67,113 @@ export default function PatientDashboard() {
   const latest = items[0];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold">Bienvenue</h1>
-        <p className="text-sm text-muted-foreground">Voici votre espace santé</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border p-6 space-y-6">
 
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="bg-gradient-to-br from-red-500 to-pink-600 text-white border-0">
-          <CardContent className="p-4">
-            <Heart className="h-6 w-6 mb-2" />
-            <div className="text-2xl font-bold">{latest?.heart_rate ?? "-"}</div>
-            <div className="text-xs text-white/80">Battements/min</div>
-          </CardContent>
-        </Card>
+        <div>
+          <h1 className="text-xl font-bold">Bienvenue</h1>
+          <p className="text-sm text-gray-500">Voici votre espace santé</p>
+        </div>
 
-        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0">
-          <CardContent className="p-4">
-            <Activity className="h-6 w-6 mb-2" />
-            <div className="text-2xl font-bold">{latest ? `${latest.systolic_bp ?? "-"}/${latest.diastolic_bp ?? "-"}` : "-"}</div>
-            <div className="text-xs text-white/80">Pression artérielle</div>
-          </CardContent>
-        </Card>
+        <div className="flex gap-2 overflow-x-auto pb-2">
+          <Link href="/patient/profile" className="flex items-center gap-2 rounded-full bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-md whitespace-nowrap">
+            <User className="h-4 w-4" />
+            Mon profil
+          </Link>
+          <Link href="/patient/documents" className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-md whitespace-nowrap">
+            <FileText className="h-4 w-4" />
+            Mes ordonnances
+          </Link>
+          <Link href="/patient/chat" className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-md whitespace-nowrap">
+            <MessageSquare className="h-4 w-4" />
+            Contacter mon médecin
+          </Link>
+        </div>
 
-        <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-0">
-          <CardContent className="p-4">
-            <Wind className="h-6 w-6 mb-2" />
-            <div className="text-2xl font-bold">{latest?.spo2 ?? "-"}%</div>
-            <div className="text-xs text-white/80">Saturation O2</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-amber-500 to-orange-600 text-white border-0">
-          <CardContent className="p-4">
-            <Scale className="h-6 w-6 mb-2" />
-            <div className="text-2xl font-bold">{latest?.weight_kg ?? "-"} kg</div>
-            <div className="text-xs text-white/80">Poids</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Enregistrer mes constantes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Systolique</label>
-              <Input placeholder="120" value={form.systolicBp} onChange={(e) => setForm((s) => ({ ...s, systolicBp: e.target.value }))} className="h-10" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Diastolique</label>
-              <Input placeholder="80" value={form.diastolicBp} onChange={(e) => setForm((s) => ({ ...s, diastolicBp: e.target.value }))} className="h-10" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Fréquence card.</label>
-              <Input placeholder="72" value={form.heartRate} onChange={(e) => setForm((s) => ({ ...s, heartRate: e.target.value }))} className="h-10" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">SpO2 (%)</label>
-              <Input placeholder="98" value={form.spo2} onChange={(e) => setForm((s) => ({ ...s, spo2: e.target.value }))} className="h-10" />
-            </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-red-50 rounded-xl p-4 text-center">
+            <Heart className="h-6 w-6 text-red-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-red-700">{latest?.heart_rate ?? "-"}</div>
+            <div className="text-xs text-red-500/80">Battements/min</div>
           </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Poids (kg)</label>
-            <Input placeholder="70" value={form.weightKg} onChange={(e) => setForm((s) => ({ ...s, weightKg: e.target.value }))} className="h-10" />
+
+          <div className="bg-blue-50 rounded-xl p-4 text-center">
+            <Activity className="h-6 w-6 text-blue-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-blue-700">{latest ? `${latest.systolic_bp ?? "-"}/${latest.diastolic_bp ?? "-"}` : "-"}</div>
+            <div className="text-xs text-blue-500/80">Pression artérielle</div>
           </div>
-          <Input placeholder="Note optionnelle" value={form.note} onChange={(e) => setForm((s) => ({ ...s, note: e.target.value }))} />
-          <Button onClick={submit} className="w-full bg-indigo-600 hover:bg-indigo-700">
-            <Plus className="h-4 w-4 mr-2" />
-            Enregistrer
-          </Button>
-        </CardContent>
-      </Card>
 
-      <div className="flex gap-2 overflow-x-auto pb-2">
-        <Link href="/patient/documents" className="flex items-center gap-2 rounded-full bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-md whitespace-nowrap">
-          <FileText className="h-4 w-4" />
-          Mes ordonnances
-        </Link>
-        <Link href="/patient/chat" className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-md whitespace-nowrap">
-          <MessageSquare className="h-4 w-4" />
-          Contacter mon médecin
-        </Link>
-      </div>
+          <div className="bg-emerald-50 rounded-xl p-4 text-center">
+            <Wind className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-emerald-700">{latest?.spo2 ?? "-"}%</div>
+            <div className="text-xs text-emerald-500/80">Saturation O2</div>
+          </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Évolution récente</CardTitle>
-        </CardHeader>
-        <CardContent style={{ height: 240 }}>
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <Tooltip />
-                <Line type="monotone" dataKey="systolic" stroke="#ef4444" dot={false} name="Sys" />
-                <Line type="monotone" dataKey="diastolic" stroke="#f97316" dot={false} name="Dia" />
-                <Line type="monotone" dataKey="hr" stroke="#ef4444" strokeDasharray="5 5" dot={false} name="FC" />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Enregistrez vos constantes pour voir l'évolution
+          <div className="bg-amber-50 rounded-xl p-4 text-center">
+            <Scale className="h-6 w-6 text-amber-500 mx-auto mb-1" />
+            <div className="text-2xl font-bold text-amber-700">{latest?.weight_kg ?? "-"} kg</div>
+            <div className="text-xs text-amber-500/80">Poids</div>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Enregistrer mes constantes</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Systolique</label>
+                <Input placeholder="120" value={form.systolicBp} onChange={(e) => setForm((s) => ({ ...s, systolicBp: e.target.value }))} className="h-10" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Diastolique</label>
+                <Input placeholder="80" value={form.diastolicBp} onChange={(e) => setForm((s) => ({ ...s, diastolicBp: e.target.value }))} className="h-10" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">Fréquence card.</label>
+                <Input placeholder="72" value={form.heartRate} onChange={(e) => setForm((s) => ({ ...s, heartRate: e.target.value }))} className="h-10" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-gray-500">SpO2 (%)</label>
+                <Input placeholder="98" value={form.spo2} onChange={(e) => setForm((s) => ({ ...s, spo2: e.target.value }))} className="h-10" />
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="space-y-1">
+              <label className="text-xs text-gray-500">Poids (kg)</label>
+              <Input placeholder="70" value={form.weightKg} onChange={(e) => setForm((s) => ({ ...s, weightKg: e.target.value }))} className="h-10" />
+            </div>
+            <Input placeholder="Note optionnelle" value={form.note} onChange={(e) => setForm((s) => ({ ...s, note: e.target.value }))} />
+            <Button onClick={submit} className="w-full bg-indigo-600 hover:bg-indigo-700">
+              <Plus className="h-4 w-4 mr-2" />
+              Enregistrer
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Évolution récente</CardTitle>
+          </CardHeader>
+          <CardContent style={{ height: 240 }}>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData}>
+                  <Tooltip />
+                  <Line type="monotone" dataKey="systolic" stroke="#ef4444" dot={false} name="Sys" />
+                  <Line type="monotone" dataKey="diastolic" stroke="#f97316" dot={false} name="Dia" />
+                  <Line type="monotone" dataKey="hr" stroke="#ef4444" strokeDasharray="5 5" dot={false} name="FC" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-gray-500">
+                Enregistrez vos constantes pour voir l'évolution
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+      </div>
     </div>
   );
 }

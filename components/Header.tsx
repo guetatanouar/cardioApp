@@ -29,6 +29,8 @@ import {
 
 type HeaderNotification = { id: string; title: string; detail: string };
 
+type ChatMessage = { id: string; text?: string; content?: string; is_read: boolean; sender_role?: string; from_role?: string; from_name?: string };
+
 interface HeaderProps {
   isPatientPortal?: boolean;
 }
@@ -52,13 +54,13 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
         const chat = await apiFetch<any[] | { items: Array<{ id: string; sender_role: string; content: string; is_read: boolean }> }>(
           `/api/chat?channel=${encodeURIComponent(channel)}`
         );
-        const chatItems = Array.isArray(chat) ? chat : (chat as any).items ?? [];
+        const chatItems: ChatMessage[] = Array.isArray(chat) ? chat : (chat as any).items ?? [];
         setNotifications(
           chatItems
-            .filter((m) => m.sender_role !== "patient" && !m.is_read)
+            .filter((m: ChatMessage) => m.sender_role !== "patient" && !m.is_read)
             .slice(-5)
             .reverse()
-            .map((m) => ({
+            .map((m: ChatMessage) => ({
               id: m.id,
               title: "Nouveau message",
               detail: m.text || m.content || ""
@@ -76,8 +78,8 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
         apiFetch<any[] | { items: Array<{ id: string; from_role: string; from_name: string; text: string; is_read: boolean }> }>("/api/chat?channel=staff")
       ]);
 
-      const chatItems = Array.isArray(staffChat) ? staffChat : (staffChat as any).items ?? [];
-      const unreadMessages = chatItems.filter((m) => m.from_role !== session.role && !m.is_read);
+      const chatItems: ChatMessage[] = Array.isArray(staffChat) ? staffChat : (staffChat as any).items ?? [];
+      const unreadMessages = chatItems.filter((m: ChatMessage) => m.from_role !== session.role && !m.is_read);
 
       const alertRows = (summary.criticalAlerts || []).slice(0, 3).map((x) => ({
         id: `alert-${x.patient_id}`,
@@ -85,7 +87,7 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
         detail: `${typeof x.spo2 === "number" ? `SpO2 ${x.spo2}%` : ""} ${typeof x.heart_rate === "number" ? `FC ${x.heart_rate} bpm` : ""}`.trim()
       }));
 
-      const messageRows = unreadMessages.slice(-3).reverse().map((m) => ({
+      const messageRows = unreadMessages.slice(-3).reverse().map((m: ChatMessage) => ({
         id: `msg-${m.id}`,
         title: `Message de ${m.from_name || m.from_role}`,
         detail: (m.text || m.content || "").substring(0, 50)

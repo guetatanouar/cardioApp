@@ -50,7 +50,7 @@ exports.authRouter.post('/patient-login', async (req, res) => {
         const patientResult = await (0, pool_js_1.query)('SELECT * FROM patients WHERE id = $1', [account.patient_id]);
         const patient = patientResult.rows[0];
         const token = jsonwebtoken_1.default.sign({ id: account.id, username: account.username, role: 'patient', patientId: patient.id, name: `${patient.first_name} ${patient.last_name}` }, process.env.JWT_SECRET, { expiresIn: '8h' });
-        res.json({ token, user: { id: account.id, username: account.username, role: 'patient', patientId: patient.id, name: `${patient.first_name} ${patient.last_name}` } });
+        res.json({ token, patientId: patient.id, user: { id: account.id, username: account.username, role: 'patient', patientId: patient.id, name: `${patient.first_name} ${patient.last_name}` } });
     }
     catch (err) {
         res.status(500).json({ message: 'Server error' });

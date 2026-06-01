@@ -56,7 +56,7 @@ authRouter.post('/patient-login', async (req, res) => {
             process.env.JWT_SECRET as string,
             { expiresIn: '8h' }
         );
-        res.json({ token, user: { id: account.id, username: account.username, role: 'patient', patientId: patient.id, name: `${patient.first_name} ${patient.last_name}` } });
+        res.json({ token, patientId: patient.id, user: { id: account.id, username: account.username, role: 'patient', patientId: patient.id, name: `${patient.first_name} ${patient.last_name}` } });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
     }

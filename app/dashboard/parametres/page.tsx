@@ -154,7 +154,7 @@ export default function SettingsPage() {
       setAddress(fresh.address || "");
       setRpps(fresh.rpps || "");
       setSpecialty(fresh.specialty || "");
-      dispatchNotification({ id: "profile-saved", title: "Profil mis à jour", type: "success" });
+      dispatchNotification({ id: "profile-saved", title: "Profil mis à jour", detail: "", type: "success" });
     } catch (error: any) {
       dispatchNotification({ id: "profile-error", title: "Erreur", detail: error?.message, type: "error" });
     }
@@ -164,11 +164,11 @@ export default function SettingsPage() {
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      dispatchNotification({ id: "pwd-match", title: "Les mots de passe ne correspondent pas", type: "error" });
+      dispatchNotification({ id: "pwd-match", title: "Les mots de passe ne correspondent pas", detail: "", type: "error" });
       return;
     }
     if (newPassword.length < 6) {
-      dispatchNotification({ id: "pwd-length", title: "Minimum 6 caractères", type: "error" });
+      dispatchNotification({ id: "pwd-length", title: "Minimum 6 caractères", detail: "", type: "error" });
       return;
     }
     setChangingPwd(true);
@@ -178,7 +178,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-      dispatchNotification({ id: "pwd-saved", title: "Mot de passe modifié", type: "success" });
+      dispatchNotification({ id: "pwd-saved", title: "Mot de passe modifié", detail: "", type: "success" });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");

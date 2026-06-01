@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api/client";
-import { setSession } from "@/lib/auth/storage";
+import { setSession, SecretairePermissions } from "@/lib/auth/storage";
 import { useI18n } from "@/lib/i18n/client";
 import { config } from "@/lib/config";
 
@@ -41,7 +41,7 @@ export default function LoginPage() {
     try {
       const res = await apiFetch<{
         token: string;
-        user: { id: string; role: "admin" | "secretaire"; fullName: string; email: string };
+        user: { id: string; role: "admin" | "secretaire"; fullName: string; email: string; permissions?: SecretairePermissions };
       }>(
         "/api/auth/login",
         {

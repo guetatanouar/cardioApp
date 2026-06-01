@@ -29,8 +29,24 @@ patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write
     }
 });
 
-patientsRouter.get('/:id', authenticateToken, requirePermission('patients'), async (req, res) => {
+patientsRouter.get('/:id', authenticateToken, async (req, res) => {
     try {
+        const user = (req as any).user;
+        // Patients can only access their own record
+        if (user.role === 'patient' && user.patientId !== req.params.id) {
+            return res.status(403).json({ error: 'Accès refusé' });
+        }
+        // Staff need the patients permission
+        if (user.role !== 'patient') {
+            const permResult = await query(
+                `SELECT can_view_patients FROM secretaire_permissions WHERE user_id = $1`,
+                [user.id]
+            );
+            const allowed = permResult.rows[0]?.can_view_patients;
+            if (user.role === 'secretaire' && !allowed) {
+                return res.status(403).json({ error: 'Permission denied' });
+            }
+        }
         const patientResult = await query('SELECT * FROM patients WHERE id = $1', [req.params.id]);
         if (patientResult.rows.length === 0) return res.status(404).json({ message: 'Patient not found' });
         
