@@ -6,6 +6,7 @@ import { dispatchNotification } from "@/lib/notifications";
 import { getSession } from "@/lib/auth/storage";
 import { useI18n, locales } from "@/lib/i18n/client";
 import { useTheme } from "next-themes";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 type Tab = "profil" | "securite" | "notifications" | "apparence" | "secretaire";
 
@@ -284,11 +285,10 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-2">Téléphone cabinet</label>
-                <input
-                  type="text"
+                <PhoneInput
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-gray-200 px-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  onChange={setPhone}
+                  className="w-full"
                 />
               </div>
               <div>

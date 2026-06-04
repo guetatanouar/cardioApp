@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { useI18n } from "@/lib/i18n/client";
+import { formatNumber } from "libphonenumber-js";
 
 type Profile = {
   fullName: string;
@@ -71,7 +72,7 @@ export default function ProfilPage() {
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">{t("cabinetPhone")}</label>
-            <p className="text-base font-medium">{profile.phone || "—"}</p>
+            <p className="text-base font-medium">{profile.phone ? formatNumber(profile.phone, "INTERNATIONAL") : "—"}</p>
           </div>
           <div>
             <label className="text-sm font-medium text-muted-foreground">{t("cabinetAddress")}</label>

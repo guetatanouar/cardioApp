@@ -16,10 +16,10 @@ exports.patientsRouter.get('/', auth_js_1.authenticateToken, (0, permissions_js_
     }
 });
 exports.patientsRouter.post('/', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('patients', 'write'), async (req, res) => {
-    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status } = req.body;
+    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, medical_history } = req.body;
     const id = `P${Date.now().toString(36)}${Math.random().toString(36).substr(2, 4)}`;
     try {
-        await (0, pool_js_1.query)('INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, pathology, severity_status || 'stable']);
+        await (0, pool_js_1.query)('INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, medical_history) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, pathology, medical_history]);
         res.status(201).json({ id, message: 'Patient created' });
     }
     catch (err) {

@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS consultations (
     patient_id VARCHAR(20) NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
     date VARCHAR(20) NOT NULL,
     motif TEXT NOT NULL,
+    ecole VARCHAR(200),
     examen TEXT,
     diagnostic TEXT,
     traitement TEXT,
@@ -145,7 +146,9 @@ async function migrate() {
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS specialty VARCHAR(150)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(100)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(100)",
-            "ALTER TABLE patient_accounts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"
+            "ALTER TABLE patient_accounts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE patients ADD COLUMN IF NOT EXISTS country VARCHAR(100)",
+            "ALTER TABLE consultations ADD COLUMN IF NOT EXISTS ecole VARCHAR(200)"
         ];
         for (const col of alterCols) {
             try { await query(col); } catch { /* column may already exist */ }

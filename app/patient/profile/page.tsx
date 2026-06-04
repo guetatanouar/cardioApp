@@ -62,6 +62,7 @@ export default function PatientProfile() {
     ? new Date(p.date_of_birth).toLocaleDateString("fr-FR")
     : "14/03/1965";
   const address = p.address || "12 Rue des Lilas, Lyon";
+  const country = p.country || "France";
   const emergencyContact = p.emergency_contact || "Marie Dupont - 0661234568";
   const allergies: string[] = Array.isArray(p.allergies) && p.allergies.length > 0
     ? p.allergies
@@ -194,6 +195,16 @@ export default function PatientProfile() {
 
               <p className="mt-2 font-medium">
                 {address}
+              </p>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-4">
+              <p className="text-gray-500 text-sm">
+                Pays
+              </p>
+
+              <p className="mt-2 font-medium">
+                {country}
               </p>
             </div>
           </div>

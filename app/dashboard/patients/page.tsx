@@ -15,6 +15,7 @@ import { apiFetch } from "@/lib/api/client";
 import { dispatchNotification } from "@/lib/notifications";
 import { usePagePermission } from "@/lib/auth/usePermissions";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -75,28 +76,45 @@ export default function PatientsPage() {
   const [resetPassword, setResetPassword] = React.useState("");
   const [accountSaving, setAccountSaving] = React.useState(false);
 
-  const [newConsultation, setNewConsultation] = React.useState({ date: new Date().toISOString().split('T')[0], reason: "", exam: "", diagnosis: "", treatment: "", note: "" });
+  const [editMode, setEditMode] = React.useState(false);
+  const [editForm, setEditForm] = React.useState({
+    phone: "", email: "", address: "", country: "", emergency_contact: "", pathology: "", allergies: "", medical_history: ""
+  });
+  const [editSaving, setEditSaving] = React.useState(false);
+  const [editError, setEditError] = React.useState<string | null>(null);
+
+  const [newConsultation, setNewConsultation] = React.useState({ date: new Date().toISOString().split('T')[0], reason: "", ecole: "", exam: "", diagnosis: "", treatment: "", note: "" });
   const [consultationSaving, setConsultationSaving] = React.useState(false);
   const [consultationError, setConsultationError] = React.useState<string | null>(null);
-
-  const [docFile, setDocFile] = React.useState<File | null>(null);
-  const [docCategory, setDocCategory] = React.useState("Analyse");
-  const [docUploading, setDocUploading] = React.useState(false);
 
   const [showCreate, setShowCreate] = React.useState(false);
   const [creating, setCreating] = React.useState(false);
   const [createError, setCreateError] = React.useState<string | null>(null);
+  const [step, setStep] = React.useState(1);
   const [createForm, setCreateForm] = React.useState({
     firstName: "",
     lastName: "",
     dateOfBirth: "",
+    gender: "M" as "M" | "F",
     bloodType: "",
     phone: "",
     email: "",
     address: "",
+    country: "",
     pathology: "",
     severityStatus: "stable" as "critique" | "surveillance" | "stable"
   });
+  const [newPatientVitals, setNewPatientVitals] = React.useState({
+    systolic: "",
+    diastolic: "",
+    heartRate: "",
+    sp02: "",
+    weight: ""
+  });
+  const [newPatientDoc, setNewPatientDoc] = React.useState<File | null>(null);
+  const [newPatientDocCategory, setNewPatientDocCategory] = React.useState("Analyse");
+  const [newPatientMeds, setNewPatientMeds] = React.useState<{ name: string; dosage: string; frequency: string; duration: string }[]>([]);
+  const [newPatientAccount, setNewPatientAccount] = React.useState({ username: "", password: "" });
 
   async function load(customQ = q, customPage = page) {
     setLoading(true);
@@ -155,8 +173,8 @@ export default function PatientsPage() {
     setChatItems([]);
     setChatText("");
     setChatUnread(0);
-    setNewConsultation({ date: new Date().toISOString().split('T')[0], reason: "", exam: "", diagnosis: "", treatment: "", note: "" });
-    setDocFile(null);
+    setEditMode(false);
+    setNewConsultation({ date: new Date().toISOString().split('T')[0], reason: "", ecole: "", exam: "", diagnosis: "", treatment: "", note: "" });
     setResetPassword("");
     loadDetail(selectedId).catch(() => undefined);
     loadAccount(selectedId).catch(() => undefined);
@@ -266,6 +284,19 @@ export default function PatientsPage() {
 
   async function createPatient(e: React.FormEvent) {
     e.preventDefault();
+    if (step === 1) {
+      const form = e.target as HTMLFormElement;
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+      setStep(2);
+      return;
+    }
+    if (step === 2) {
+      setStep(3);
+      return;
+    }
     setCreateError(null);
     setCreating(true);
     try {
@@ -273,19 +304,73 @@ export default function PatientsPage() {
         first_name: createForm.firstName,
         last_name: createForm.lastName,
         date_of_birth: createForm.dateOfBirth,
-        gender: "M" as const,
+        gender: createForm.gender,
         blood_type: createForm.bloodType || undefined,
         phone: createForm.phone || undefined,
         email: createForm.email || undefined,
         address: createForm.address || undefined,
+        country: createForm.country || undefined,
         pathology: createForm.pathology || undefined,
         severity_status: createForm.severityStatus
       };
 
-      await apiFetch("/api/patients", {
+      const res = await apiFetch<{ id: string }>("/api/patients", {
         method: "POST",
         body: JSON.stringify(payload)
       });
+      const patientId = (res as any).id || (res as any).patientId;
+
+      if (newPatientVitals.systolic || newPatientVitals.diastolic || newPatientVitals.heartRate || newPatientVitals.weight || newPatientVitals.sp02) {
+        await apiFetch(`/api/patients/${patientId}/vitals`, {
+          method: "POST",
+          body: JSON.stringify({
+            systolic: newPatientVitals.systolic ? Number(newPatientVitals.systolic) : undefined,
+            diastolic: newPatientVitals.diastolic ? Number(newPatientVitals.diastolic) : undefined,
+            heart_rate: newPatientVitals.heartRate ? Number(newPatientVitals.heartRate) : undefined,
+            weight: newPatientVitals.weight ? Number(newPatientVitals.weight) : undefined,
+            sp02: newPatientVitals.sp02 ? Number(newPatientVitals.sp02) : undefined
+          })
+        });
+      }
+
+      if (newPatientDoc) {
+        const formData = new FormData();
+        formData.append("file", newPatientDoc);
+        formData.append("category", newPatientDocCategory);
+        await apiFetch(`/api/patients/${patientId}/documents`, {
+          method: "POST",
+          body: formData
+        });
+      }
+
+      if (newPatientMeds.length > 0) {
+        const validMeds = newPatientMeds.filter((m) => m.name && m.dosage);
+        if (validMeds.length > 0) {
+          await apiFetch("/api/prescriptions", {
+            method: "POST",
+            body: JSON.stringify({
+              patientId,
+              items: validMeds.map((m) => ({
+                name: m.name,
+                dosage: m.dosage,
+                frequency: m.frequency || undefined,
+                duration: m.duration || undefined
+              }))
+            })
+          });
+        }
+      }
+
+      if (newPatientAccount.username && newPatientAccount.password) {
+        await apiFetch("/api/settings/patient-accounts", {
+          method: "POST",
+          body: JSON.stringify({
+            patientId,
+            username: newPatientAccount.username,
+            password: newPatientAccount.password
+          })
+        });
+      }
 
       dispatchNotification({
         id: `patient-created-${Date.now()}`,
@@ -295,23 +380,90 @@ export default function PatientsPage() {
       });
 
       setShowCreate(false);
+      setStep(1);
       setCreateForm({
         firstName: "",
         lastName: "",
         dateOfBirth: "",
+        gender: "M",
         bloodType: "",
         phone: "",
         email: "",
         address: "",
+        country: "",
         pathology: "",
         severityStatus: "stable"
       });
+      setNewPatientVitals({ systolic: "", diastolic: "", heartRate: "", sp02: "", weight: "" });
+      setNewPatientDoc(null);
+      setNewPatientDocCategory("Analyse");
+      setNewPatientMeds([]);
+      setNewPatientAccount({ username: "", password: "" });
       await load();
     } catch {
       setCreateError("Impossible de creer le patient");
     } finally {
       setCreating(false);
     }
+  }
+
+  function startEdit() {
+    if (!detail?.patient) return;
+    setEditForm({
+      phone: detail.patient.phone || "",
+      email: detail.patient.email || "",
+      address: detail.patient.address || "",
+      country: detail.patient.country || "",
+      emergency_contact: detail.patient.emergency_contact || "",
+      pathology: detail.patient.pathology || "",
+      allergies: Array.isArray(detail.patient.allergies) ? detail.patient.allergies.join(", ") : (detail.patient.allergies || ""),
+      medical_history: Array.isArray(detail.patient.medical_history) ? detail.patient.medical_history.join(", ") : (detail.patient.medical_history || "")
+    });
+    setEditError(null);
+    setEditMode(true);
+  }
+
+  async function saveEdit() {
+    if (!selectedId || !detail?.patient) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      await apiFetch(`/api/patients/${selectedId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          first_name: detail.patient.first_name,
+          last_name: detail.patient.last_name,
+          date_of_birth: detail.patient.date_of_birth,
+          gender: detail.patient.gender,
+          blood_type: detail.patient.blood_type,
+          phone: editForm.phone || undefined,
+          email: editForm.email || undefined,
+          address: editForm.address || undefined,
+          country: editForm.country || undefined,
+          emergency_contact: editForm.emergency_contact || undefined,
+          pathology: editForm.pathology || undefined,
+          allergies: editForm.allergies ? editForm.allergies.split(",").map((s) => s.trim()).filter(Boolean) : [],
+          medical_history: editForm.medical_history ? editForm.medical_history.split(",").map((s) => s.trim()).filter(Boolean) : []
+        })
+      });
+      setEditMode(false);
+      dispatchNotification({
+        id: `edit-${Date.now()}`,
+        title: "Patient modifié",
+        detail: "Informations mises à jour",
+        type: "success"
+      });
+      await loadDetail(selectedId);
+    } catch {
+      setEditError("Erreur lors de la modification");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  function cancelEdit() {
+    setEditMode(false);
+    setEditError(null);
   }
 
   function severityClass(status: PatientListItem["severity_status"]) {
@@ -377,84 +529,268 @@ export default function PatientsPage() {
             <option value="surveillance">Surveillance</option>
             <option value="stable">Stable</option>
           </select>
-          <Button variant="outline" onClick={() => { setPage(1); load(); }} disabled={loading}>Chercher</Button>
         </div>
 
         <div className="flex items-center gap-2 md:ml-auto">
           <Button variant="outline" onClick={exportCsv}>Exporter CSV</Button>
-          <Dialog open={showCreate} onOpenChange={setShowCreate}>
+          <Dialog open={showCreate} onOpenChange={(open) => { setShowCreate(open); if (!open) setStep(1); }}>
             <DialogTrigger asChild>
               <Button>Nouveau patient</Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl p-0" title="Nouveau patient">
               <div className="rounded-t-2xl bg-gradient-to-r from-indigo-600 to-blue-700 px-6 py-4 text-white">
-                <div className="text-sm opacity-90">1/2</div>
-                <div className="text-lg font-semibold">Nouveau patient</div>
+                <div className="text-sm opacity-90">{step}/3</div>
+                <div className="text-lg font-semibold">
+                  {step === 1 ? "Information personnelle" : step === 2 ? "Constantes & Documents" : "Acces & Medicaments"}
+                </div>
               </div>
               <div className="p-6">
                 <form className="space-y-3" onSubmit={createPatient}>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <Input
-                      placeholder="Prenom"
-                      value={createForm.firstName}
-                      onChange={(e) => setCreateForm((s) => ({ ...s, firstName: e.target.value }))}
-                      required
-                    />
-                    <Input
-                      placeholder="Nom"
-                      value={createForm.lastName}
-                      onChange={(e) => setCreateForm((s) => ({ ...s, lastName: e.target.value }))}
-                      required
-                    />
-                    <Input
-                      type="date"
-                      value={createForm.dateOfBirth}
-                      onChange={(e) => setCreateForm((s) => ({ ...s, dateOfBirth: e.target.value }))}
-                      required
-                    />
-                    <Input
-                      placeholder="Groupe sanguin"
-                      value={createForm.bloodType}
-                      onChange={(e) => setCreateForm((s) => ({ ...s, bloodType: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Telephone"
-                      value={createForm.phone}
-                      onChange={(e) => setCreateForm((s) => ({ ...s, phone: e.target.value }))}
-                    />
-                    <Input
-                      type="email"
-                      placeholder="Email"
-                      value={createForm.email}
-                      onChange={(e) => setCreateForm((s) => ({ ...s, email: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Pathologie"
-                      value={createForm.pathology}
-                      onChange={(e) => setCreateForm((s) => ({ ...s, pathology: e.target.value }))}
-                    />
-                    <select
-                      value={createForm.severityStatus}
-                      onChange={(e) => setCreateForm((s) => ({ ...s, severityStatus: e.target.value as "critique" | "surveillance" | "stable" }))}
-                      className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
-                    >
-                      <option value="stable">Stable</option>
-                      <option value="surveillance">Surveillance</option>
-                      <option value="critique">Critique</option>
-                    </select>
-                  </div>
+                  {step === 1 ? (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <Input
+                          placeholder="Prenom"
+                          value={createForm.firstName}
+                          onChange={(e) => setCreateForm((s) => ({ ...s, firstName: e.target.value }))}
+                          required
+                        />
+                        <Input
+                          placeholder="Nom"
+                          value={createForm.lastName}
+                          onChange={(e) => setCreateForm((s) => ({ ...s, lastName: e.target.value }))}
+                          required
+                        />
+                        <Input
+                          type="date"
+                          value={createForm.dateOfBirth}
+                          onChange={(e) => setCreateForm((s) => ({ ...s, dateOfBirth: e.target.value }))}
+                          required
+                        />
+                        <select
+                          value={createForm.gender}
+                          onChange={(e) => setCreateForm((s) => ({ ...s, gender: e.target.value as "M" | "F" }))}
+                          className="h-10 rounded-md border border-input bg-transparent px-3 text-sm"
+                        >
+                          <option value="M">Homme</option>
+                          <option value="F">Femme</option>
+                        </select>
+                        
+                        <PhoneInput
+                          country="FR"
+                          value={createForm.phone}
+                          onChange={(v) => setCreateForm((s) => ({ ...s, phone: v }))}
+                          className="w-full"
+                        />
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={createForm.email}
+                          onChange={(e) => setCreateForm((s) => ({ ...s, email: e.target.value }))}
+                        />
+                        <Input
+                          placeholder="Pathologie"
+                          value={createForm.pathology}
+                          onChange={(e) => setCreateForm((s) => ({ ...s, pathology: e.target.value }))}
+                        />
+                      </div>
 
-                  <Input
-                    placeholder="Adresse"
-                    value={createForm.address}
-                    onChange={(e) => setCreateForm((s) => ({ ...s, address: e.target.value }))}
-                  />
+                      <Input
+                        placeholder="Adresse"
+                        value={createForm.address}
+                        onChange={(e) => setCreateForm((s) => ({ ...s, address: e.target.value }))}
+                      />
+                    </>
+                  ) : step === 2 ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Groupe sanguin</label>
+                        <div className="flex flex-wrap gap-2">
+                          {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map((bg) => (
+                            <button
+                              key={bg}
+                              type="button"
+                              onClick={() => setCreateForm((s) => ({ ...s, bloodType: s.bloodType === bg ? "" : bg }))}
+                              className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
+                                createForm.bloodType === bg
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border bg-card text-card-foreground hover:bg-accent"
+                              }`}
+                            >
+                              {bg}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">Tension systolique</label>
+                          <Input
+                            type="number"
+                            placeholder="mm Hg"
+                            value={newPatientVitals.systolic}
+                            onChange={(e) => setNewPatientVitals((s) => ({ ...s, systolic: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">Tension diastolique</label>
+                          <Input
+                            type="number"
+                            placeholder="mm Hg"
+                            value={newPatientVitals.diastolic}
+                            onChange={(e) => setNewPatientVitals((s) => ({ ...s, diastolic: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">Frequence cardiaque</label>
+                          <Input
+                            type="number"
+                            placeholder="bpm"
+                            value={newPatientVitals.heartRate}
+                            onChange={(e) => setNewPatientVitals((s) => ({ ...s, heartRate: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">SpO2</label>
+                          <Input
+                            type="number"
+                            placeholder="%"
+                            value={newPatientVitals.sp02}
+                            onChange={(e) => setNewPatientVitals((s) => ({ ...s, sp02: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm text-muted-foreground mb-1 block">Poids</label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            placeholder="kg"
+                            value={newPatientVitals.weight}
+                            onChange={(e) => setNewPatientVitals((s) => ({ ...s, weight: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-sm text-muted-foreground mb-1 block">Document</label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="file"
+                            onChange={(e) => setNewPatientDoc(e.target.files?.[0] ?? null)}
+                            className="flex-1"
+                          />
+                          <select
+                            value={newPatientDocCategory}
+                            onChange={(e) => setNewPatientDocCategory(e.target.value)}
+                            className="h-10 rounded-md border border-input bg-transparent px-3 text-sm w-36"
+                          >
+                            <option value="Analyse">Analyse</option>
+                            <option value="Radio">Radio</option>
+                            <option value="Echographie">Echographie</option>
+                            <option value="Autre">Autre</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm text-muted-foreground mb-1 block">Acces patient (optionnel)</label>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <Input
+                            placeholder="Nom d'utilisateur"
+                            value={newPatientAccount.username}
+                            onChange={(e) => setNewPatientAccount((s) => ({ ...s, username: e.target.value }))}
+                          />
+                          <Input
+                            type="password"
+                            placeholder="Mot de passe"
+                            value={newPatientAccount.password}
+                            onChange={(e) => setNewPatientAccount((s) => ({ ...s, password: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-sm text-muted-foreground mb-1 block">Medicaments</label>
+                        <div className="space-y-2">
+                          {newPatientMeds.map((med, i) => (
+                            <div key={i} className="flex gap-2 items-start">
+                              <Input
+                                placeholder="Nom"
+                                value={med.name}
+                                onChange={(e) => {
+                                  const updated = [...newPatientMeds];
+                                  updated[i] = { ...updated[i], name: e.target.value };
+                                  setNewPatientMeds(updated);
+                                }}
+                                className="flex-1"
+                              />
+                              <Input
+                                placeholder="Dosage"
+                                value={med.dosage}
+                                onChange={(e) => {
+                                  const updated = [...newPatientMeds];
+                                  updated[i] = { ...updated[i], dosage: e.target.value };
+                                  setNewPatientMeds(updated);
+                                }}
+                                className="w-24"
+                              />
+                              <Input
+                                placeholder="Freq"
+                                value={med.frequency}
+                                onChange={(e) => {
+                                  const updated = [...newPatientMeds];
+                                  updated[i] = { ...updated[i], frequency: e.target.value };
+                                  setNewPatientMeds(updated);
+                                }}
+                                className="w-24"
+                              />
+                              <Input
+                                placeholder="Duree"
+                                value={med.duration}
+                                onChange={(e) => {
+                                  const updated = [...newPatientMeds];
+                                  updated[i] = { ...updated[i], duration: e.target.value };
+                                  setNewPatientMeds(updated);
+                                }}
+                                className="w-24"
+                              />
+                              {newPatientMeds.length > 1 && (
+                                <Button type="button" variant="ghost" size="sm" onClick={() => setNewPatientMeds(newPatientMeds.filter((_, idx) => idx !== i))}>
+                                  X
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                          <Button type="button" variant="outline" size="sm" onClick={() => setNewPatientMeds([...newPatientMeds, { name: "", dosage: "", frequency: "", duration: "" }])}>
+                            + Ajouter medicament
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {createError ? <div className="text-sm text-destructive">{createError}</div> : null}
 
                   <div className="flex justify-end gap-2">
-                    <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Annuler</Button>
-                    <Button type="submit" disabled={creating}>{creating ? "Creation..." : "Creer"}</Button>
+                    {step === 1 ? (
+                      <>
+                        <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Annuler</Button>
+                        <Button type="submit">Suivant</Button>
+                      </>
+                    ) : step === 2 ? (
+                      <>
+                        <Button type="button" variant="outline" onClick={() => setStep(1)}>Retour</Button>
+                        <Button type="submit">Suivant</Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button type="button" variant="outline" onClick={() => setStep(2)}>Retour</Button>
+                        <Button type="submit" disabled={creating}>{creating ? "Creation..." : "Creer"}</Button>
+                      </>
+                    )}
                   </div>
                 </form>
               </div>
@@ -518,9 +854,14 @@ export default function PatientsPage() {
         <DialogContent className="max-w-4xl p-0">
           <div className="rounded-t-2xl bg-gradient-to-r from-indigo-600 to-blue-700 px-6 py-4 text-white">
             <DialogHeader className="space-y-0">
-              <DialogTitle className="text-lg font-semibold">
-                {detail?.patient ? `${detail.patient.last_name} ${detail.patient.first_name}` : "Fiche patient"}
-              </DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-lg font-semibold">
+                  {detail?.patient ? `${detail.patient.last_name} ${detail.patient.first_name}` : "Fiche patient"}
+                </DialogTitle>
+                {detail?.patient && !editMode ? (
+                  <Button type="button" variant="secondary" size="sm" onClick={startEdit}>Modifier</Button>
+                ) : null}
+              </div>
               <div className="text-sm text-white/80">{detail?.patient?.blood_type ? `Groupe ${detail.patient.blood_type}` : ""}</div>
             </DialogHeader>
           </div>
@@ -561,6 +902,49 @@ export default function PatientsPage() {
             </div>
 
             {!detail ? null : tab === "dossier" ? (
+              editMode ? (
+                <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Telephone</label>
+                      <Input value={editForm.phone} onChange={(e) => setEditForm((s) => ({ ...s, phone: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Email</label>
+                      <Input value={editForm.email} onChange={(e) => setEditForm((s) => ({ ...s, email: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Adresse</label>
+                      <Input value={editForm.address} onChange={(e) => setEditForm((s) => ({ ...s, address: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Pays</label>
+                      <Input value={editForm.country} onChange={(e) => setEditForm((s) => ({ ...s, country: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Contact urgence</label>
+                      <Input value={editForm.emergency_contact} onChange={(e) => setEditForm((s) => ({ ...s, emergency_contact: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Pathologie</label>
+                      <Input value={editForm.pathology} onChange={(e) => setEditForm((s) => ({ ...s, pathology: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Allergies (separees par virgules)</label>
+                      <Input value={editForm.allergies} onChange={(e) => setEditForm((s) => ({ ...s, allergies: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Historique medical (separe par virgules)</label>
+                      <Input value={editForm.medical_history} onChange={(e) => setEditForm((s) => ({ ...s, medical_history: e.target.value }))} />
+                    </div>
+                  </div>
+                  {editError ? <div className="text-sm text-destructive">{editError}</div> : null}
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={cancelEdit}>Annuler</Button>
+                    <Button type="button" onClick={saveEdit} disabled={editSaving}>{editSaving ? "Sauvegarde..." : "Sauvegarder"}</Button>
+                  </div>
+                </div>
+              ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader>
@@ -578,6 +962,10 @@ export default function PatientsPage() {
                     <div>
                       <div className="text-muted-foreground">Adresse</div>
                       <div>{detail.patient.address ?? "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Pays</div>
+                      <div>{detail.patient.country ?? "—"}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Contact urgence</div>
@@ -606,6 +994,7 @@ export default function PatientsPage() {
                   </CardContent>
                 </Card>
               </div>
+              )
             ) : tab === "consultations" ? (
               <div className="grid gap-4 md:grid-cols-2">
                 <Card>
@@ -618,6 +1007,7 @@ export default function PatientsPage() {
                         <div key={c.id} className="rounded-xl border border-border p-3">
                           <div className="text-xs text-muted-foreground">{new Date(c.date).toLocaleDateString("fr-FR")}</div>
                           <div className="mt-1 font-medium text-sm">{c.motif ?? "—"}</div>
+                          {c.ecole ? <div className="text-xs text-muted-foreground mt-0.5">Ecole: {c.ecole}</div> : null}
                           {c.diagnostic && <div className="text-sm text-muted-foreground">{c.diagnostic}</div>}
                           {c.traitement && <div className="text-xs text-blue-600 mt-1">Traitement: {c.traitement}</div>}
                         </div>
@@ -647,6 +1037,15 @@ export default function PatientsPage() {
                         placeholder="Motif de la consultation"
                         value={newConsultation.reason}
                         onChange={(e) => setNewConsultation((s) => ({ ...s, reason: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Ecole</label>
+                      <textarea
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[40px] resize-none"
+                        placeholder="Ecole"
+                        value={newConsultation.ecole}
+                        onChange={(e) => setNewConsultation((s) => ({ ...s, ecole: e.target.value }))}
                       />
                     </div>
                     <div>
@@ -701,6 +1100,7 @@ export default function PatientsPage() {
                               body: JSON.stringify({
                                 date: newConsultation.date,
                                 motif: newConsultation.reason || undefined,
+                                ecole: newConsultation.ecole || undefined,
                                 examen: newConsultation.exam || undefined,
                                 diagnostic: newConsultation.diagnosis || undefined,
                                 traitement: newConsultation.treatment || undefined,
@@ -713,7 +1113,7 @@ export default function PatientsPage() {
                               detail: newConsultation.reason || "Nouvelle consultation",
                               type: "success"
                             });
-                            setNewConsultation({ date: new Date().toISOString().split('T')[0], reason: "", exam: "", diagnosis: "", treatment: "", note: "" });
+                            setNewConsultation({ date: new Date().toISOString().split('T')[0], reason: "", ecole: "", exam: "", diagnosis: "", treatment: "", note: "" });
                             await loadDetail(selectedId);
                           } catch {
                             setConsultationError("Erreur lors de l'ajout de la consultation");
