@@ -14,8 +14,17 @@ import {
   MessageSquare,
   Settings,
   UserCircle,
-  Users
+  Search,
+  Users,
+  Microscope,
+  UserPlus,
+  Stethoscope,
+  Activity,
+  FileUp,
+  Pill,
+  MessageCircle
 } from "lucide-react";
+import { Toaster } from "sonner";
 
 import { cn } from "@/lib/cn";
 import { clearSession, getSession } from "@/lib/auth/storage";
@@ -34,7 +43,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
-type HeaderNotification = { id: string; title: string; detail: string };
+type HeaderNotification = { id: string; title: string; detail: string; type?: string; is_read?: boolean };
 
 const allStaffNav = [
   { href: "/dashboard/profil", icon: UserCircle, labelKey: "profile", permKey: undefined },
@@ -42,6 +51,7 @@ const allStaffNav = [
   { href: "/dashboard/patients", icon: Users, labelKey: "patients", permKey: "can_view_patients" },
   { href: "/dashboard/agenda", icon: CalendarDays, labelKey: "agenda", permKey: "can_view_appointments" },
   { href: "/dashboard/suive", icon: HeartPulse, labelKey: "suivi", permKey: "can_view_suive" },
+  { href: "/dashboard/analyse", icon: Microscope, labelKey: "analyse", permKey: "can_view_documents" },
   { href: "/dashboard/prescriptions", icon: FileText, labelKey: "prescriptions", permKey: "can_view_prescriptions" },
   { href: "/dashboard/chat", icon: MessageSquare, labelKey: "chat", permKey: "can_view_chat" }
 ];
@@ -101,6 +111,9 @@ const getHeaderTitleInfo = (pathname: string) => {
   }
   if (pathname.includes("/dashboard/chat")) {
     return { title: "Messagerie", subtitle: "Discussions d'équipe" };
+  }
+  if (pathname.includes("/dashboard/analyse")) {
+    return { title: "Analyse", subtitle: "Analyse des documents patients" };
   }
   if (pathname.includes("/dashboard/parametres")) {
     return { title: "Paramètres", subtitle: "Configuration du cabinet" };
@@ -171,23 +184,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const [summary, staffChat] = await Promise.all([
+    const [summary, staffChat, serverNotifs] = await Promise.all([
       apiFetch<{
         unreadStaffMessages: number;
         criticalAlerts: Array<{ patient_id: string; first_name: string; last_name: string; spo2: number | null; heart_rate: number | null }>;
         appointmentsToday: Array<{ id: string; first_name: string; last_name: string; starts_at: string; status: string }>;
       }>("/api/dashboard/summary"),
-      apiFetch<any[] | { items: Array<{ id: string; from_role: string; from_name: string; text: string; content: string; is_read: boolean }> }>("/api/chat?channel=staff")
+      apiFetch<any[] | { items: Array<{ id: string; from_role: string; from_name: string; text: string; content: string; is_read: boolean }> }>("/api/chat?channel=staff"),
+      apiFetch<any[]>("/api/notifications")
     ]);
 
     const chatItems = Array.isArray(staffChat) ? staffChat : (staffChat as any).items ?? [];
     const unreadMessages = chatItems.filter((m: any) => m.from_role !== session.role && !m.is_read);
     setChatUnreadCount(unreadMessages.length);
 
+    const notifRows = (serverNotifs || []).slice(0, 10).map((n: any) => ({
+      id: `notif-${n.id}`,
+      title: n.title,
+      detail: n.message || "",
+      type: n.type,
+      is_read: n.is_read
+    }));
+
     const alertRows = (summary.criticalAlerts || []).slice(0, 3).map((x) => ({
       id: `alert-${x.patient_id}`,
       title: `Alerte: ${x.last_name} ${x.first_name}`,
-      detail: `${typeof x.spo2 === "number" ? `SpO2 ${x.spo2}%` : ""} ${typeof x.heart_rate === "number" ? `FC ${x.heart_rate} bpm` : ""}`.trim()
+      detail: `${typeof x.spo2 === "number" ? `SpO2 ${x.spo2}%` : ""} ${typeof x.heart_rate === "number" ? `FC ${x.heart_rate} bpm` : ""}`.trim(),
+      type: "critical_alert"
     }));
 
     const urgentRows = (summary.appointmentsToday || [])
@@ -196,16 +219,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       .map((a) => ({
         id: `rdv-${a.id}`,
         title: `RDV urgent: ${a.last_name} ${a.first_name}`,
-        detail: new Date(a.starts_at).toLocaleTimeString()
+        detail: new Date(a.starts_at).toLocaleTimeString(),
+        type: "urgent_appointment"
       }));
 
     const messageRows = unreadMessages.slice(-3).reverse().map((m: any) => ({
       id: `msg-${m.id}`,
       title: `Message de ${m.from_name || m.from_role}`,
-      detail: (m.text || m.content || "").substring(0, 50)
+      detail: (m.text || m.content || "").substring(0, 50),
+      type: "chat_message"
     }));
 
-    setNotifications([...alertRows, ...messageRows, ...urgentRows]);
+    setNotifications([...notifRows, ...alertRows, ...messageRows, ...urgentRows]);
   }
 
   React.useEffect(() => {
@@ -266,7 +291,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {
             id: notification.id,
             title: notification.title,
-            detail: notification.detail
+            detail: notification.detail,
+            type: notification.type
           },
           ...prev.slice(0, 9)
         ];
@@ -452,7 +478,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <DropdownMenuLabel className="flex items-center justify-between">
                     <span>Notifications</span>
                     {totalNotif > 0 && (
-                      <button type="button" className="text-[10px] font-medium text-primary" onClick={() => setNotifications([])}>
+                      <button
+                        type="button"
+                        className="text-[10px] font-medium text-primary"
+                        onClick={async () => {
+                          await apiFetch("/api/notifications/mark-read", { method: "POST" }).catch(() => {});
+                          setNotifications([]);
+                        }}
+                      >
                         Tout marquer comme lu
                       </button>
                     )}
@@ -462,12 +495,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {notifications.length === 0 ? (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">Aucune notification</div>
                     ) : (
-                      notifications.map((n: HeaderNotification) => (
-                        <div key={n.id} className="rounded-md border border-border/50 p-2 m-1">
-                          <div className="text-sm font-medium">{n.title}</div>
-                          <div className="text-xs text-muted-foreground">{n.detail}</div>
-                        </div>
-                      ))
+                      notifications.map((n: HeaderNotification) => {
+                        let Icon = Bell;
+                        if (n.type === "patient_created") Icon = UserPlus;
+                        else if (n.type === "consultation_added") Icon = Stethoscope;
+                        else if (n.type === "vitals_added") Icon = Activity;
+                        else if (n.type === "document_uploaded") Icon = FileUp;
+                        else if (n.type === "prescription_created") Icon = Pill;
+                        else if (n.type === "chat_message") Icon = MessageCircle;
+                        else if (n.type === "critical_alert") Icon = Heart;
+                        else if (n.type === "urgent_appointment") Icon = CalendarDays;
+                        return (
+                          <div key={n.id} className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2">
+                            <Icon className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium">{n.title}</div>
+                              <div className="text-xs text-muted-foreground truncate">{n.detail}</div>
+                            </div>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </DropdownMenuContent>
@@ -510,7 +557,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           </header>
 
-          <main className="p-6">{children}</main>
+          <main className="p-6">
+            <Toaster position="top-right" richColors />
+            {children}
+          </main>
         </div>
       </div>
     </div>

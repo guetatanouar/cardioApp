@@ -1,0 +1,17 @@
+Rapport Holter ECG 24h
+=======================
+Patient: Claire Martin
+Date: 18/03/2026
+
+Résultats:
+- Durée d'enregistrement: 23h45
+- Rythme de base: Sinusal régulier
+- Fréquence cardiaque moyenne: 68 bpm
+- FC minimale: 52 bpm (à 03:15)
+- FC maximale: 112 bpm (à 14:30)
+- Extrasystoles ventriculaires: 3 (isolées, non soutenues)
+- Extrasystoles auriculaires: 12
+- Pauses > 2.5s: Aucune
+- Episodes de tachycardie: Aucun
+
+Conclusion: Holter normal. Pas d'anomalie du rythme significative.
