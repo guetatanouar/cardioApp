@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/permissions.js';
+import { createNotification } from '../lib/createNotification.js';
 
 export const appointmentsRouter = Router();
 
@@ -59,6 +60,18 @@ appointmentsRouter.post('/', authenticateToken, requirePermission('appointments'
             'INSERT INTO appointments (id, patient_id, date, time, duration, type, status, reason, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
             [id, patientId, dateStr, timeStr, durationMinutes ?? 30, type, status ?? 'scheduled', reason ?? null, notes ?? null]
         );
+        const user = (req as any).user;
+        const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [patientId]);
+        const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : patientId;
+        createNotification({
+            type: 'appointment_created',
+            title: 'Nouveau rendez-vous',
+            message: `Rendez-vous ${type} pour ${pName} le ${dateStr} à ${timeStr}`,
+            actor_name: user?.name,
+            actor_role: user?.role,
+            patient_id: patientId,
+            related_id: id,
+        });
         res.status(201).json({ message: 'Appointment created', id });
     } catch (err) {
         console.error(err);

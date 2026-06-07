@@ -10,7 +10,9 @@ import { chatRouter } from './routes/chat.js';
 import { prescriptionsRouter } from './routes/prescriptions.js';
 import { consultationsRouter } from './routes/consultations.js';
 import { documentsRouter } from './routes/documents.js';
+import { analyseRouter } from './routes/analyse.js';
 import { settingsRouter } from './routes/settings.js';
+import { notificationsRouter } from './routes/notifications.js';
 
 dotenv.config();
 
@@ -33,7 +35,9 @@ app.use('/api/chat', chatRouter);
 app.use('/api/prescriptions', prescriptionsRouter);
 app.use('/api/consultations', consultationsRouter);
 app.use('/api/documents', documentsRouter);
+app.use('/api/analyse', analyseRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/notifications', notificationsRouter);
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

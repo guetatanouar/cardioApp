@@ -1,0 +1,15 @@
+Rapport d'Électrocardiogramme (ECG)
+====================================
+Patient: Jean Dupont
+Date: 15/03/2026
+Médecin prescripteur: Dr. Pierre Moreau
+
+Résultat:
+- Rythme sinusal régulier
+- Fréquence cardiaque: 72 bpm
+- Axe électrique: 60° (normal)
+- Intervalle PR: 160 ms (normal)
+- Complexe QRS: 90 ms (normal)
+- Segment ST: isoélectrique, pas de sus-décalage ni sous-décalage significatif
+- Onde T: normale
+- Conclusion: ECG normal, pas d'anomalie significative

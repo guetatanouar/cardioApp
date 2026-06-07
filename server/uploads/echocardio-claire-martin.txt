@@ -1,0 +1,17 @@
+Rapport d'Échocardiographie Doppler
+=====================================
+Patient: Claire Martin
+Date: 20/03/2026
+Médecin prescripteur: Dr. Pierre Moreau
+
+Paramètres mesurés:
+- Fraction d'éjection ventriculaire gauche (FEVG): 55% (normale: 50-70%)
+- Diamètre télédiastolique VG: 48 mm (normal: 38-52)
+- Diamètre télésystolique VG: 32 mm (normal: 22-36)
+- Septum interventriculaire: 10 mm (normal: 6-12)
+- Paroi postérieure VG: 9 mm (normal: 6-12)
+- Oreillette gauche: 35 mm (normal: <40)
+- Vitesse E/A: 1.1 (normal: 0.8-1.5)
+- Vélocité maximale tricuspide: 2.4 m/s
+
+Conclusion: FEVG préservée. Pas d'hypertrophie significative. Fonction diastolique normale.

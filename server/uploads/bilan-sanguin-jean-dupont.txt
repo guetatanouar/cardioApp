@@ -1,0 +1,17 @@
+Rapport d'Analyse Sanguine
+===========================
+Patient: Jean Dupont
+Date: 15/03/2026
+
+Bilan lipidique:
+- Cholestérol total: 2.10 g/L (normal: 1.50-2.50)
+- LDL-Cholestérol: 1.30 g/L (normal: <1.60)
+- HDL-Cholestérol: 0.50 g/L (normal: >0.40)
+- Triglycérides: 1.20 g/L (normal: <1.50)
+
+Marqueurs cardiaques:
+- Troponine: 0.01 ng/mL (normal: <0.04)
+- CK-MB: 3.2 ng/mL (normal: <5.0)
+- BNP: 35 pg/mL (normal: <100)
+
+Conclusion: Bilan lipidique dans les normes. Marqueurs cardiaques normaux.

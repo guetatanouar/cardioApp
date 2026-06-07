@@ -1,0 +1,26 @@
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::4000
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at Server.listen (node:net:2067:7)
+    at Function.listen (C:\Users\pc\cardioapp\server\node_modules\express\lib\application.js:635:24)
+    at express (C:\Users\pc\cardioapp\server\index.ts:40:5)
+    at Object.<anonymous> (C:\Users\pc\cardioapp\server\index.ts:42:2)
+    at Module._compile (node:internal/modules/cjs/loader:1529:14)
+    at Object.transformer (C:\Users\pc\cardioapp\server\node_modules\tsx\dist\register-D46fvsV_.cjs:3:1104)
+    at Module.load (node:internal/modules/cjs/loader:1275:32)
+    at Module._load (node:internal/modules/cjs/loader:1096:12)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 4000
+}
+
+Node.js v20.19.2

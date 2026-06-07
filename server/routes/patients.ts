@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/permissions.js';
+import { createNotification } from '../lib/createNotification.js';
 
 export const patientsRouter = Router();
 
@@ -22,6 +23,15 @@ patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write
             'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
             [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, pathology, severity_status || 'stable']
         );
+        const user = (req as any).user;
+        createNotification({
+            type: 'patient_created',
+            title: 'Nouveau patient créé',
+            message: `${first_name} ${last_name} a été ajouté(e)`,
+            actor_name: user?.name,
+            actor_role: user?.role,
+            patient_id: id,
+        });
         res.status(201).json({ id, message: 'Patient created' });
     } catch (err) {
         console.error(err);
@@ -73,6 +83,18 @@ patientsRouter.post('/:id/consultations', authenticateToken, requirePermission('
             'INSERT INTO consultations (id, patient_id, date, motif, examen, diagnostic, traitement, note, author) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
             [id, req.params.id, date || new Date().toISOString().split('T')[0], motif, examen, diagnostic, traitement, note, "Dr. Moreau"]
         );
+        const user = (req as any).user;
+        const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [req.params.id]);
+        const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : req.params.id;
+        createNotification({
+            type: 'consultation_added',
+            title: 'Consultation ajoutée',
+            message: `Nouvelle consultation pour ${pName}`,
+            actor_name: user?.name,
+            actor_role: user?.role,
+            patient_id: req.params.id,
+            related_id: id,
+        });
         res.status(201).json({ message: 'Consultation added' });
     } catch (err) {
         console.error(err);
@@ -88,6 +110,18 @@ patientsRouter.post('/:id/vitals', authenticateToken, requirePermission('vitals'
             'INSERT INTO vital_entries (id, patient_id, systolic, diastolic, heart_rate, weight, sp02, note) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
             [id, req.params.id, systolic, diastolic, heart_rate, weight, sp02, note]
         );
+        const user = (req as any).user;
+        const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [req.params.id]);
+        const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : req.params.id;
+        createNotification({
+            type: 'vitals_added',
+            title: 'Signes vitaux enregistrés',
+            message: `Nouveaux signes vitaux pour ${pName}`,
+            actor_name: user?.name,
+            actor_role: user?.role,
+            patient_id: req.params.id,
+            related_id: id,
+        });
         res.status(201).json({ message: 'Vital entry added' });
     } catch (err) {
         console.error(err);

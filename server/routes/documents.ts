@@ -3,6 +3,7 @@ import multer from 'multer';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/permissions.js';
+import { createNotification } from '../lib/createNotification.js';
 
 const upload = multer({ dest: 'uploads/' });
 export const documentsRouter = Router();
@@ -24,6 +25,18 @@ documentsRouter.post('/:patientId', authenticateToken, requirePermission('docume
             'INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)',
             [id, req.params.patientId, name, category, size, filePath]
         );
+        const user = (req as any).user;
+        const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [req.params.patientId]);
+        const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : req.params.patientId;
+        createNotification({
+            type: 'document_uploaded',
+            title: 'Document ajouté',
+            message: `${name} ajouté pour ${pName}`,
+            actor_name: user?.name,
+            actor_role: user?.role,
+            patient_id: req.params.patientId,
+            related_id: id,
+        });
         res.status(201).json({ message: 'Document uploaded' });
     } catch (err) {
         res.status(500).json({ message: 'Server error' });
