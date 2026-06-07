@@ -28,7 +28,7 @@ import {
 
 type HeaderNotification = { id: string; title: string; detail: string };
 
-type ChatMessage = { id: string; text?: string; content?: string; is_read: boolean; sender_role?: string; from_role?: string; from_name?: string };
+type ChatMessage = { id: string; content?: string; is_read: boolean; sender_role?: string; sender_id?: string };
 
 interface HeaderProps {
   isPatientPortal?: boolean;
@@ -50,7 +50,7 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
     try {
       if (session.role === "patient") {
         const channel = `patient:${session.userId}`;
-        const chat = await apiFetch<any[] | { items: Array<{ id: string; sender_role: string; content: string; is_read: boolean }> }>(
+        const chat = await         apiFetch<any[] | { items: Array<{ id: string; sender_role: string; content: string; is_read: boolean }> }>(
           `/api/chat?channel=${encodeURIComponent(channel)}`
         );
         const chatItems: ChatMessage[] = Array.isArray(chat) ? chat : (chat as any).items ?? [];
@@ -62,7 +62,7 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
             .map((m: ChatMessage) => ({
               id: m.id,
               title: "Nouveau message",
-              detail: m.text || m.content || ""
+              detail: m.content || ""
             }))
         );
         return;
@@ -74,11 +74,11 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
           criticalAlerts: Array<{ patient_id: string; first_name: string; last_name: string; spo2: number | null; heart_rate: number | null }>;
           appointmentsToday: Array<{ id: string; first_name: string; last_name: string; starts_at: string; status: string }>;
         }>("/api/dashboard/summary"),
-        apiFetch<any[] | { items: Array<{ id: string; from_role: string; from_name: string; text: string; is_read: boolean }> }>("/api/chat?channel=staff")
+        apiFetch<any[] | { items: Array<{ id: string; sender_role: string; sender_id: string; content: string; is_read: boolean }> }>("/api/chat?channel=staff")
       ]);
 
       const chatItems: ChatMessage[] = Array.isArray(staffChat) ? staffChat : (staffChat as any).items ?? [];
-      const unreadMessages = chatItems.filter((m: ChatMessage) => m.from_role !== session.role && !m.is_read);
+      const unreadMessages = chatItems.filter((m: ChatMessage) => m.sender_role !== session.role && !m.is_read);
 
       const alertRows = (summary.criticalAlerts || []).slice(0, 3).map((x) => ({
         id: `alert-${x.patient_id}`,
@@ -88,8 +88,8 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
 
       const messageRows = unreadMessages.slice(-3).reverse().map((m: ChatMessage) => ({
         id: `msg-${m.id}`,
-        title: `Message de ${m.from_name || m.from_role}`,
-        detail: (m.text || m.content || "").substring(0, 50)
+        title: `Message de ${m.sender_role === "admin" ? "Dr. Moreau" : "Secrétaire"}`,
+        detail: (m.content || "").substring(0, 50)
       }));
 
       const urgentRows = (summary.appointmentsToday || [])
@@ -114,7 +114,6 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
   }, [session]);
 
   const fullName = session?.fullName ?? (session?.role === "patient" ? "Espace patient" : "Personnel médical");
-  const _shortName = fullName.split(" ").slice(-1)[0] ?? fullName;
   const initials = fullName
     .split(" ")
     .filter(Boolean)

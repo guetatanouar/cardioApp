@@ -35,7 +35,7 @@ function formatMonth(d: string) {
 export default function MedicalDashboard() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [searchQuery, _setSearchQuery] = useState("");
+  const [searchQuery] = useState("");
   const [vitals, setVitals] = useState<VitalEntry[]>([]);
 
   useEffect(() => {

@@ -15,11 +15,21 @@ export default function PatientChatPage() {
 
   const [items, setItems] = React.useState<any[]>([]);
   const [text, setText] = React.useState("");
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+  function scrollToBottom() {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  React.useEffect(() => {
+    scrollToBottom();
+  }, [items]);
 
   async function load() {
     if (!channel) return;
-    const res = await apiFetch<{ items: any[] }>(`/api/chat?channel=${encodeURIComponent(channel)}`);
-    setItems(res.items);
+    const res = await apiFetch<any[] | { items: any[] }>(`/api/chat?channel=${encodeURIComponent(channel)}`);
+    const chatItems = Array.isArray(res) ? res : (res as any).items ?? [];
+    setItems(chatItems);
     await apiFetch("/api/chat/mark-read", {
       method: "POST",
       body: JSON.stringify({ channel })
@@ -36,32 +46,68 @@ export default function PatientChatPage() {
 
   async function send() {
     if (!text.trim() || !channel) return;
-    await apiFetch("/api/chat", { method: "POST", body: JSON.stringify({ channel, content: text }) });
+    await apiFetch("/api/chat", { method: "POST", body: JSON.stringify({ channel, content: text.trim() }) });
     setText("");
     await load();
   }
 
+  function isMine(msg: any) {
+    return msg.sender_id === session?.userId;
+  }
+
+  function formatTime(dateStr: string) {
+    return new Date(dateStr).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  }
+
   return (
-    <Card>
+    <Card className="flex flex-col h-full">
       <CardHeader>
         <CardTitle>Chat médecin</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="mb-3 h-[50vh] overflow-auto rounded-md border border-border p-3">
-          <div className="space-y-2">
-            {items.map((m) => (
-              <div key={m.id} className="text-sm">
-                <div className="text-muted-foreground">{m.sender_role} • {new Date(m.created_at).toLocaleString()}</div>
-                <div>{m.content}</div>
-              </div>
-            ))}
-            {items.length === 0 ? <div className="text-sm text-muted-foreground">Empty</div> : null}
-          </div>
+      <CardContent className="flex flex-1 flex-col min-h-0">
+        <div className="flex-1 space-y-2 overflow-y-auto rounded-md border border-border bg-muted/30 p-3 mb-3 min-h-0">
+          {items.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Aucun message
+            </div>
+          ) : (
+            items.map((m: any) => {
+              const mine = isMine(m);
+              return (
+                <div
+                  key={m.id}
+                  className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
+                >
+                  <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${
+                    mine ? "bg-primary text-primary-foreground" : "bg-blue-50 border border-blue-200 text-blue-900"
+                  }`}>
+                    <div className="whitespace-pre-wrap">{m.content}</div>
+                    <div className={`text-[9px] mt-1 ${mine ? "text-primary-foreground/50" : "opacity-50"}`}>
+                      {formatTime(m.created_at)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+          <div ref={messagesEndRef} />
         </div>
-
         <div className="flex gap-2">
-          <Input value={text} onChange={(e) => setText(e.target.value)} placeholder="Message" />
-          <Button onClick={send}>Send</Button>
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                send();
+              }
+            }}
+            placeholder="Votre message..."
+            className="flex-1"
+          />
+          <Button onClick={send} disabled={!text.trim()}>
+            Envoyer
+          </Button>
         </div>
       </CardContent>
     </Card>

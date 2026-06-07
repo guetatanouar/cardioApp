@@ -8,7 +8,7 @@ export const authRouter = Router();
 authRouter.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
-        const result = await query('SELECT * FROM users WHERE username = $1 OR email = $1', [username]);
+        const result = await query('SELECT id, username, email, full_name as name, role, password_hash as password FROM users WHERE username = $1 OR email = $1', [username]);
         const user = result.rows[0];
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(401).json({ message: 'Invalid credentials' });
@@ -44,7 +44,7 @@ authRouter.post('/login', async (req, res) => {
 authRouter.post('/patient-login', async (req, res) => {
     const { username, password } = req.body;
     try {
-        const result = await query('SELECT * FROM patient_accounts WHERE username = $1 AND active IS NOT FALSE', [username]);
+        const result = await query('SELECT *, password_hash as password FROM patient_accounts WHERE username = $1 AND is_active IS NOT FALSE', [username]);
         const account = result.rows[0];
         if (!account || !(await bcrypt.compare(password, account.password))) {
             return res.status(401).json({ message: 'Invalid credentials' });

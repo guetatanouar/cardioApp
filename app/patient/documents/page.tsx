@@ -17,8 +17,8 @@ export default function PatientDocumentsPage() {
 
   async function load() {
     if (!patientId) return;
-    const res = await apiFetch<{ items: any[] }>(`/api/patients/${patientId}/documents`);
-    setItems(res.items);
+    const res = await apiFetch<any[]>(`/api/documents/${patientId}`);
+    setItems(res);
   }
 
   React.useEffect(() => {
@@ -30,14 +30,14 @@ export default function PatientDocumentsPage() {
     const form = new FormData();
     form.append("file", file);
     form.append("category", category);
-    await apiUpload(`/api/patients/${patientId}/documents`, form);
+    await apiUpload(`/api/documents/${patientId}`, form);
     setFile(null);
     await load();
   }
 
   async function remove(docId: string) {
     if (!patientId) return;
-    await apiFetch(`/api/patients/${patientId}/documents/${docId}`, { method: "DELETE" });
+    await apiFetch(`/api/documents/${docId}`, { method: "DELETE" });
     await load();
   }
 

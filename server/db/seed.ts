@@ -10,46 +10,46 @@ async function seed() {
         const secPass = await bcrypt.hash('sec123', 10);
 
         await query(
-            `INSERT INTO users (username, email, password, name, role, initials, title, phone, address, rpps, specialty, first_name, last_name)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-             ON CONFLICT (username) DO UPDATE SET email = $2, name = $4`,
-            ['admin', 'p.moreau@cabinet-cardio.fr', adminPass, 'Dr. Pierre Moreau', 'admin', 'PM', 'Cardiologue',
+            `INSERT INTO users (id, username, email, password_hash, full_name, role, initials, title, phone, address, rpps, specialty, first_name, last_name)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+             ON CONFLICT (id) DO NOTHING`,
+            ['1', 'admin', 'p.moreau@cabinet-cardio.fr', adminPass, 'Dr. Pierre Moreau', 'admin', 'PM', 'Cardiologue',
              '01 23 45 67 89', '12 rue de la Paix, 75001 Paris', '12345678901', 'Cardiologue',
              'Kamel', 'Hadj']
         );
         await query(
-            `INSERT INTO users (username, email, password, name, role, initials, title, phone, address, rpps, specialty, first_name, last_name)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-             ON CONFLICT (username) DO UPDATE SET email = $2, name = $4`,
-            ['secretaire', 's.dubois@cabinet-cardio.fr', secPass, 'Sophie Dubois', 'secretaire', 'SD', 'Secrétaire médicale',
+            `INSERT INTO users (id, username, email, password_hash, full_name, role, initials, title, phone, address, rpps, specialty, first_name, last_name)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+             ON CONFLICT (id) DO NOTHING`,
+            ['2', 'secretaire', 's.dubois@cabinet-cardio.fr', secPass, 'Sophie Dubois', 'secretaire', 'SD', 'Secrétaire médicale',
              null, null, null, null, 'Sophie', 'Dubois']
         );
 
         // Seed Patients
         await query(
-            `INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, emergency_contact, allergies, medical_history)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            `INSERT INTO patients (id, first_name, last_name, date_of_birth, blood_type, phone, email, address, emergency_contact, allergies, medical_history)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              ON CONFLICT (id) DO NOTHING`,
-            ['p1', 'Jean', 'Dupont', '1955-10-12', 'M', 'A+', '0601020304', 'jean.dupont@email.com', '12 rue de la Paix, Paris', 'Marie Dupont (0602030405)', '{"Pénicilline"}', '{"HTA", "Diabète type 2"}']
+            ['p1', 'Jean', 'Dupont', '1955-10-12', 'A+', '0601020304', 'jean.dupont@email.com', '12 rue de la Paix, Paris', 'Marie Dupont - 0602030405', 'Pénicilline', 'HTA, Diabète type 2']
         );
         await query(
-            `INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, emergency_contact, allergies, medical_history)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            `INSERT INTO patients (id, first_name, last_name, date_of_birth, blood_type, phone, email, address, emergency_contact, allergies, medical_history)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              ON CONFLICT (id) DO NOTHING`,
-            ['p2', 'Claire', 'Martin', '1962-03-25', 'F', 'O-', '0611121314', 'claire.martin@email.com', '5 av des Fleurs, Lyon', 'Paul Martin (0612131415)', '{}', '{"Insuffisance cardiaque"}']
+            ['p2', 'Claire', 'Martin', '1962-03-25', 'O-', '0611121314', 'claire.martin@email.com', '5 av des Fleurs, Lyon', 'Paul Martin - 0612131415', null, 'Insuffisance cardiaque']
         );
 
         // Seed Patient Accounts
         const jeanPass = await bcrypt.hash('jean123', 10);
         const clairePass = await bcrypt.hash('claire123', 10);
         await query(
-            `INSERT INTO patient_accounts (patient_id, username, password)
+            `INSERT INTO patient_accounts (patient_id, username, password_hash)
              VALUES ($1, $2, $3)
              ON CONFLICT (username) DO NOTHING`,
             ['p1', 'jean.dupont', jeanPass]
         );
         await query(
-            `INSERT INTO patient_accounts (patient_id, username, password)
+            `INSERT INTO patient_accounts (patient_id, username, password_hash)
              VALUES ($1, $2, $3)
              ON CONFLICT (username) DO NOTHING`,
             ['p2', 'claire.martin', clairePass]

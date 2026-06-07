@@ -6,6 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
+// Ensure uploads directory exists
+const uploadsDir = path_1.default.resolve('uploads');
+if (!fs_1.default.existsSync(uploadsDir)) {
+    fs_1.default.mkdirSync(uploadsDir, { recursive: true });
+}
 const auth_js_1 = require("./routes/auth.js");
 const dashboard_js_1 = require("./routes/dashboard.js");
 const patients_js_1 = require("./routes/patients.js");
@@ -25,7 +32,7 @@ app.use((0, cors_1.default)({
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
     credentials: true
 }));
-app.use(express_1.default.json());
+app.use(express_1.default.json({ limit: '50mb' }));
 app.use('/uploads', express_1.default.static('uploads'));
 app.use('/api/dashboard', dashboard_js_1.dashboardRouter);
 app.use('/api/auth', auth_js_1.authRouter);

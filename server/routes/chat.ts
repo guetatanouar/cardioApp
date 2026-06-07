@@ -30,39 +30,39 @@ chatRouter.post('/', authenticateToken, requirePermission('chat', 'send'), async
     const id = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const user = (req as any).user;
     let patient_id: string | undefined = undefined;
-    let from_role = user.role;
-    let from_name = user.name || 'Dr. Moreau';
+    let sender_role = user.role;
+    let sender_id = user.id;
     let actualChannel = 'staff';
     
     if (typeof channel === 'string' && channel.startsWith('patient:')) {
         patient_id = channel.replace('patient:', '');
-        from_role = user.role === 'patient' ? 'patient' : 'staff';
-        from_name = user.name || 'Dr. Moreau';
+        sender_role = user.role === 'patient' ? 'patient' : 'staff';
+        sender_id = user.id;
         actualChannel = 'patient';
     }
     
     try {
         await query(
-            'INSERT INTO chat_messages (id, channel, patient_id, from_name, from_role, text) VALUES ($1, $2, $3, $4, $5, $6)',
-            [id, actualChannel, patient_id, from_name, from_role, content]
+            'INSERT INTO chat_messages (id, channel, sender_role, sender_id, patient_id, content) VALUES ($1, $2, $3, $4, $5, $6)',
+            [id, actualChannel, sender_role, sender_id, patient_id, content]
         );
-        if (actualChannel === 'staff' && from_role !== 'admin') {
+        if (actualChannel === 'staff' && sender_role !== 'admin') {
             createNotification({
                 type: 'chat_message',
                 title: 'Nouveau message',
-                message: `Message de ${from_name}: ${content.substring(0, 100)}`,
-                actor_name: from_name,
-                actor_role: from_role,
+                message: `Message de ${user.name}: ${content.substring(0, 100)}`,
+                actor_name: user.name,
+                actor_role: sender_role,
                 related_id: id,
             });
         }
-        if (actualChannel === 'patient' && from_role === 'patient') {
+        if (actualChannel === 'patient' && sender_role === 'patient') {
             createNotification({
                 type: 'chat_message',
                 title: 'Nouveau message patient',
-                message: `Message de ${from_name}: ${content.substring(0, 100)}`,
-                actor_name: from_name,
-                actor_role: from_role,
+                message: `Message de ${user.name}: ${content.substring(0, 100)}`,
+                actor_name: user.name,
+                actor_role: sender_role,
                 patient_id: patient_id,
                 related_id: id,
             });

@@ -18,12 +18,14 @@ documentsRouter.get('/:patientId', authenticateToken, requirePermission('documen
 });
 
 documentsRouter.post('/:patientId', authenticateToken, requirePermission('documents', 'write'), upload.single('file'), async (req, res) => {
-    const { id, name, category, size } = req.body;
-    const filePath = req.file?.path;
+    const file = req.file;
+    if (!file) return res.status(400).json({ message: 'No file provided' });
+    const docId = `doc_${Date.now().toString(36)}`;
+    const { category } = req.body;
     try {
         await query(
             'INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)',
-            [id, req.params.patientId, name, category, size, filePath]
+            [docId, req.params.patientId, file.originalname, category || 'autre', String(file.size), file.path]
         );
         const user = (req as any).user;
         const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [req.params.patientId]);
@@ -31,15 +33,16 @@ documentsRouter.post('/:patientId', authenticateToken, requirePermission('docume
         createNotification({
             type: 'document_uploaded',
             title: 'Document ajouté',
-            message: `${name} ajouté pour ${pName}`,
+            message: `${file.originalname} ajouté pour ${pName}`,
             actor_name: user?.name,
             actor_role: user?.role,
             patient_id: req.params.patientId,
-            related_id: id,
+            related_id: docId,
         });
         res.status(201).json({ message: 'Document uploaded' });
     } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('Document upload error:', err);
+        res.status(500).json({ message: 'Server error', error: (err as Error).message });
     }
 });
 

@@ -8,7 +8,7 @@ import { usePagePermission } from "@/lib/auth/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Users, Stethoscope, User, Shield } from "lucide-react";
+import { Send, Users } from "lucide-react";
 
 export default function ChatPage() {
   const hasAccess = usePagePermission("can_view_chat");
@@ -80,30 +80,17 @@ export default function ChatPage() {
   }
 
   function isMine(msg: any) {
-    if (channel === "staff") {
-      return msg.from_name === session?.fullName;
-    }
-    return msg.from_name === session?.fullName;
-  }
-
-  function getRoleBadge(msg: any) {
-    if (isMine(msg)) return null;
-    if (channel === "staff") {
-      if (msg.from_role === "secretaire") return { label: "Secrétaire", icon: User, color: "text-amber-600" };
-      return { label: "Équipe", icon: Shield, color: "text-blue-600" };
-    }
-    if (msg.from_role === "patient") return { label: "Patient", icon: Stethoscope, color: "text-emerald-600" };
-    return { label: "Staff", icon: Shield, color: "text-blue-600" };
+    return msg.sender_id === session?.userId;
   }
 
   function getBubbleStyle(msg: any) {
     const mine = isMine(msg);
     if (mine) return "bg-primary text-primary-foreground";
     if (channel === "staff") {
-      if (msg.from_role === "secretaire") return "bg-amber-50 border border-amber-200";
+      if (msg.sender_role === "secretaire") return "bg-amber-50 border border-amber-200";
       return "bg-blue-50 border border-blue-200";
     }
-    if (msg.from_role === "patient") return "bg-emerald-50 border border-emerald-200";
+    if (msg.sender_role === "patient") return "bg-emerald-50 border border-emerald-200";
     return "bg-blue-50 border border-blue-200";
   }
 
@@ -157,29 +144,17 @@ export default function ChatPage() {
           <div className="flex-1 space-y-2 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3 min-h-0">
             {(items || []).map((msg) => {
               const mine = isMine(msg);
-              const badge = getRoleBadge(msg);
               const bubbleStyle = getBubbleStyle(msg);
-              const RoleIcon = badge?.icon || Shield;
               return (
                 <div
                   key={msg.id}
                   className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
                 >
-                  <div
-                    className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${bubbleStyle}`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {!mine && badge && (
-                        <RoleIcon className={`h-3 w-3 ${badge.color}`} />
-                      )}
-                      <span className={`text-[10px] font-medium ${mine ? "text-primary-foreground/70" : badge?.color || "opacity-70"}`}>
-                        {mine ? "Moi" : msg.from_name}
-                      </span>
-                      <span className={`text-[9px] ${mine ? "text-primary-foreground/50" : "opacity-50"}`}>
-                        {formatTime(msg.created_at)}
-                      </span>
+                  <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${bubbleStyle}`}>
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                    <div className={`text-[9px] mt-1 ${mine ? "text-primary-foreground/50" : "opacity-50"}`}>
+                      {formatTime(msg.created_at)}
                     </div>
-                    <div className="whitespace-pre-wrap">{msg.content || msg.text}</div>
                   </div>
                 </div>
               );

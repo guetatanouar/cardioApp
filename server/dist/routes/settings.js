@@ -12,7 +12,7 @@ exports.settingsRouter = (0, express_1.Router)();
 exports.settingsRouter.use(auth_js_1.authenticateToken);
 exports.settingsRouter.get('/profile', async (req, res) => {
     try {
-        const result = await (0, pool_js_1.query)(`SELECT name as "fullName", email, role, phone, address, rpps, specialty, first_name, last_name
+        const result = await (0, pool_js_1.query)(`SELECT full_name as "fullName", email, role, phone, address, rpps, specialty, first_name, last_name
              FROM users WHERE id = $1`, [req.user.id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
@@ -27,7 +27,7 @@ exports.settingsRouter.get('/profile', async (req, res) => {
 exports.settingsRouter.put('/profile', async (req, res) => {
     try {
         const { fullName, email, phone, address, rpps, specialty, firstName, lastName } = req.body;
-        await (0, pool_js_1.query)(`UPDATE users SET name = $1, email = $2, phone = $3, address = $4, rpps = $5, specialty = $6, first_name = $7, last_name = $8 WHERE id = $9`, [fullName, email, phone || null, address || null, rpps || null, specialty || null, firstName || null, lastName || null, req.user.id]);
+        await (0, pool_js_1.query)(`UPDATE users SET full_name = $1, email = $2, phone = $3, address = $4, rpps = $5, specialty = $6, first_name = $7, last_name = $8 WHERE id = $9`, [fullName, email, phone || null, address || null, rpps || null, specialty || null, firstName || null, lastName || null, req.user.id]);
         res.json({ success: true });
     }
     catch (error) {
@@ -38,7 +38,7 @@ exports.settingsRouter.put('/profile', async (req, res) => {
 exports.settingsRouter.put('/password', async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
-        const userResult = await (0, pool_js_1.query)('SELECT password FROM users WHERE id = $1', [req.user.id]);
+        const userResult = await (0, pool_js_1.query)('SELECT password_hash as password FROM users WHERE id = $1', [req.user.id]);
         if (userResult.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
@@ -47,7 +47,7 @@ exports.settingsRouter.put('/password', async (req, res) => {
             return res.status(401).json({ error: 'Current password is incorrect' });
         }
         const hashed = await bcryptjs_1.default.hash(newPassword, 10);
-        await (0, pool_js_1.query)('UPDATE users SET password = $1 WHERE id = $2', [hashed, req.user.id]);
+        await (0, pool_js_1.query)('UPDATE users SET password_hash = $1 WHERE id = $2', [hashed, req.user.id]);
         res.json({ success: true });
     }
     catch (error) {
@@ -58,7 +58,7 @@ exports.settingsRouter.put('/password', async (req, res) => {
 exports.settingsRouter.get('/secretaire-permissions', async (req, res) => {
     try {
         const result = await (0, pool_js_1.query)(`
-            SELECT u.id as user_id, u.name as full_name, u.email,
+            SELECT u.id as user_id, u.full_name as full_name, u.email,
                 COALESCE(p.can_view_patients, false) as can_view_patients,
                 COALESCE(p.can_edit_patients, false) as can_edit_patients,
                 COALESCE(p.can_delete_patients, false) as can_delete_patients,
@@ -77,7 +77,7 @@ exports.settingsRouter.get('/secretaire-permissions', async (req, res) => {
             FROM users u
             LEFT JOIN secretaire_permissions p ON u.id = p.user_id
             WHERE u.role = 'secretaire'
-            ORDER BY u.name
+            ORDER BY u.full_name
         `);
         res.json({ items: result.rows });
     }
@@ -88,7 +88,7 @@ exports.settingsRouter.get('/secretaire-permissions', async (req, res) => {
 });
 exports.settingsRouter.put('/secretaire-permissions/:userId', async (req, res) => {
     try {
-        const userId = parseInt(req.params.userId);
+        const userId = req.params.userId;
         const knownKeys = new Set([
             'can_view_patients', 'can_edit_patients', 'can_delete_patients',
             'can_view_appointments', 'can_edit_appointments', 'can_delete_appointments',
@@ -130,8 +130,8 @@ exports.settingsRouter.post('/patient-accounts', async (req, res) => {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         const hashed = await bcryptjs_1.default.hash(password, 10);
-        await (0, pool_js_1.query)(`INSERT INTO patient_accounts (patient_id, username, password) VALUES ($1, $2, $3)
-             ON CONFLICT (patient_id) DO UPDATE SET username = $2, password = $3, is_active = TRUE`, [patientId, username, hashed]);
+        await (0, pool_js_1.query)(`INSERT INTO patient_accounts (patient_id, username, password_hash) VALUES ($1, $2, $3)
+             ON CONFLICT (patient_id) DO UPDATE SET username = $2, password_hash = $3, is_active = TRUE`, [patientId, username, hashed]);
         res.json({ success: true });
     }
     catch (error) {
@@ -147,10 +147,10 @@ exports.settingsRouter.put('/patient-accounts/:patientId', async (req, res) => {
         if (password) {
             const hashed = await bcryptjs_1.default.hash(password, 10);
             if (isActive !== undefined) {
-                await (0, pool_js_1.query)('UPDATE patient_accounts SET is_active = $1, password = $2 WHERE patient_id = $3', [isActive, hashed, patientId]);
+                await (0, pool_js_1.query)('UPDATE patient_accounts SET is_active = $1, password_hash = $2 WHERE patient_id = $3', [isActive, hashed, patientId]);
             }
             else {
-                await (0, pool_js_1.query)('UPDATE patient_accounts SET password = $1 WHERE patient_id = $2', [hashed, patientId]);
+                await (0, pool_js_1.query)('UPDATE patient_accounts SET password_hash = $1 WHERE patient_id = $2', [hashed, patientId]);
             }
         }
         else {

@@ -11,16 +11,17 @@ import {
   YAxis
 } from "recharts";
 
-import { apiFetch } from "@/lib/api/client";
+import { apiFetch, apiUpload } from "@/lib/api/client";
 import { dispatchNotification } from "@/lib/notifications";
 import { usePagePermission } from "@/lib/auth/usePermissions";
+import { getSession } from "@/lib/auth/storage";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
-import { FileText, Plus, Trash2, Download } from "lucide-react";
+import { FileText, Plus, Trash2, Download, Upload } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -54,7 +55,7 @@ export default function PatientsPage() {
 
   const [items, setItems] = React.useState<PatientListItem[]>([]);
   const [total, setTotal] = React.useState(0);
-  const [_loading, setLoading] = React.useState(false);
+  const [, setLoading] = React.useState(false);
 
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [tab, setTab] = React.useState<"dossier" | "consultations" | "vitals" | "documents" | "messages" | "access" | "ordonnances">("dossier");
@@ -78,14 +79,19 @@ export default function PatientsPage() {
 
   const [editMode, setEditMode] = React.useState(false);
   const [editForm, setEditForm] = React.useState({
-    phone: "", email: "", address: "", country: "", emergency_contact: "", pathology: "", allergies: "", medical_history: ""
+    phone: "", email: "", address: "", country: "", emergency_contact: "", pathology: "", allergies: "", medical_history: "", severity_status: "stable" as "critique" | "surveillance" | "stable"
   });
   const [editSaving, setEditSaving] = React.useState(false);
   const [editError, setEditError] = React.useState<string | null>(null);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+
   const [newConsultation, setNewConsultation] = React.useState({ date: new Date().toISOString().split('T')[0], reason: "", ecole: "", exam: "", diagnosis: "", treatment: "", note: "" });
   const [consultationSaving, setConsultationSaving] = React.useState(false);
   const [consultationError, setConsultationError] = React.useState<string | null>(null);
+  const [editConsultId, setEditConsultId] = React.useState<string | null>(null);
+  const [editConsultForm, setEditConsultForm] = React.useState({ date: "", motif: "", ecole: "", examen: "", diagnostic: "", traitement: "", note: "" });
 
   const [showCreate, setShowCreate] = React.useState(false);
   const [creating, setCreating] = React.useState(false);
@@ -112,7 +118,7 @@ export default function PatientsPage() {
     weight: ""
   });
   const [newPatientDoc, setNewPatientDoc] = React.useState<File | null>(null);
-  const [newPatientDocCategory, setNewPatientDocCategory] = React.useState("Analyse");
+  const [newPatientDocCategory, setNewPatientDocCategory] = React.useState("analyse");
   const [newPatientMeds, setNewPatientMeds] = React.useState<{ name: string; dosage: string; frequency: string; duration: string }[]>([]);
   const [newPatientAccount, setNewPatientAccount] = React.useState({ username: "", password: "" });
 
@@ -212,7 +218,7 @@ export default function PatientsPage() {
         method: "POST",
         body: JSON.stringify({
           channel: `patient:${selectedId}`,
-          text
+          content: text
         })
       });
       await loadChat(selectedId);
@@ -320,57 +326,65 @@ export default function PatientsPage() {
       });
       const patientId = (res as any).id || (res as any).patientId;
 
-      if (newPatientVitals.systolic || newPatientVitals.diastolic || newPatientVitals.heartRate || newPatientVitals.weight || newPatientVitals.sp02) {
-        await apiFetch(`/api/patients/${patientId}/vitals`, {
-          method: "POST",
-          body: JSON.stringify({
-            systolic: newPatientVitals.systolic ? Number(newPatientVitals.systolic) : undefined,
-            diastolic: newPatientVitals.diastolic ? Number(newPatientVitals.diastolic) : undefined,
-            heart_rate: newPatientVitals.heartRate ? Number(newPatientVitals.heartRate) : undefined,
-            weight: newPatientVitals.weight ? Number(newPatientVitals.weight) : undefined,
-            sp02: newPatientVitals.sp02 ? Number(newPatientVitals.sp02) : undefined
-          })
-        });
-      }
-
-      if (newPatientDoc) {
-        const formData = new FormData();
-        formData.append("file", newPatientDoc);
-        formData.append("category", newPatientDocCategory);
-        await apiFetch(`/api/patients/${patientId}/documents`, {
-          method: "POST",
-          body: formData
-        });
-      }
-
-      if (newPatientMeds.length > 0) {
-        const validMeds = newPatientMeds.filter((m) => m.name && m.dosage);
-        if (validMeds.length > 0) {
-          await apiFetch("/api/prescriptions", {
+      try {
+        if (newPatientVitals.systolic || newPatientVitals.diastolic || newPatientVitals.heartRate || newPatientVitals.weight || newPatientVitals.sp02) {
+          await apiFetch(`/api/patients/${patientId}/vitals`, {
             method: "POST",
             body: JSON.stringify({
-              patientId,
-              items: validMeds.map((m) => ({
-                name: m.name,
-                dosage: m.dosage,
-                frequency: m.frequency || undefined,
-                duration: m.duration || undefined
-              }))
+              systolic: newPatientVitals.systolic ? Number(newPatientVitals.systolic) : undefined,
+              diastolic: newPatientVitals.diastolic ? Number(newPatientVitals.diastolic) : undefined,
+              heart_rate: newPatientVitals.heartRate ? Number(newPatientVitals.heartRate) : undefined,
+              weight: newPatientVitals.weight ? Number(newPatientVitals.weight) : undefined,
+              sp02: newPatientVitals.sp02 ? Number(newPatientVitals.sp02) : undefined
             })
           });
         }
-      }
+      } catch { /* non bloquant */ }
 
-      if (newPatientAccount.username && newPatientAccount.password) {
-        await apiFetch("/api/settings/patient-accounts", {
-          method: "POST",
-          body: JSON.stringify({
-            patientId,
-            username: newPatientAccount.username,
-            password: newPatientAccount.password
-          })
-        });
-      }
+      try {
+        if (newPatientDoc) {
+          const formData = new FormData();
+          formData.append("file", newPatientDoc);
+          formData.append("category", newPatientDocCategory);
+          await apiFetch(`/api/documents/${patientId}`, {
+            method: "POST",
+            body: formData
+          });
+        }
+      } catch { /* non bloquant */ }
+
+      try {
+        if (newPatientMeds.length > 0) {
+          const validMeds = newPatientMeds.filter((m) => m.name && m.dosage);
+          if (validMeds.length > 0) {
+            await apiFetch("/api/prescriptions", {
+              method: "POST",
+              body: JSON.stringify({
+                patientId,
+                items: validMeds.map((m) => ({
+                  name: m.name,
+                  dosage: m.dosage,
+                  frequency: m.frequency || undefined,
+                  duration: m.duration || undefined
+                }))
+              })
+            });
+          }
+        }
+      } catch { /* non bloquant */ }
+
+      try {
+        if (newPatientAccount.username && newPatientAccount.password) {
+          await apiFetch("/api/settings/patient-accounts", {
+            method: "POST",
+            body: JSON.stringify({
+              patientId,
+              username: newPatientAccount.username,
+              password: newPatientAccount.password
+            })
+          });
+        }
+      } catch { /* non bloquant */ }
 
       dispatchNotification({
         id: `patient-created-${Date.now()}`,
@@ -417,7 +431,8 @@ export default function PatientsPage() {
       emergency_contact: detail.patient.emergency_contact || "",
       pathology: detail.patient.pathology || "",
       allergies: Array.isArray(detail.patient.allergies) ? detail.patient.allergies.join(", ") : (detail.patient.allergies || ""),
-      medical_history: Array.isArray(detail.patient.medical_history) ? detail.patient.medical_history.join(", ") : (detail.patient.medical_history || "")
+      medical_history: Array.isArray(detail.patient.medical_history) ? detail.patient.medical_history.join(", ") : (detail.patient.medical_history || ""),
+      severity_status: detail.patient.severity_status || "stable"
     });
     setEditError(null);
     setEditMode(true);
@@ -442,8 +457,9 @@ export default function PatientsPage() {
           country: editForm.country || undefined,
           emergency_contact: editForm.emergency_contact || undefined,
           pathology: editForm.pathology || undefined,
-          allergies: editForm.allergies ? editForm.allergies.split(",").map((s) => s.trim()).filter(Boolean) : [],
-          medical_history: editForm.medical_history ? editForm.medical_history.split(",").map((s) => s.trim()).filter(Boolean) : []
+          allergies: editForm.allergies || null,
+          medical_history: editForm.medical_history || null,
+          severity_status: editForm.severity_status
         })
       });
       setEditMode(false);
@@ -464,6 +480,32 @@ export default function PatientsPage() {
   function cancelEdit() {
     setEditMode(false);
     setEditError(null);
+  }
+
+  async function deletePatient() {
+    if (!selectedId) return;
+    setDeleting(true);
+    try {
+      await apiFetch(`/api/patients/${selectedId}`, { method: "DELETE" });
+      setShowDeleteConfirm(false);
+      setSelectedId(null);
+      dispatchNotification({
+        id: `delete-${Date.now()}`,
+        title: "Patient supprimé",
+        detail: "Le patient a été supprimé avec succès",
+        type: "success"
+      });
+      await load();
+    } catch {
+      dispatchNotification({
+        id: `delete-error-${Date.now()}`,
+        title: "Erreur",
+        detail: "Impossible de supprimer le patient",
+        type: "error"
+      });
+    } finally {
+      setDeleting(false);
+    }
   }
 
   function severityClass(status: PatientListItem["severity_status"]) {
@@ -685,10 +727,10 @@ export default function PatientsPage() {
                             onChange={(e) => setNewPatientDocCategory(e.target.value)}
                             className="h-10 rounded-md border border-input bg-transparent px-3 text-sm w-36"
                           >
-                            <option value="Analyse">Analyse</option>
-                            <option value="Radio">Radio</option>
-                            <option value="Echographie">Echographie</option>
-                            <option value="Autre">Autre</option>
+                            <option value="analyse">Analyse</option>
+                            <option value="radio">Radio</option>
+                            <option value="echographie">Echographie</option>
+                            <option value="autre">Autre</option>
                           </select>
                         </div>
                       </div>
@@ -850,16 +892,19 @@ export default function PatientsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={Boolean(selectedId)} onOpenChange={(open) => (!open ? setSelectedId(null) : undefined)}>
-        <DialogContent className="max-w-4xl p-0">
+      <Dialog open={Boolean(selectedId)} onOpenChange={(open) => (!open ? (setSelectedId(null), setShowDeleteConfirm(false)) : undefined)}>
+        <DialogContent className="max-w-4xl p-0 max-h-[85vh] overflow-y-auto">
           <div className="rounded-t-2xl bg-gradient-to-r from-indigo-600 to-blue-700 px-6 py-4 text-white">
             <DialogHeader className="space-y-0">
               <div className="flex items-center justify-between">
                 <DialogTitle className="text-lg font-semibold">
                   {detail?.patient ? `${detail.patient.last_name} ${detail.patient.first_name}` : "Fiche patient"}
                 </DialogTitle>
-                {detail?.patient && !editMode ? (
-                  <Button type="button" variant="secondary" size="sm" onClick={startEdit}>Modifier</Button>
+                {detail?.patient && !editMode && !showDeleteConfirm ? (
+                  <div className="flex gap-2">
+                    <Button type="button" variant="secondary" size="sm" onClick={startEdit}>Modifier</Button>
+                    <Button type="button" variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)}>Supprimer</Button>
+                  </div>
                 ) : null}
               </div>
               <div className="text-sm text-white/80">{detail?.patient?.blood_type ? `Groupe ${detail.patient.blood_type}` : ""}</div>
@@ -867,9 +912,26 @@ export default function PatientsPage() {
           </div>
 
           <div className="p-6">
-            {detailLoading ? <div className="text-sm text-muted-foreground">Chargement...</div> : null}
-            {detailError ? <div className="text-sm text-destructive">{detailError}</div> : null}
+            {showDeleteConfirm ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  {detail?.patient
+                    ? `Supprimer ${detail.patient.first_name} ${detail.patient.last_name} ? Cette action est irreversible.`
+                    : "Voulez-vous supprimer ce patient ? Cette action est irreversible."}
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={() => setShowDeleteConfirm(false)} disabled={deleting}>
+                    Annuler
+                  </Button>
+                  <Button type="button" variant="destructive" onClick={deletePatient} disabled={deleting}>
+                    {deleting ? "Suppression..." : "Supprimer"}
+                  </Button>
+                </div>
+              </div>
+            ) : detailLoading ? <div className="text-sm text-muted-foreground">Chargement...</div> : null}
+            {!showDeleteConfirm && detailError ? <div className="text-sm text-destructive">{detailError}</div> : null}
 
+            {!showDeleteConfirm && detail ? (<>
             <div className="mb-4 flex flex-wrap gap-2">
               {(
                 [
@@ -901,7 +963,7 @@ export default function PatientsPage() {
               ))}
             </div>
 
-            {!detail ? null : tab === "dossier" ? (
+            {tab === "dossier" ? (
               editMode ? (
                 <div className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
@@ -936,6 +998,18 @@ export default function PatientsPage() {
                     <div>
                       <label className="text-sm text-muted-foreground mb-1 block">Historique medical (separe par virgules)</label>
                       <Input value={editForm.medical_history} onChange={(e) => setEditForm((s) => ({ ...s, medical_history: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="text-sm text-muted-foreground mb-1 block">Severite</label>
+                      <select
+                        value={editForm.severity_status}
+                        onChange={(e) => setEditForm((s) => ({ ...s, severity_status: e.target.value as "critique" | "surveillance" | "stable" }))}
+                        className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                      >
+                        <option value="stable">Stable</option>
+                        <option value="surveillance">Surveillance</option>
+                        <option value="critique">Critique</option>
+                      </select>
                     </div>
                   </div>
                   {editError ? <div className="text-sm text-destructive">{editError}</div> : null}
@@ -1001,16 +1075,80 @@ export default function PatientsPage() {
                   <CardHeader>
                     <CardTitle className="text-base">Historique</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="max-h-[360px] overflow-y-auto">
                     <div className="space-y-3">
                       {(detail.consultations || []).map((c: any) => (
+                        editConsultId === c.id ? (
+                          <div key={c.id} className="rounded-xl border border-border p-3 space-y-2">
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-0.5 block">Date</label>
+                                <Input type="date" value={editConsultForm.date} onChange={(e) => setEditConsultForm((s) => ({ ...s, date: e.target.value }))} />
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-0.5 block">Motif</label>
+                                <Input value={editConsultForm.motif} onChange={(e) => setEditConsultForm((s) => ({ ...s, motif: e.target.value }))} />
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-0.5 block">Ecole</label>
+                                <Input value={editConsultForm.ecole} onChange={(e) => setEditConsultForm((s) => ({ ...s, ecole: e.target.value }))} />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-0.5 block">Examen</label>
+                              <textarea className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none" value={editConsultForm.examen} onChange={(e) => setEditConsultForm((s) => ({ ...s, examen: e.target.value }))} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-0.5 block">Diagnostic</label>
+                                <textarea className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none" value={editConsultForm.diagnostic} onChange={(e) => setEditConsultForm((s) => ({ ...s, diagnostic: e.target.value }))} />
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground mb-0.5 block">Traitement</label>
+                                <textarea className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none" value={editConsultForm.traitement} onChange={(e) => setEditConsultForm((s) => ({ ...s, traitement: e.target.value }))} />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs text-muted-foreground mb-0.5 block">Note</label>
+                              <textarea className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none" value={editConsultForm.note} onChange={(e) => setEditConsultForm((s) => ({ ...s, note: e.target.value }))} />
+                            </div>
+                            <div className="flex justify-end gap-2 pt-1">
+                              <Button type="button" variant="outline" size="sm" onClick={() => setEditConsultId(null)}>Annuler</Button>
+                              <Button type="button" size="sm" disabled={consultationSaving} onClick={async () => {
+                                if (!selectedId) return;
+                                setConsultationSaving(true);
+                                try {
+                                  await apiFetch(`/api/patients/${selectedId}/consultations/${c.id}`, {
+                                    method: "PUT",
+                                    body: JSON.stringify(editConsultForm)
+                                  });
+                                  setEditConsultId(null);
+                                  dispatchNotification({ id: `consult-edit-${Date.now()}`, title: "Consultation modifiée", detail: editConsultForm.motif || "Consultation mise à jour", type: "success" });
+                                  await loadDetail(selectedId);
+                                } catch {
+                                  setConsultationError("Erreur lors de la modification");
+                                } finally {
+                                  setConsultationSaving(false);
+                                }
+                              }}>{consultationSaving ? "Sauvegarde..." : "Sauvegarder"}</Button>
+                            </div>
+                          </div>
+                        ) : (
                         <div key={c.id} className="rounded-xl border border-border p-3">
-                          <div className="text-xs text-muted-foreground">{new Date(c.date).toLocaleDateString("fr-FR")}</div>
-                          <div className="mt-1 font-medium text-sm">{c.motif ?? "—"}</div>
-                          {c.ecole ? <div className="text-xs text-muted-foreground mt-0.5">Ecole: {c.ecole}</div> : null}
-                          {c.diagnostic && <div className="text-sm text-muted-foreground">{c.diagnostic}</div>}
-                          {c.traitement && <div className="text-xs text-blue-600 mt-1">Traitement: {c.traitement}</div>}
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="text-xs text-muted-foreground">{new Date(c.date).toLocaleDateString("fr-FR")}</div>
+                              <div className="mt-1 font-medium text-sm">{c.motif ?? "—"}</div>
+                              {c.ecole ? <div className="text-xs text-muted-foreground mt-0.5">Ecole: {c.ecole}</div> : null}
+                              {c.diagnostic && <div className="text-sm text-muted-foreground">{c.diagnostic}</div>}
+                              {c.traitement && <div className="text-xs text-blue-600 mt-1">Traitement: {c.traitement}</div>}
+                            </div>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => { setEditConsultId(c.id); setEditConsultForm({ date: c.date || "", motif: c.motif || "", ecole: c.ecole || "", examen: c.examen || "", diagnostic: c.diagnostic || "", traitement: c.traitement || "", note: c.note || "" }); }}>
+                              Modifier
+                            </Button>
+                          </div>
                         </div>
+                        )
                       ))}
                       {!detail.consultations?.length ? <div className="text-sm text-muted-foreground">Aucune consultation</div> : null}
                     </div>
@@ -1021,9 +1159,9 @@ export default function PatientsPage() {
                   <CardHeader>
                     <CardTitle className="text-base">Nouvelle consultation</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2 max-h-[360px] overflow-y-auto">
                     <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Date</label>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Date</label>
                       <Input
                         type="date"
                         value={newConsultation.date}
@@ -1031,54 +1169,54 @@ export default function PatientsPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Motif</label>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Motif</label>
                       <textarea
-                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[60px] resize-none"
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none"
                         placeholder="Motif de la consultation"
                         value={newConsultation.reason}
                         onChange={(e) => setNewConsultation((s) => ({ ...s, reason: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Ecole</label>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Ecole</label>
                       <textarea
-                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[40px] resize-none"
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none"
                         placeholder="Ecole"
                         value={newConsultation.ecole}
                         onChange={(e) => setNewConsultation((s) => ({ ...s, ecole: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Examen</label>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Examen</label>
                       <textarea
-                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[60px] resize-none"
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none"
                         placeholder="Résultats de l'examen"
                         value={newConsultation.exam}
                         onChange={(e) => setNewConsultation((s) => ({ ...s, exam: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Diagnostic</label>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Diagnostic</label>
                       <textarea
-                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[60px] resize-none"
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none"
                         placeholder="Diagnostic"
                         value={newConsultation.diagnosis}
                         onChange={(e) => setNewConsultation((s) => ({ ...s, diagnosis: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Traitement</label>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Traitement</label>
                       <textarea
-                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[60px] resize-none"
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none"
                         placeholder="Traitement prescrit"
                         value={newConsultation.treatment}
                         onChange={(e) => setNewConsultation((s) => ({ ...s, treatment: e.target.value }))}
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Note optionnelle</label>
+                      <label className="text-xs text-muted-foreground mb-0.5 block">Note</label>
                       <textarea
-                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[40px] resize-none"
+                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm min-h-[36px] resize-none"
                         placeholder="Note"
                         value={newConsultation.note}
                         onChange={(e) => setNewConsultation((s) => ({ ...s, note: e.target.value }))}
@@ -1206,14 +1344,11 @@ export default function PatientsPage() {
                 );
               })()
             ) : tab === "documents" ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Documents</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground">Aucun document</div>
-                </CardContent>
-              </Card>
+              <DocumentsTab
+                patientId={selectedId!}
+                documents={detail?.documents || []}
+                onRefresh={() => selectedId && loadDetail(selectedId)}
+              />
             ) : tab === "ordonnances" ? (
               <PrescriptionsTab
                 patientId={selectedId!}
@@ -1234,21 +1369,29 @@ export default function PatientsPage() {
                           Aucun message. Commencez la conversation.
                         </div>
                       ) : (
-                        chatItems.map((m: any) => (
+                        chatItems.map((m: any) => {
+                          const isStaff = m.sender_role === "admin" || m.sender_role === "secretaire";
+                          const session = getSession();
+                          const isCurrentUser = session && (m.sender_id === session.userId || m.sender_role === session.role);
+                          const displayName = m.sender_role === "patient"
+                            ? `${detail?.patient?.first_name || ""} ${detail?.patient?.last_name || ""}`.trim() || "Patient"
+                            : isCurrentUser ? "Moi" : (m.sender_role === "admin" ? "Dr. Moreau" : "Secrétaire");
+                          return (
                           <div
                             key={m.id}
                             className={cn(
                               "rounded-lg p-3 max-w-[80%]",
-                              m.from_role === "patient" ? "bg-blue-100 text-blue-900 ml-auto" : "bg-gray-100 text-gray-900 mr-auto"
+                              isStaff ? "bg-blue-100 text-blue-900 ml-auto" : "bg-gray-100 text-gray-900 mr-auto"
                             )}
                           >
-                            <div className="text-xs font-medium mb-1">{m.from_name}</div>
-                            <div className="text-sm">{m.text || m.content}</div>
+                            <div className="text-xs font-medium mb-1">{displayName}</div>
+                            <div className="text-sm">{m.content}</div>
                             <div className="text-[10px] text-muted-foreground mt-1">
                               {new Date(m.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                             </div>
                           </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -1401,9 +1544,149 @@ export default function PatientsPage() {
                 </CardContent>
               </Card>
             )}
+          </>) : null}
           </div>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function DocumentsTab({ patientId, documents, onRefresh }: {
+  patientId: string;
+  documents: any[];
+  onRefresh: () => void;
+}) {
+  const [uploading, setUploading] = React.useState(false);
+  const [docFile, setDocFile] = React.useState<File | null>(null);
+  const [docCategory, setDocCategory] = React.useState("analyse");
+  const [deletingDoc, setDeletingDoc] = React.useState<string | null>(null);
+
+  async function handleUpload() {
+    if (!docFile) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", docFile);
+      formData.append("category", docCategory);
+      await apiUpload(`/api/documents/${patientId}`, formData);
+      setDocFile(null);
+      dispatchNotification({
+        id: `doc-upload-${Date.now()}`,
+        title: "Document ajouté",
+        detail: docFile.name,
+        type: "success"
+      });
+      onRefresh();
+    } catch {
+      dispatchNotification({
+        id: `doc-error-${Date.now()}`,
+        title: "Erreur",
+        detail: "Impossible d'ajouter le document",
+        type: "error"
+      });
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleDelete(docId: string) {
+    setDeletingDoc(docId);
+    try {
+      await apiFetch(`/api/documents/${docId}`, { method: "DELETE" });
+      dispatchNotification({
+        id: `doc-delete-${Date.now()}`,
+        title: "Document supprimé",
+        detail: "Document supprimé",
+        type: "success"
+      });
+      onRefresh();
+    } catch {
+      dispatchNotification({
+        id: `doc-del-error-${Date.now()}`,
+        title: "Erreur",
+        detail: "Impossible de supprimer le document",
+        type: "error"
+      });
+    } finally {
+      setDeletingDoc(null);
+    }
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Documents ({documents.length})</CardTitle>
+        </CardHeader>
+        <CardContent className="max-h-[360px] overflow-y-auto">
+          {documents.length === 0 ? (
+            <div className="text-sm text-muted-foreground">Aucun document</div>
+          ) : (
+            <div className="space-y-2">
+              {documents.map((d: any) => (
+                <div key={d.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="h-8 w-8 text-primary shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium truncate">{d.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {d.category} {d.size ? `- ${(Number(d.size) / 1024).toFixed(1)} KB` : ""}
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={deletingDoc === d.id}
+                    onClick={() => handleDelete(d.id)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Ajouter un document</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div>
+            <label className="text-xs text-muted-foreground mb-0.5 block">Fichier</label>
+            <Input
+              type="file"
+              onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
+              className="text-sm"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground mb-0.5 block">Categorie</label>
+            <select
+              value={docCategory}
+              onChange={(e) => setDocCategory(e.target.value)}
+              className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+            >
+              <option value="analyse">Analyse</option>
+              <option value="radio">Radio</option>
+              <option value="echographie">Echographie</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+          <Button
+            type="button"
+            className="w-full"
+            disabled={!docFile || uploading}
+            onClick={handleUpload}
+          >
+            {uploading ? "Upload..." : <><Upload className="mr-2 h-4 w-4" /> Ajouter</>}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

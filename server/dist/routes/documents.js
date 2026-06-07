@@ -22,26 +22,30 @@ exports.documentsRouter.get('/:patientId', auth_js_1.authenticateToken, (0, perm
     }
 });
 exports.documentsRouter.post('/:patientId', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('documents', 'write'), upload.single('file'), async (req, res) => {
-    const { id, name, category, size } = req.body;
-    const filePath = req.file?.path;
+    const file = req.file;
+    if (!file)
+        return res.status(400).json({ message: 'No file provided' });
+    const docId = `doc_${Date.now().toString(36)}`;
+    const { category } = req.body;
     try {
-        await (0, pool_js_1.query)('INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)', [id, req.params.patientId, name, category, size, filePath]);
+        await (0, pool_js_1.query)('INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)', [docId, req.params.patientId, file.originalname, category || 'autre', String(file.size), file.path]);
         const user = req.user;
         const patient = await (0, pool_js_1.query)('SELECT first_name, last_name FROM patients WHERE id = $1', [req.params.patientId]);
         const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : req.params.patientId;
         (0, createNotification_js_1.createNotification)({
             type: 'document_uploaded',
             title: 'Document ajouté',
-            message: `${name} ajouté pour ${pName}`,
+            message: `${file.originalname} ajouté pour ${pName}`,
             actor_name: user?.name,
             actor_role: user?.role,
             patient_id: req.params.patientId,
-            related_id: id,
+            related_id: docId,
         });
         res.status(201).json({ message: 'Document uploaded' });
     }
     catch (err) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('Document upload error:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 exports.documentsRouter.delete('/:id', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('documents', 'write'), async (req, res) => {

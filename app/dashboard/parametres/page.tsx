@@ -71,7 +71,7 @@ export default function SettingsPage() {
   const [profile, setProfile] = React.useState<Profile | null>(null);
   const [loading, setLoading] = React.useState(true);
 
-  const [_fullName, setFullName] = React.useState("");
+  const [, setFullName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");

@@ -8,6 +8,7 @@ import {
   CalendarDays,
   ChevronDown,
   FileText,
+  Heart,
   HeartPulse,
   LayoutDashboard,
   LogOut,
@@ -188,12 +189,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         criticalAlerts: Array<{ patient_id: string; first_name: string; last_name: string; spo2: number | null; heart_rate: number | null }>;
         appointmentsToday: Array<{ id: string; first_name: string; last_name: string; starts_at: string; status: string }>;
       }>("/api/dashboard/summary"),
-      apiFetch<any[] | { items: Array<{ id: string; from_role: string; from_name: string; text: string; content: string; is_read: boolean }> }>("/api/chat?channel=staff"),
+      apiFetch<any[] | { items: Array<{ id: string; sender_role: string; sender_id: string; content: string; is_read: boolean }> }>("/api/chat?channel=staff"),
       apiFetch<any[]>("/api/notifications")
     ]);
 
     const chatItems = Array.isArray(staffChat) ? staffChat : (staffChat as any).items ?? [];
-    const unreadMessages = chatItems.filter((m: any) => m.from_role !== session.role && !m.is_read);
+    const unreadMessages = chatItems.filter((m: any) => m.sender_role !== session.role && !m.is_read);
     setChatUnreadCount(unreadMessages.length);
 
     const notifRows = (serverNotifs || []).slice(0, 10).map((n: any) => ({
@@ -223,8 +224,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     const messageRows = unreadMessages.slice(-3).reverse().map((m: any) => ({
       id: `msg-${m.id}`,
-      title: `Message de ${m.from_name || m.from_role}`,
-      detail: (m.text || m.content || "").substring(0, 50),
+      title: `Message de ${m.sender_role === "admin" ? "Dr. Moreau" : "Secrétaire"}`,
+      detail: (m.content || "").substring(0, 50),
       type: "chat_message"
     }));
 

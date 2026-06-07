@@ -1,9 +1,11 @@
 import { Router } from 'express';
+import multer from 'multer';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/permissions.js';
 import { createNotification } from '../lib/createNotification.js';
 
+const upload = multer({ dest: 'uploads/' });
 export const patientsRouter = Router();
 
 patientsRouter.get('/', authenticateToken, requirePermission('patients'), async (req, res) => {
@@ -81,14 +83,39 @@ patientsRouter.get('/:id', authenticateToken, async (req, res) => {
 });
 
 patientsRouter.put('/:id', authenticateToken, requirePermission('patients', 'write'), async (req, res) => {
-    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history } = req.body;
+    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, pathology, severity_status } = req.body;
     try {
         await query(
-            'UPDATE patients SET first_name=$1, last_name=$2, date_of_birth=$3, gender=$4, blood_type=$5, phone=$6, email=$7, address=$8, country=$9, emergency_contact=$10, allergies=$11, medical_history=$12 WHERE id=$13',
-            [first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, req.params.id]
+            'UPDATE patients SET first_name=$1, last_name=$2, date_of_birth=$3, gender=$4, blood_type=$5, phone=$6, email=$7, address=$8, country=$9, emergency_contact=$10, allergies=$11, medical_history=$12, pathology=$13, severity_status=$14 WHERE id=$15',
+            [first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, pathology, severity_status, req.params.id]
         );
         res.json({ message: 'Patient updated' });
     } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+patientsRouter.delete('/:id', authenticateToken, requirePermission('patients', 'delete'), async (req, res) => {
+    try {
+        const result = await query('DELETE FROM patients WHERE id = $1 RETURNING id', [req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ message: 'Patient not found' });
+        res.json({ message: 'Patient deleted' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+patientsRouter.put('/:id/consultations/:consultationId', authenticateToken, requirePermission('consultations', 'write'), async (req, res) => {
+    const { motif, ecole, examen, diagnostic, traitement, note, date } = req.body;
+    try {
+        await query(
+            'UPDATE consultations SET date=$1, motif=$2, ecole=$3, examen=$4, diagnostic=$5, traitement=$6, note=$7 WHERE id=$8 AND patient_id=$9',
+            [date, motif, ecole, examen, diagnostic, traitement, note, req.params.consultationId, req.params.id]
+        );
+        res.json({ message: 'Consultation updated' });
+    } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -146,3 +173,5 @@ patientsRouter.post('/:id/vitals', authenticateToken, requirePermission('vitals'
         res.status(500).json({ message: 'Server error' });
     }
 });
+
+

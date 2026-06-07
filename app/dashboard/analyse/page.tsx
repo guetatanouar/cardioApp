@@ -153,7 +153,7 @@ export default function AnalysePage() {
       loadData().catch(() => undefined);
     } catch (err) {
       toast.dismiss();
-      toast.error(t("analysisError", { name: "" }));
+      toast.error(t("analysisError"));
       console.error(err);
     }
     setUploading(false);
