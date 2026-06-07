@@ -12,6 +12,11 @@ const permissions_js_1 = require("../middleware/permissions.js");
 const createNotification_js_1 = require("../lib/createNotification.js");
 const upload = (0, multer_1.default)({ dest: 'uploads/' });
 exports.patientsRouter = (0, express_1.Router)();
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const KNOWN_COUNTRIES = ['CA','US','FR','BE','CH','DZ','MA','TN','GB','DE','IT','ES','NL','PT','SE','AT','DK','FI','IE','LU','GR','PL','CZ','HU','RO','BG','HR','SK','SI','EE','LV','LT','MT','SA','AE','QA','EG','LB','SY','TR'];
+function validateEmail(email) { return EMAIL_REGEX.test(email); }
+function validatePhone(phone) { if (!phone) return true; const digits = phone.replace(/\D/g, ''); return digits.length >= 6 && digits.length <= 15; }
+function validateCountry(country) { if (!country) return true; return KNOWN_COUNTRIES.includes(country); }
 exports.patientsRouter.get('/', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('patients'), async (req, res) => {
     try {
         const result = await (0, pool_js_1.query)('SELECT * FROM patients ORDER BY created_at DESC');
@@ -24,6 +29,9 @@ exports.patientsRouter.get('/', auth_js_1.authenticateToken, (0, permissions_js_
 exports.patientsRouter.post('/', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('patients', 'write'), async (req, res) => {
     const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status } = req.body;
     const id = `P${Date.now().toString(36)}${Math.random().toString(36).substr(2, 4)}`;
+    if (email && !validateEmail(email)) { return res.status(400).json({ message: 'Format d\'email invalide' }); }
+    if (phone && !validatePhone(phone)) { return res.status(400).json({ message: 'Format de numéro de téléphone invalide' }); }
+    if (country && !validateCountry(country)) { return res.status(400).json({ message: 'Pays non reconnu' }); }
     try {
         await (0, pool_js_1.query)('INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)', [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, country, pathology, severity_status || 'stable']);
         const user = req.user;
@@ -81,6 +89,9 @@ exports.patientsRouter.get('/:id', auth_js_1.authenticateToken, async (req, res)
 });
 exports.patientsRouter.put('/:id', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('patients', 'write'), async (req, res) => {
     const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, pathology, severity_status } = req.body;
+    if (email && !validateEmail(email)) { return res.status(400).json({ message: 'Format d\'email invalide' }); }
+    if (phone && !validatePhone(phone)) { return res.status(400).json({ message: 'Format de numéro de téléphone invalide' }); }
+    if (country && !validateCountry(country)) { return res.status(400).json({ message: 'Pays non reconnu' }); }
     try {
         await (0, pool_js_1.query)('UPDATE patients SET first_name=$1, last_name=$2, date_of_birth=$3, gender=$4, blood_type=$5, phone=$6, email=$7, address=$8, country=$9, emergency_contact=$10, allergies=$11, medical_history=$12, pathology=$13, severity_status=$14 WHERE id=$15', [first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, pathology, severity_status, req.params.id]);
         res.json({ message: 'Patient updated' });
