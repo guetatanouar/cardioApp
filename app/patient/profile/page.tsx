@@ -14,6 +14,7 @@ import {
 
 import { apiFetch } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/storage";
+import { getCountryByCode } from "@/lib/countries";
 
 export default function PatientProfile() {
   const router = useRouter();
@@ -62,7 +63,8 @@ export default function PatientProfile() {
     ? new Date(p.date_of_birth).toLocaleDateString("fr-FR")
     : "14/03/1965";
   const address = p.address || "12 Rue des Lilas, Lyon";
-  const country = p.country || "France";
+  const countryInfo = p.country ? getCountryByCode(p.country) : null;
+  const country = countryInfo ? `${countryInfo.flag} ${countryInfo.name}` : (p.country || "France");
   const emergencyContact = p.emergency_contact || "Marie Dupont - 0661234568";
   const allergies: string[] = Array.isArray(p.allergies) && p.allergies.length > 0
     ? p.allergies

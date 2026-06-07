@@ -18,6 +18,7 @@ import { getSession } from "@/lib/auth/storage";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { CountrySelect } from "@/components/ui/country-select";
+import { getCountryByCode } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -620,7 +621,7 @@ export default function PatientsPage() {
                         </select>
                         
                         <PhoneInput
-                          country="FR"
+                          defaultCountry="CA"
                           value={createForm.phone}
                           onChange={(v) => setCreateForm((s) => ({ ...s, phone: v }))}
                           className="w-full"
@@ -1062,9 +1063,9 @@ export default function PatientsPage() {
                       <div>{detail.patient.address ?? "—"}</div>
                     </div>
                     <div>
-                      <div className="text-muted-foreground">Pays</div>
-                      <div>{detail.patient.country ?? "—"}</div>
-                    </div>
+                       <div className="text-muted-foreground">Pays</div>
+                       <div>{(() => { const c = getCountryByCode(detail.patient.country); return c ? <><span className="text-base mr-1">{c.flag}</span>{c.name}</> : (detail.patient.country ?? "—"); })()}</div>
+                     </div>
                     <div>
                       <div className="text-muted-foreground">Contact urgence</div>
                       <div>{detail.patient.emergency_contact ?? "—"}</div>
