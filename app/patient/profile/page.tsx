@@ -73,8 +73,8 @@ export default function PatientProfile() {
   const mappedConsultations = consultations.length > 0
     ? consultations
     : [
-        { title: "Contrôle tension artérielle mensuel", date: "30/03/2025", doctor: "Dr. Pierre Moreau" },
-        { title: "Résultats bilan biologique", date: "28/02/2025", doctor: "Dr. Pierre Moreau" },
+        { title: "Contrôle tension artérielle mensuel", date: "30/03/2025", doctor: "Dr. Étienne Tremblay" },
+        { title: "Résultats bilan biologique", date: "28/02/2025", doctor: "Dr. Étienne Tremblay" },
       ];
 
   return (
@@ -264,7 +264,7 @@ export default function PatientProfile() {
                   </h4>
 
                   <p className="text-sm text-gray-500 mt-1">
-                    {consultation.date ? new Date(consultation.date).toLocaleDateString("fr-FR") : consultation.date} · {consultation.doctor || consultation.author || "Dr. Pierre Moreau"}
+                    {consultation.date ? new Date(consultation.date).toLocaleDateString("fr-FR") : consultation.date} · {consultation.doctor || consultation.author || "Dr. Étienne Tremblay"}
                   </p>
                 </div>
               ))}

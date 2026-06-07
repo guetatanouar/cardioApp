@@ -98,11 +98,11 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[calc(100vh-8rem)] gap-4">
-      <Card className="w-64 flex-shrink-0">
+      <Card className="w-64 flex-shrink-0 flex flex-col min-h-0">
         <CardHeader className="p-3">
           <CardTitle className="text-sm">Conversations</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="p-0 flex-1 overflow-y-auto">
           <button
             type="button"
             onClick={() => setChannel("staff")}

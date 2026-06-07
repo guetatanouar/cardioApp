@@ -224,7 +224,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     const messageRows = unreadMessages.slice(-3).reverse().map((m: any) => ({
       id: `msg-${m.id}`,
-      title: `Message de ${m.sender_role === "admin" ? "Dr. Moreau" : "Secrétaire"}`,
+      title: `Message de ${m.sender_role === "admin" ? "Dr. Tremblay" : "Secrétaire"}`,
       detail: (m.content || "").substring(0, 50),
       type: "chat_message"
     }));

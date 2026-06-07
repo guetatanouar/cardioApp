@@ -220,8 +220,8 @@ export default function LoginPage() {
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900 dark:text-indigo-300">
                         <User className="h-5 w-5" />
                       </div>
-                      <div className="mt-2 text-sm font-semibold">Dr. Pierre Moreau</div>
-                      <div className="text-xs text-muted-foreground">Cardiologue</div>
+<div className="mt-2 text-sm font-semibold">Dr. Étienne Tremblay</div>
+                       <div className="text-xs text-muted-foreground">Cardiologue</div>
                       {staffProfile === "admin" && (
                         <div className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white">
                           <Shield className="h-3 w-3" />
@@ -236,8 +236,8 @@ export default function LoginPage() {
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300">
                         <User className="h-5 w-5" />
                       </div>
-                      <div className="mt-2 text-sm font-semibold">Sophie Dubois</div>
-                      <div className="text-xs text-muted-foreground">Secretaires</div>
+<div className="mt-2 text-sm font-semibold">Marie-Claude Gagnon</div>
+                       <div className="text-xs text-muted-foreground">Secrétaire</div>
                       {staffProfile === "secretaire" && (
                         <div className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-white">
                           <Shield className="h-3 w-3" />
@@ -291,7 +291,7 @@ export default function LoginPage() {
                         Connexion...
                       </span>
                     ) : (
-                      `Se connecter — ${staffProfile === "admin" ? "Dr. Moreau" : "S. Dubois"}`
+                      `Se connecter — ${staffProfile === "admin" ? "Dr. Tremblay" : "M.-C. Gagnon"}`
                     )}
                   </Button>
                 </form>

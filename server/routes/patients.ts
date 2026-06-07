@@ -126,7 +126,7 @@ patientsRouter.post('/:id/consultations', authenticateToken, requirePermission('
     try {
         await query(
             'INSERT INTO consultations (id, patient_id, date, motif, ecole, examen, diagnostic, traitement, note, author) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
-            [id, req.params.id, date || new Date().toISOString().split('T')[0], motif, ecole, examen, diagnostic, traitement, note, "Dr. Moreau"]
+            [id, req.params.id, date || new Date().toISOString().split('T')[0], motif, ecole, examen, diagnostic, traitement, note, "Dr. Étienne Tremblay"]
         );
         const user = (req as any).user;
         const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [req.params.id]);

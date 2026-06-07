@@ -116,7 +116,7 @@ exports.patientsRouter.post('/:id/consultations', auth_js_1.authenticateToken, (
     const { motif, ecole, examen, diagnostic, traitement, note, date } = req.body;
     const id = `c${Date.now().toString(36)}`;
     try {
-        await (0, pool_js_1.query)('INSERT INTO consultations (id, patient_id, date, motif, ecole, examen, diagnostic, traitement, note, author) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [id, req.params.id, date || new Date().toISOString().split('T')[0], motif, ecole, examen, diagnostic, traitement, note, "Dr. Moreau"]);
+        await (0, pool_js_1.query)('INSERT INTO consultations (id, patient_id, date, motif, ecole, examen, diagnostic, traitement, note, author) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)', [id, req.params.id, date || new Date().toISOString().split('T')[0], motif, ecole, examen, diagnostic, traitement, note, "Dr. Étienne Tremblay"]);
         const user = req.user;
         const patient = await (0, pool_js_1.query)('SELECT first_name, last_name FROM patients WHERE id = $1', [req.params.id]);
         const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : req.params.id;

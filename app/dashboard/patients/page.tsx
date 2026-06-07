@@ -1375,7 +1375,7 @@ export default function PatientsPage() {
                           const isCurrentUser = session && (m.sender_id === session.userId || m.sender_role === session.role);
                           const displayName = m.sender_role === "patient"
                             ? `${detail?.patient?.first_name || ""} ${detail?.patient?.last_name || ""}`.trim() || "Patient"
-                            : isCurrentUser ? "Moi" : (m.sender_role === "admin" ? "Dr. Moreau" : "Secrétaire");
+                            : isCurrentUser ? "Moi" : (m.sender_role === "admin" ? "Dr. Tremblay" : "Secrétaire");
                           return (
                           <div
                             key={m.id}

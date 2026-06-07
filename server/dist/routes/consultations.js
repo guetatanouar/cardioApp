@@ -18,7 +18,7 @@ exports.consultationsRouter.post('/:id', auth_js_1.authenticateToken, async (req
     const { motif, examen, diagnostic, traitement, note } = req.body;
     const id = `cons_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
-        await (0, pool_js_1.query)('INSERT INTO consultations (id, patient_id, date, motif, examen, diagnostic, traitement, note, author) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [id, req.params.id, new Date().toISOString().split('T')[0], motif, examen, diagnostic, traitement, note, "Dr. Moreau"]);
+        await (0, pool_js_1.query)('INSERT INTO consultations (id, patient_id, date, motif, examen, diagnostic, traitement, note, author) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [id, req.params.id, new Date().toISOString().split('T')[0], motif, examen, diagnostic, traitement, note, "Dr. Étienne Tremblay"]);
         res.status(201).json({ message: 'Consultation added' });
     }
     catch (err) {
