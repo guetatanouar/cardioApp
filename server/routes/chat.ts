@@ -12,7 +12,7 @@ chatRouter.get('/', authenticateToken, requirePermission('chat'), async (req, re
         let result;
         if (channel === 'staff') {
             result = await query('SELECT * FROM chat_messages WHERE channel = \'staff\' ORDER BY created_at ASC');
-        } else if (channel && channel.startsWith('patient:')) {
+        } else if (typeof channel === 'string' && channel.startsWith('patient:')) {
             const patientId = channel.replace('patient:', '');
             result = await query('SELECT * FROM chat_messages WHERE channel = \'patient\' AND patient_id = $1 ORDER BY created_at ASC', [patientId]);
         } else {
@@ -29,12 +29,12 @@ chatRouter.post('/', authenticateToken, requirePermission('chat', 'send'), async
     const { channel, content } = req.body;
     const id = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const user = (req as any).user;
-    let patient_id = null;
+    let patient_id: string | undefined = undefined;
     let from_role = user.role;
     let from_name = user.name || 'Dr. Moreau';
     let actualChannel = 'staff';
     
-    if (channel && channel.startsWith('patient:')) {
+    if (typeof channel === 'string' && channel.startsWith('patient:')) {
         patient_id = channel.replace('patient:', '');
         from_role = user.role === 'patient' ? 'patient' : 'staff';
         from_name = user.name || 'Dr. Moreau';
@@ -78,7 +78,7 @@ chatRouter.post('/mark-read', authenticateToken, requirePermission('chat'), asyn
     const { channel } = req.body;
     try {
         let actualChannel = channel;
-        if (channel && channel.startsWith('patient:')) {
+        if (typeof channel === 'string' && channel.startsWith('patient:')) {
             actualChannel = 'patient';
         }
         await query('UPDATE chat_messages SET is_read = TRUE WHERE channel = $1 AND is_read = FALSE', [actualChannel]);

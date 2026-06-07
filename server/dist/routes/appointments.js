@@ -5,6 +5,7 @@ const express_1 = require("express");
 const pool_js_1 = require("../db/pool.js");
 const auth_js_1 = require("../middleware/auth.js");
 const permissions_js_1 = require("../middleware/permissions.js");
+const createNotification_js_1 = require("../lib/createNotification.js");
 exports.appointmentsRouter = (0, express_1.Router)();
 exports.appointmentsRouter.get('/', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('appointments'), async (req, res) => {
     try {
@@ -56,6 +57,18 @@ exports.appointmentsRouter.post('/', auth_js_1.authenticateToken, (0, permission
     const timeStr = date.toTimeString().slice(0, 5);
     try {
         await (0, pool_js_1.query)('INSERT INTO appointments (id, patient_id, date, time, duration, type, status, reason, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [id, patientId, dateStr, timeStr, durationMinutes ?? 30, type, status ?? 'scheduled', reason ?? null, notes ?? null]);
+        const user = req.user;
+        const patient = await (0, pool_js_1.query)('SELECT first_name, last_name FROM patients WHERE id = $1', [patientId]);
+        const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : patientId;
+        (0, createNotification_js_1.createNotification)({
+            type: 'appointment_created',
+            title: 'Nouveau rendez-vous',
+            message: `Rendez-vous ${type} pour ${pName} le ${dateStr} à ${timeStr}`,
+            actor_name: user?.name,
+            actor_role: user?.role,
+            patient_id: patientId,
+            related_id: id,
+        });
         res.status(201).json({ message: 'Appointment created', id });
     }
     catch (err) {

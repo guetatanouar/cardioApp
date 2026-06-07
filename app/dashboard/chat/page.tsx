@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 
 import { apiFetch } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/storage";

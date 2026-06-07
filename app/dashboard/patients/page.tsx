@@ -54,7 +54,7 @@ export default function PatientsPage() {
 
   const [items, setItems] = React.useState<PatientListItem[]>([]);
   const [total, setTotal] = React.useState(0);
-  const [loading, setLoading] = React.useState(false);
+  const [_loading, setLoading] = React.useState(false);
 
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const [tab, setTab] = React.useState<"dossier" | "consultations" | "vitals" | "documents" | "messages" | "access" | "ordonnances">("dossier");

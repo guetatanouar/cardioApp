@@ -36,6 +36,19 @@ async function seed() {
         await (0, pool_js_1.query)(`INSERT INTO patient_accounts (patient_id, username, password)
              VALUES ($1, $2, $3)
              ON CONFLICT (username) DO NOTHING`, ['p2', 'claire.martin', clairePass]);
+        // Seed Documents for testing Analyse module
+        await (0, pool_js_1.query)(`INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`, ['doc_1', 'p1', 'ECG - Jean Dupont', 'analyse', '1.2 KB', 'uploads/ecg-jean-dupont.txt']);
+        await (0, pool_js_1.query)(`INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`, ['doc_2', 'p1', 'Bilan sanguin - Jean Dupont', 'analyse', '0.8 KB', 'uploads/bilan-sanguin-jean-dupont.txt']);
+        await (0, pool_js_1.query)(`INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`, ['doc_3', 'p2', 'Échocardiographie - Claire Martin', 'echographie', '1.0 KB', 'uploads/echocardio-claire-martin.txt']);
+        await (0, pool_js_1.query)(`INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`, ['doc_4', 'p2', 'Holter 24h - Claire Martin', 'analyse', '0.9 KB', 'uploads/holter-claire-martin.txt']);
         // Seed Secretaire Permissions (all granted)
         const secUser = await (0, pool_js_1.query)('SELECT id FROM users WHERE username = $1', ['secretaire']);
         if (secUser.rows.length > 0) {

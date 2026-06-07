@@ -14,7 +14,6 @@ import {
   MessageSquare,
   Settings,
   UserCircle,
-  Search,
   Users,
   Microscope,
   UserPlus,
@@ -32,7 +31,6 @@ import { useI18n } from "@/lib/i18n/client";
 import { getDir } from "@/lib/i18n/messages";
 import { apiFetch } from "@/lib/api/client";
 import { addNotificationListener } from "@/lib/notifications";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,

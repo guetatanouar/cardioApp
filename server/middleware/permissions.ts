@@ -19,7 +19,7 @@ const permMap: Record<string, string> = {
   consultations: 'can_view_consultations'
 };
 
-export function requirePermission(resource: string, action: 'read' | 'write' | 'delete' = 'read') {
+export function requirePermission(resource: string, action: 'read' | 'write' | 'delete' | 'send' = 'read') {
   return async (req: Request, res: Response, next: NextFunction) => {
     const user = (req as any).user;
     if (!user) return res.status(401).json({ error: 'Non authentifié' });

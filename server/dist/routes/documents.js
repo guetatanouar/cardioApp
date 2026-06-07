@@ -9,6 +9,7 @@ const multer_1 = __importDefault(require("multer"));
 const pool_js_1 = require("../db/pool.js");
 const auth_js_1 = require("../middleware/auth.js");
 const permissions_js_1 = require("../middleware/permissions.js");
+const createNotification_js_1 = require("../lib/createNotification.js");
 const upload = (0, multer_1.default)({ dest: 'uploads/' });
 exports.documentsRouter = (0, express_1.Router)();
 exports.documentsRouter.get('/:patientId', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('documents'), async (req, res) => {
@@ -25,6 +26,18 @@ exports.documentsRouter.post('/:patientId', auth_js_1.authenticateToken, (0, per
     const filePath = req.file?.path;
     try {
         await (0, pool_js_1.query)('INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)', [id, req.params.patientId, name, category, size, filePath]);
+        const user = req.user;
+        const patient = await (0, pool_js_1.query)('SELECT first_name, last_name FROM patients WHERE id = $1', [req.params.patientId]);
+        const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : req.params.patientId;
+        (0, createNotification_js_1.createNotification)({
+            type: 'document_uploaded',
+            title: 'Document ajouté',
+            message: `${name} ajouté pour ${pName}`,
+            actor_name: user?.name,
+            actor_role: user?.role,
+            patient_id: req.params.patientId,
+            related_id: id,
+        });
         res.status(201).json({ message: 'Document uploaded' });
     }
     catch (err) {

@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS consultations (
     patient_id VARCHAR(20) NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
     date VARCHAR(20) NOT NULL,
     motif TEXT NOT NULL,
+    ecole VARCHAR(200),
     examen TEXT,
     diagnostic TEXT,
     traitement TEXT,
@@ -111,6 +112,28 @@ CREATE TABLE IF NOT EXISTS prescriptions (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS analysis_reports (
+    id VARCHAR(60) PRIMARY KEY,
+    patient_id VARCHAR(20) NOT NULL REFERENCES patients(id) ON DELETE CASCADE,
+    document_ids JSONB NOT NULL DEFAULT '[]',
+    report_content JSONB NOT NULL DEFAULT '{}',
+    created_by INT REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    type VARCHAR(50) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT,
+    actor_name VARCHAR(150),
+    actor_role VARCHAR(30) NOT NULL,
+    patient_id VARCHAR(20) REFERENCES patients(id) ON DELETE CASCADE,
+    related_id VARCHAR(60),
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 DROP TABLE IF EXISTS secretaire_permissions CASCADE;
 
 CREATE TABLE IF NOT EXISTS secretaire_permissions (
@@ -144,7 +167,9 @@ async function migrate() {
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS specialty VARCHAR(150)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(100)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(100)",
-            "ALTER TABLE patient_accounts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"
+            "ALTER TABLE patient_accounts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE patients ADD COLUMN IF NOT EXISTS country VARCHAR(100)",
+            "ALTER TABLE consultations ADD COLUMN IF NOT EXISTS ecole VARCHAR(200)"
         ];
         for (const col of alterCols) {
             try {

@@ -379,7 +379,6 @@ export const messages = {
     bpm: "bpm",
     oxygenSat: "O2 Sat",
     kg: "kg",
-<<<<<<< HEAD
     totalPatients: "Total Patients",
     appointmentsTodayShort: "Appointments today",
     urgentCases: "Urgent cases",
@@ -602,7 +601,6 @@ export const messages = {
     bpm: "نبضة/دقيقة",
     oxygenSat: "تشبع الأكسجين",
     kg: "كغ",
-<<<<<<< HEAD
     totalPatients: "إجمالي المرضى",
     appointmentsTodayShort: "مواعيد اليوم",
     urgentCases: "حالات عاجلة",

@@ -5,6 +5,7 @@ const express_1 = require("express");
 const pool_js_1 = require("../db/pool.js");
 const auth_js_1 = require("../middleware/auth.js");
 const permissions_js_1 = require("../middleware/permissions.js");
+const createNotification_js_1 = require("../lib/createNotification.js");
 exports.chatRouter = (0, express_1.Router)();
 exports.chatRouter.get('/', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('chat'), async (req, res) => {
     const { channel } = req.query;
@@ -13,7 +14,7 @@ exports.chatRouter.get('/', auth_js_1.authenticateToken, (0, permissions_js_1.re
         if (channel === 'staff') {
             result = await (0, pool_js_1.query)('SELECT * FROM chat_messages WHERE channel = \'staff\' ORDER BY created_at ASC');
         }
-        else if (channel && channel.startsWith('patient:')) {
+        else if (typeof channel === 'string' && channel.startsWith('patient:')) {
             const patientId = channel.replace('patient:', '');
             result = await (0, pool_js_1.query)('SELECT * FROM chat_messages WHERE channel = \'patient\' AND patient_id = $1 ORDER BY created_at ASC', [patientId]);
         }
@@ -30,18 +31,40 @@ exports.chatRouter.get('/', auth_js_1.authenticateToken, (0, permissions_js_1.re
 exports.chatRouter.post('/', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('chat', 'send'), async (req, res) => {
     const { channel, content } = req.body;
     const id = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    let patient_id = null;
-    let from_role = 'admin';
-    let from_name = 'Dr. Moreau';
+    const user = req.user;
+    let patient_id = undefined;
+    let from_role = user.role;
+    let from_name = user.name || 'Dr. Moreau';
     let actualChannel = 'staff';
-    if (channel && channel.startsWith('patient:')) {
+    if (typeof channel === 'string' && channel.startsWith('patient:')) {
         patient_id = channel.replace('patient:', '');
-        from_role = 'staff';
-        from_name = 'Dr. Moreau';
+        from_role = user.role === 'patient' ? 'patient' : 'staff';
+        from_name = user.name || 'Dr. Moreau';
         actualChannel = 'patient';
     }
     try {
         await (0, pool_js_1.query)('INSERT INTO chat_messages (id, channel, patient_id, from_name, from_role, text) VALUES ($1, $2, $3, $4, $5, $6)', [id, actualChannel, patient_id, from_name, from_role, content]);
+        if (actualChannel === 'staff' && from_role !== 'admin') {
+            (0, createNotification_js_1.createNotification)({
+                type: 'chat_message',
+                title: 'Nouveau message',
+                message: `Message de ${from_name}: ${content.substring(0, 100)}`,
+                actor_name: from_name,
+                actor_role: from_role,
+                related_id: id,
+            });
+        }
+        if (actualChannel === 'patient' && from_role === 'patient') {
+            (0, createNotification_js_1.createNotification)({
+                type: 'chat_message',
+                title: 'Nouveau message patient',
+                message: `Message de ${from_name}: ${content.substring(0, 100)}`,
+                actor_name: from_name,
+                actor_role: from_role,
+                patient_id: patient_id,
+                related_id: id,
+            });
+        }
         res.status(201).json({ message: 'Message sent' });
     }
     catch (err) {
@@ -53,7 +76,7 @@ exports.chatRouter.post('/mark-read', auth_js_1.authenticateToken, (0, permissio
     const { channel } = req.body;
     try {
         let actualChannel = channel;
-        if (channel && channel.startsWith('patient:')) {
+        if (typeof channel === 'string' && channel.startsWith('patient:')) {
             actualChannel = 'patient';
         }
         await (0, pool_js_1.query)('UPDATE chat_messages SET is_read = TRUE WHERE channel = $1 AND is_read = FALSE', [actualChannel]);

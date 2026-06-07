@@ -4,7 +4,6 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
-  ChevronDown,
   Moon,
   Search,
   Sun,
@@ -115,7 +114,7 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
   }, [session]);
 
   const fullName = session?.fullName ?? (session?.role === "patient" ? "Espace patient" : "Personnel médical");
-  const shortName = fullName.split(" ").slice(-1)[0] ?? fullName;
+  const _shortName = fullName.split(" ").slice(-1)[0] ?? fullName;
   const initials = fullName
     .split(" ")
     .filter(Boolean)
