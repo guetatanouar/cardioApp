@@ -17,6 +17,7 @@ import { usePagePermission } from "@/lib/auth/usePermissions";
 import { getSession } from "@/lib/auth/storage";
 import { Input } from "@/components/ui/input";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { CountrySelect } from "@/components/ui/country-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -630,18 +631,30 @@ export default function PatientsPage() {
                           value={createForm.email}
                           onChange={(e) => setCreateForm((s) => ({ ...s, email: e.target.value }))}
                         />
-                        <Input
-                          placeholder="Pathologie"
-                          value={createForm.pathology}
-                          onChange={(e) => setCreateForm((s) => ({ ...s, pathology: e.target.value }))}
-                        />
-                      </div>
-
                       <Input
-                        placeholder="Adresse"
-                        value={createForm.address}
-                        onChange={(e) => setCreateForm((s) => ({ ...s, address: e.target.value }))}
-                      />
+                         placeholder="Pathologie"
+                         value={createForm.pathology}
+                         onChange={(e) => setCreateForm((s) => ({ ...s, pathology: e.target.value }))}
+                       />
+                     </div>
+
+                     <div className="grid gap-3 md:grid-cols-2">
+                       <div>
+                         <label className="text-sm text-muted-foreground mb-1 block">Pays</label>
+                         <CountrySelect
+                           value={createForm.country}
+                           onChange={(v) => setCreateForm((s) => ({ ...s, country: v }))}
+                         />
+                       </div>
+                       <div>
+                         <label className="text-sm text-muted-foreground mb-1 block">Adresse</label>
+                         <Input
+                           placeholder="Adresse"
+                           value={createForm.address}
+                           onChange={(e) => setCreateForm((s) => ({ ...s, address: e.target.value }))}
+                         />
+                       </div>
+                     </div>
                     </>
                   ) : step === 2 ? (
                     <div className="space-y-4">
@@ -968,21 +981,32 @@ export default function PatientsPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4 md:grid-cols-2">
                     <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Telephone</label>
-                      <Input value={editForm.phone} onChange={(e) => setEditForm((s) => ({ ...s, phone: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Email</label>
-                      <Input value={editForm.email} onChange={(e) => setEditForm((s) => ({ ...s, email: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Adresse</label>
-                      <Input value={editForm.address} onChange={(e) => setEditForm((s) => ({ ...s, address: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Pays</label>
-                      <Input value={editForm.country} onChange={(e) => setEditForm((s) => ({ ...s, country: e.target.value }))} />
-                    </div>
+                       <label className="text-sm text-muted-foreground mb-1 block">Telephone</label>
+                       <PhoneInput
+                         value={editForm.phone}
+                         onChange={(v) => setEditForm((s) => ({ ...s, phone: v }))}
+                         className="w-full"
+                       />
+                     </div>
+                     <div>
+                       <label className="text-sm text-muted-foreground mb-1 block">Email</label>
+                       <Input
+                         type="email"
+                         value={editForm.email}
+                         onChange={(e) => setEditForm((s) => ({ ...s, email: e.target.value }))}
+                       />
+                     </div>
+                     <div>
+                       <label className="text-sm text-muted-foreground mb-1 block">Adresse</label>
+                       <Input value={editForm.address} onChange={(e) => setEditForm((s) => ({ ...s, address: e.target.value }))} />
+                     </div>
+                     <div>
+                       <label className="text-sm text-muted-foreground mb-1 block">Pays</label>
+                       <CountrySelect
+                         value={editForm.country}
+                         onChange={(v) => setEditForm((s) => ({ ...s, country: v }))}
+                       />
+                     </div>
                     <div>
                       <label className="text-sm text-muted-foreground mb-1 block">Contact urgence</label>
                       <Input value={editForm.emergency_contact} onChange={(e) => setEditForm((s) => ({ ...s, emergency_contact: e.target.value }))} />

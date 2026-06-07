@@ -8,6 +8,29 @@ import { createNotification } from '../lib/createNotification.js';
 const upload = multer({ dest: 'uploads/' });
 export const patientsRouter = Router();
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const KNOWN_COUNTRIES = [
+  'CA','US','FR','BE','CH','DZ','MA','TN','GB','DE','IT','ES',
+  'NL','PT','SE','AT','DK','FI','IE','LU','GR','PL','CZ','HU',
+  'RO','BG','HR','SK','SI','EE','LV','LT','MT','SA','AE','QA',
+  'EG','LB','SY','TR'
+];
+
+function validateEmail(email: string): boolean {
+  return EMAIL_REGEX.test(email);
+}
+
+function validatePhone(phone: string): boolean {
+  if (!phone) return true;
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 6 && digits.length <= 15;
+}
+
+function validateCountry(country: string): boolean {
+  if (!country) return true;
+  return KNOWN_COUNTRIES.includes(country);
+}
+
 patientsRouter.get('/', authenticateToken, requirePermission('patients'), async (req, res) => {
     try {
         const result = await query('SELECT * FROM patients ORDER BY created_at DESC');
@@ -20,6 +43,17 @@ patientsRouter.get('/', authenticateToken, requirePermission('patients'), async 
 patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write'), async (req, res) => {
     const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status } = req.body;
     const id = `P${Date.now().toString(36)}${Math.random().toString(36).substr(2, 4)}`;
+
+    if (email && !validateEmail(email)) {
+      return res.status(400).json({ message: 'Format d\'email invalide' });
+    }
+    if (phone && !validatePhone(phone)) {
+      return res.status(400).json({ message: 'Format de numéro de téléphone invalide' });
+    }
+    if (country && !validateCountry(country)) {
+      return res.status(400).json({ message: 'Pays non reconnu' });
+    }
+
     try {
         await query(
             'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
@@ -84,6 +118,17 @@ patientsRouter.get('/:id', authenticateToken, async (req, res) => {
 
 patientsRouter.put('/:id', authenticateToken, requirePermission('patients', 'write'), async (req, res) => {
     const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, pathology, severity_status } = req.body;
+
+    if (email && !validateEmail(email)) {
+      return res.status(400).json({ message: 'Format d\'email invalide' });
+    }
+    if (phone && !validatePhone(phone)) {
+      return res.status(400).json({ message: 'Format de numéro de téléphone invalide' });
+    }
+    if (country && !validateCountry(country)) {
+      return res.status(400).json({ message: 'Pays non reconnu' });
+    }
+
     try {
         await query(
             'UPDATE patients SET first_name=$1, last_name=$2, date_of_birth=$3, gender=$4, blood_type=$5, phone=$6, email=$7, address=$8, country=$9, emergency_contact=$10, allergies=$11, medical_history=$12, pathology=$13, severity_status=$14 WHERE id=$15',

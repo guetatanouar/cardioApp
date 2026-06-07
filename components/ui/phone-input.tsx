@@ -7,6 +7,8 @@ import {
   parsePhoneNumber,
 } from "libphonenumber-js";
 import { cn } from "@/lib/cn";
+import { countries } from "@/lib/countries";
+import type { Country } from "@/lib/countries";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,28 +16,6 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const countries = [
-  { code: "DZ" as CountryCode, name: "Algérie", flag: "🇩🇿", prefix: "+213" },
-  { code: "FR" as CountryCode, name: "France", flag: "🇫🇷", prefix: "+33" },
-  { code: "MA" as CountryCode, name: "Maroc", flag: "🇲🇦", prefix: "+212" },
-  { code: "TN" as CountryCode, name: "Tunisie", flag: "🇹🇳", prefix: "+216" },
-  { code: "GB" as CountryCode, name: "Royaume-Uni", flag: "🇬🇧", prefix: "+44" },
-  { code: "US" as CountryCode, name: "États-Unis", flag: "🇺🇸", prefix: "+1" },
-  { code: "CA" as CountryCode, name: "Canada", flag: "🇨🇦", prefix: "+1" },
-  { code: "DE" as CountryCode, name: "Allemagne", flag: "🇩🇪", prefix: "+49" },
-  { code: "IT" as CountryCode, name: "Italie", flag: "🇮🇹", prefix: "+39" },
-  { code: "ES" as CountryCode, name: "Espagne", flag: "🇪🇸", prefix: "+34" },
-  { code: "BE" as CountryCode, name: "Belgique", flag: "🇧🇪", prefix: "+32" },
-  { code: "CH" as CountryCode, name: "Suisse", flag: "🇨🇭", prefix: "+41" },
-  { code: "SA" as CountryCode, name: "Arabie Saoudite", flag: "🇸🇦", prefix: "+966" },
-  { code: "AE" as CountryCode, name: "Émirats Arabes Unis", flag: "🇦🇪", prefix: "+971" },
-  { code: "QA" as CountryCode, name: "Qatar", flag: "🇶🇦", prefix: "+974" },
-  { code: "EG" as CountryCode, name: "Égypte", flag: "🇪🇬", prefix: "+20" },
-  { code: "LB" as CountryCode, name: "Liban", flag: "🇱🇧", prefix: "+961" },
-  { code: "SY" as CountryCode, name: "Syrie", flag: "🇸🇾", prefix: "+963" },
-  { code: "TR" as CountryCode, name: "Turquie", flag: "🇹🇷", prefix: "+90" },
-];
 
 interface PhoneInputProps {
   value: string;
@@ -65,13 +45,13 @@ export function PhoneInput({
   error,
 }: PhoneInputProps) {
   const countryList = onlyCountries
-    ? countries.filter((c) => onlyCountries.includes(c.code))
+    ? countries.filter((c) => onlyCountries.includes(c.code as CountryCode))
     : countries;
   const initCountry = countryProp || defaultCountry;
   const [country, setCountry] = React.useState<CountryCode>(() => {
     if (value) {
       for (const c of countryList) {
-        if (value.startsWith(c.prefix)) return c.code;
+        if (value.startsWith(c.prefix)) return c.code as CountryCode;
       }
     }
     return initCountry;
