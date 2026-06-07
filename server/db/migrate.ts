@@ -147,7 +147,6 @@ async function migrate() {
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(100)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(100)",
             "ALTER TABLE patient_accounts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
-            "ALTER TABLE patients ADD COLUMN IF NOT EXISTS country VARCHAR(100)",
             "ALTER TABLE consultations ADD COLUMN IF NOT EXISTS ecole VARCHAR(200)"
         ];
         for (const col of alterCols) {

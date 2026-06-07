@@ -1,0 +1,4 @@
+"id","last_name","first_name","date_of_birth","severity_status","pathology","phone","email"
+"1","Benali","Ahmed","1975-03-15","critique","Hypertension","+213550123456","ahmed@email.com"
+"2","Zohra","Fatima","1982-07-22","stable","Diabète","+213550789012",""
+"3","Saidi","Karim","1968-11-05","surveillance","Insuffisance cardiaque","+213550345678","karim@email.com"

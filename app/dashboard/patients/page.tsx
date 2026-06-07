@@ -78,7 +78,7 @@ export default function PatientsPage() {
 
   const [editMode, setEditMode] = React.useState(false);
   const [editForm, setEditForm] = React.useState({
-    phone: "", email: "", address: "", country: "", emergency_contact: "", pathology: "", allergies: "", medical_history: ""
+    phone: "", email: "", address: "", emergency_contact: "", pathology: "", allergies: "", medical_history: ""
   });
   const [editSaving, setEditSaving] = React.useState(false);
   const [editError, setEditError] = React.useState<string | null>(null);
@@ -100,7 +100,6 @@ export default function PatientsPage() {
     phone: "",
     email: "",
     address: "",
-    country: "",
     pathology: "",
     severityStatus: "stable" as "critique" | "surveillance" | "stable"
   });
@@ -309,7 +308,6 @@ export default function PatientsPage() {
         phone: createForm.phone || undefined,
         email: createForm.email || undefined,
         address: createForm.address || undefined,
-        country: createForm.country || undefined,
         pathology: createForm.pathology || undefined,
         severity_status: createForm.severityStatus
       };
@@ -336,8 +334,8 @@ export default function PatientsPage() {
       if (newPatientDoc) {
         const formData = new FormData();
         formData.append("file", newPatientDoc);
-        formData.append("category", newPatientDocCategory);
-        await apiFetch(`/api/patients/${patientId}/documents`, {
+        formData.append("category", newPatientDocCategory.toLowerCase());
+        await apiFetch(`/api/documents/${patientId}`, {
           method: "POST",
           body: formData
         });
@@ -379,6 +377,7 @@ export default function PatientsPage() {
         type: "success"
       });
 
+      setSelectedId(patientId);
       setShowCreate(false);
       setStep(1);
       setCreateForm({
@@ -390,7 +389,6 @@ export default function PatientsPage() {
         phone: "",
         email: "",
         address: "",
-        country: "",
         pathology: "",
         severityStatus: "stable"
       });
@@ -413,7 +411,6 @@ export default function PatientsPage() {
       phone: detail.patient.phone || "",
       email: detail.patient.email || "",
       address: detail.patient.address || "",
-      country: detail.patient.country || "",
       emergency_contact: detail.patient.emergency_contact || "",
       pathology: detail.patient.pathology || "",
       allergies: Array.isArray(detail.patient.allergies) ? detail.patient.allergies.join(", ") : (detail.patient.allergies || ""),
@@ -439,7 +436,6 @@ export default function PatientsPage() {
           phone: editForm.phone || undefined,
           email: editForm.email || undefined,
           address: editForm.address || undefined,
-          country: editForm.country || undefined,
           emergency_contact: editForm.emergency_contact || undefined,
           pathology: editForm.pathology || undefined,
           allergies: editForm.allergies ? editForm.allergies.split(",").map((s) => s.trim()).filter(Boolean) : [],
@@ -918,10 +914,6 @@ export default function PatientsPage() {
                       <Input value={editForm.address} onChange={(e) => setEditForm((s) => ({ ...s, address: e.target.value }))} />
                     </div>
                     <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Pays</label>
-                      <Input value={editForm.country} onChange={(e) => setEditForm((s) => ({ ...s, country: e.target.value }))} />
-                    </div>
-                    <div>
                       <label className="text-sm text-muted-foreground mb-1 block">Contact urgence</label>
                       <Input value={editForm.emergency_contact} onChange={(e) => setEditForm((s) => ({ ...s, emergency_contact: e.target.value }))} />
                     </div>
@@ -962,10 +954,6 @@ export default function PatientsPage() {
                     <div>
                       <div className="text-muted-foreground">Adresse</div>
                       <div>{detail.patient.address ?? "—"}</div>
-                    </div>
-                    <div>
-                      <div className="text-muted-foreground">Pays</div>
-                      <div>{detail.patient.country ?? "—"}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Contact urgence</div>

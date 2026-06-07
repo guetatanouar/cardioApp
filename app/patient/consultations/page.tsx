@@ -32,6 +32,7 @@ export default function PatientConsultationsPage() {
             <div key={c.id} className="rounded-md border border-border p-3">
               <div className="text-sm text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</div>
               <div className="font-medium">{c.reason ?? "—"}</div>
+              {c.ecole ? <div className="text-xs text-muted-foreground mt-0.5">Ecole: {c.ecole}</div> : null}
               <div className="text-sm text-muted-foreground">{c.diagnosis ?? ""}</div>
             </div>
           ))}

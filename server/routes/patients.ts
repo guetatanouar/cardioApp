@@ -15,12 +15,12 @@ patientsRouter.get('/', authenticateToken, requirePermission('patients'), async 
 });
 
 patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write'), async (req, res) => {
-    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status } = req.body;
+    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status } = req.body;
     const id = `P${Date.now().toString(36)}${Math.random().toString(36).substr(2, 4)}`;
     try {
         await query(
-            'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
-            [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, country, pathology, severity_status || 'stable']
+            'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, pathology, severity_status || 'stable']
         );
         res.status(201).json({ id, message: 'Patient created' });
     } catch (err) {
@@ -71,11 +71,11 @@ patientsRouter.get('/:id', authenticateToken, async (req, res) => {
 });
 
 patientsRouter.put('/:id', authenticateToken, requirePermission('patients', 'write'), async (req, res) => {
-    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history } = req.body;
+    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, emergency_contact, allergies, medical_history } = req.body;
     try {
         await query(
-            'UPDATE patients SET first_name=$1, last_name=$2, date_of_birth=$3, gender=$4, blood_type=$5, phone=$6, email=$7, address=$8, country=$9, emergency_contact=$10, allergies=$11, medical_history=$12 WHERE id=$13',
-            [first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, req.params.id]
+            'UPDATE patients SET first_name=$1, last_name=$2, date_of_birth=$3, gender=$4, blood_type=$5, phone=$6, email=$7, address=$8, emergency_contact=$9, allergies=$10, medical_history=$11 WHERE id=$12',
+            [first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, emergency_contact, allergies, medical_history, req.params.id]
         );
         res.json({ message: 'Patient updated' });
     } catch (err) {

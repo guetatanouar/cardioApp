@@ -17,8 +17,11 @@ documentsRouter.get('/:patientId', authenticateToken, requirePermission('documen
 });
 
 documentsRouter.post('/:patientId', authenticateToken, requirePermission('documents', 'write'), upload.single('file'), async (req, res) => {
-    const { id, name, category, size } = req.body;
+    const id = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const { category } = req.body;
     const filePath = req.file?.path;
+    const name = req.file?.originalname;
+    const size = req.file?.size ? `${(req.file.size / 1024).toFixed(1)} KB` : null;
     try {
         await query(
             'INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)',
@@ -26,6 +29,7 @@ documentsRouter.post('/:patientId', authenticateToken, requirePermission('docume
         );
         res.status(201).json({ message: 'Document uploaded' });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 });

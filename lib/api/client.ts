@@ -70,7 +70,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     else if (Array.isArray(h)) h.forEach(([k, v]) => headers.set(k, v));
     else Object.entries(h as Record<string, string>).forEach(([k, v]) => headers.set(k, v));
   }
-  headers.set("Content-Type", "application/json");
+  if (!(init?.body instanceof FormData)) {
+    headers.set("Content-Type", "application/json");
+  }
   if (session?.token) headers.set("Authorization", `Bearer ${session.token}`);
 
   const isMutation = init?.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(init.method.toUpperCase());

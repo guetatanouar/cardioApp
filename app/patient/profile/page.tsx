@@ -62,7 +62,6 @@ export default function PatientProfile() {
     ? new Date(p.date_of_birth).toLocaleDateString("fr-FR")
     : "14/03/1965";
   const address = p.address || "12 Rue des Lilas, Lyon";
-  const country = p.country || "France";
   const emergencyContact = p.emergency_contact || "Marie Dupont - 0661234568";
   const allergies: string[] = Array.isArray(p.allergies) && p.allergies.length > 0
     ? p.allergies
@@ -127,7 +126,7 @@ export default function PatientProfile() {
             Mes documents
           </button>
 
-          <button onClick={() => router.push("/patient")} className="px-6 py-4 text-gray-600 flex items-center gap-2 hover:text-gray-900">
+          <button onClick={() => router.push("/patient/vitals")} className="px-6 py-4 text-gray-600 flex items-center gap-2 hover:text-gray-900">
             <Activity size={18} />
             Mes constantes
           </button>
@@ -198,15 +197,6 @@ export default function PatientProfile() {
               </p>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4">
-              <p className="text-gray-500 text-sm">
-                Pays
-              </p>
-
-              <p className="mt-2 font-medium">
-                {country}
-              </p>
-            </div>
           </div>
 
           {/* Allergies */}
@@ -262,6 +252,7 @@ export default function PatientProfile() {
                   <h4 className="font-medium">
                     {consultation.title || consultation.motif}
                   </h4>
+                  {consultation.ecole ? <p className="text-xs text-gray-400 mt-0.5">Ecole: {consultation.ecole}</p> : null}
 
                   <p className="text-sm text-gray-500 mt-1">
                     {consultation.date ? new Date(consultation.date).toLocaleDateString("fr-FR") : consultation.date} · {consultation.doctor || consultation.author || "Dr. Pierre Moreau"}
