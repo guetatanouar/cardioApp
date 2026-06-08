@@ -45,7 +45,6 @@ import {
 type HeaderNotification = { id: string; title: string; detail: string; type?: string; is_read?: boolean };
 
 const allStaffNav = [
-  { href: "/dashboard/profil", icon: UserCircle, labelKey: "profile", permKey: undefined },
   { href: "/dashboard", icon: LayoutDashboard, labelKey: "Tableau de bord", permKey: undefined },
   { href: "/dashboard/patients", icon: Users, labelKey: "patients", permKey: "can_view_patients" },
   { href: "/dashboard/agenda", icon: CalendarDays, labelKey: "agenda", permKey: "can_view_appointments" },
@@ -325,10 +324,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <div className={cn("flex", isRTL && "flex-row-reverse")}>
         <aside className={cn(
-          "fixed inset-y-0 z-50 w-[250px] bg-[#2f3b8f] flex flex-col justify-between",
+          "fixed inset-y-0 z-50 w-[250px] bg-[#2f3b8f] flex flex-col",
           isRTL ? "right-0 border-l border-white/10" : "left-0 border-r border-white/10"
         )}>
-          <div>
+          <div className="flex flex-col flex-1 min-h-0">
             <div className="p-5 border-b border-white/10">
               <div className="bg-white rounded-lg p-3 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold">
@@ -341,7 +340,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <nav className="mt-6 px-4 space-y-2">
+            <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
               {navItems.map((item) => {
                 const active = pathname === item.href || pathname?.startsWith(item.href + "/");
                 const Icon = item.icon;
@@ -351,7 +350,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all",
+                      "w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm transition-all",
                       isRTL ? "flex-row-reverse" : "",
                       isDashboard
                         ? "text-white/70 hover:bg-white/10"
@@ -373,7 +372,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
 
-          <div className="p-4 border-t border-white/10 space-y-2">
+          <div className="p-4 border-t border-white/10 space-y-2 mt-auto">
             {session?.role !== "patient" && (
               <button
                 className={cn(
