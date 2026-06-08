@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 
+dotenv.config({ path: path.resolve(process.cwd(), 'server', '.env') });
+
 // Ensure uploads directory exists
 const uploadsDir = path.resolve('uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -21,8 +23,6 @@ import { documentsRouter } from './routes/documents.js';
 import { analyseRouter } from './routes/analyse.js';
 import { settingsRouter } from './routes/settings.js';
 import { notificationsRouter } from './routes/notifications.js';
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
