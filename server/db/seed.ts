@@ -1,23 +1,23 @@
 import bcrypt from 'bcryptjs';
 import { query } from './pool.js';
 
-function ago(interval) {
+function ago(interval: string) {
     const m = interval.match(/(\d+)\s+(\w+)/);
     if (!m) return new Date().toISOString();
     const n = parseInt(m[1]);
-    const ms = {hour: 3600000, hours: 3600000, day: 86400000, days: 86400000, week: 604800000, weeks: 604800000};
-    return new Date(Date.now() - n * (ms[m[2]] || 0)).toISOString();
+    const ms: Record<string, number> = {hour: 3600000, hours: 3600000, day: 86400000, days: 86400000, week: 604800000, weeks: 604800000};
+    return new Date(Date.now() - n * (ms[m[2]!] || 0)).toISOString();
 }
 
-function dateOff(expr) {
+function dateOff(expr: string) {
     const d = new Date();
     if (expr === 'today') return d.toISOString().split('T')[0];
     const m = expr.match(/([+-])\s*(\d+)\s+(\w+)/);
     if (!m) return d.toISOString().split('T')[0];
     const sign = m[1] === '-' ? -1 : 1;
     const n = parseInt(m[2]) * sign;
-    const ms = {hour: 3600000, hours: 3600000, day: 86400000, days: 86400000, week: 604800000, weeks: 604800000};
-    return new Date(d.getTime() + n * (ms[m[3]] || 0)).toISOString().split('T')[0];
+    const ms: Record<string, number> = {hour: 3600000, hours: 3600000, day: 86400000, days: 86400000, week: 604800000, weeks: 604800000};
+    return new Date(d.getTime() + n * (ms[m[3]!] || 0)).toISOString().split('T')[0];
 }
 
 async function seed() {
