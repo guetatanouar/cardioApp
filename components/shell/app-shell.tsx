@@ -14,7 +14,6 @@ import {
   LogOut,
   MessageSquare,
   Settings,
-  UserCircle,
   Users,
   Microscope,
   UserPlus,

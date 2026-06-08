@@ -8,7 +8,6 @@ import {
 } from "libphonenumber-js";
 import { cn } from "@/lib/cn";
 import { countries } from "@/lib/countries";
-import type { Country } from "@/lib/countries";
 import {
   DropdownMenu,
   DropdownMenuContent,
