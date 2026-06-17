@@ -1,7 +1,4 @@
 node_modules
-apps/*/.env
-apps/*/.next
-apps/*/dist
 *.log
 *.tsbuildinfo
 .next/*
