@@ -125,7 +125,7 @@ const getHeaderTitleInfo = (pathname: string) => {
     return { title: "Mon Cardiologue", subtitle: "Discutez en direct avec le cabinet" };
   }
   if (pathname.includes("/patient")) {
-    return { title: "Espace Patient", subtitle: "Suivi de votre santé" };
+    return { title: "patientSpace", subtitle: "healthFollowUp" };
   }
   return { title: "CardioManager", subtitle: "Cabinet de cardiologie" };
 };
@@ -322,6 +322,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <div className={cn("flex", isRTL && "flex-row-reverse")}>
+        {!isPatientRoute && (
         <aside className={cn(
           "fixed inset-y-0 z-50 w-[250px] bg-[#2f3b8f] flex flex-col",
           isRTL ? "right-0 border-l border-white/10" : "left-0 border-r border-white/10"
@@ -402,16 +403,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </aside>
+        )}
 
-        <div className={cn("flex flex-1 flex-col", isRTL ? "pr-[250px]" : "pl-[250px]")}>
+        <div className={cn("flex flex-1 flex-col", isRTL ? "pr-[250px]" : "pl-[250px]", isPatientRoute && "!pl-0 !pr-0")}>
+          {isPatientRoute && (
+            <div className="bg-emerald-600 text-white px-6 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-emerald-600">
+                  <Heart className="h-5 w-5 fill-emerald-600" strokeWidth={0} />
+                </div>
+                <span className="font-semibold text-sm">{t("appName" as any)}</span>
+              </div>
+              <button
+                className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors"
+                onClick={() => {
+                  clearSession();
+                  router.replace("/login");
+                }}
+              >
+                <LogOut className="h-4 w-4" />
+                {t("logout" as any)}
+              </button>
+            </div>
+          )}
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/50 bg-background/95 px-6 backdrop-blur">
             {/* Left side: Page Title and Subtitle */}
             <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
               <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">
-                {headerInfo.title}
+                {isPatientRoute ? t(headerInfo.title as any) : headerInfo.title}
               </h1>
               <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-medium leading-none">
-                {headerInfo.subtitle}
+                {isPatientRoute ? t(headerInfo.subtitle as any) : headerInfo.subtitle}
               </span>
             </div>
 

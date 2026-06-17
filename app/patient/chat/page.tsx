@@ -4,11 +4,13 @@ import * as React from "react";
 
 import { apiFetch } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/storage";
+import { useI18n } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PatientHeader } from "@/components/patient/patient-header";
 
 export default function PatientChatPage() {
+  const { t } = useI18n();
   const session = typeof window !== "undefined" ? getSession() : null;
   const patientId = session?.userId;
   const channel = patientId ? `patient:${patientId}` : "";
@@ -60,56 +62,58 @@ export default function PatientChatPage() {
   }
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader>
-        <CardTitle>Chat médecin</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-1 flex-col min-h-0">
-        <div className="flex-1 space-y-2 overflow-y-auto rounded-md border border-border bg-muted/30 p-3 mb-3 min-h-0">
-          {items.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Aucun message
-            </div>
-          ) : (
-            items.map((m: any) => {
-              const mine = isMine(m);
-              return (
-                <div
-                  key={m.id}
-                  className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
-                >
-                  <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${
-                    mine ? "bg-primary text-primary-foreground" : "bg-blue-50 border border-blue-200 text-blue-900"
-                  }`}>
-                    <div className="whitespace-pre-wrap">{m.content}</div>
-                    <div className={`text-[9px] mt-1 ${mine ? "text-primary-foreground/50" : "opacity-50"}`}>
-                      {formatTime(m.created_at)}
-                    </div>
-                  </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border">
+        <PatientHeader />
+        <div className="p-6">
+          <div className="flex flex-col h-[500px]">
+            <div className="flex-1 space-y-2 overflow-y-auto rounded-md border border-border bg-muted/30 p-3 mb-3 min-h-0">
+              {items.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  Aucun message
                 </div>
-              );
-            })
-          )}
-          <div ref={messagesEndRef} />
+              ) : (
+                items.map((m: any) => {
+                  const mine = isMine(m);
+                  return (
+                    <div
+                      key={m.id}
+                      className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
+                    >
+                      <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${
+                        mine ? "bg-primary text-primary-foreground" : "bg-blue-50 border border-blue-200 text-blue-900"
+                      }`}>
+                        <div className="whitespace-pre-wrap">{m.content}</div>
+                        <div className={`text-[9px] mt-1 ${mine ? "text-primary-foreground/50" : "opacity-50"}`}>
+                          {formatTime(m.created_at)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder="Votre message..."
+                className="flex-1"
+              />
+              <Button onClick={send} disabled={!text.trim()}>
+                Envoyer
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder="Votre message..."
-            className="flex-1"
-          />
-          <Button onClick={send} disabled={!text.trim()}>
-            Envoyer
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
