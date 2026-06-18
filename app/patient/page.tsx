@@ -29,8 +29,8 @@ export default function PatientDashboard() {
 
   async function load() {
     if (!patientId) return;
-    const res = await apiFetch<{ items: any[] }>(`/api/patients/${patientId}/vitals`);
-    setItems(res.items);
+    const res = await apiFetch<any[]>(`/api/vitals/${patientId}`);
+    setItems(Array.isArray(res) ? res : []);
   }
 
   React.useEffect(() => {
@@ -39,14 +39,15 @@ export default function PatientDashboard() {
 
   async function submit() {
     if (!patientId) return;
-    await apiFetch(`/api/patients/${patientId}/vitals`, {
+    await apiFetch(`/api/vitals/${patientId}`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        systolicBp: form.systolicBp ? Number(form.systolicBp) : undefined,
-        diastolicBp: form.diastolicBp ? Number(form.diastolicBp) : undefined,
-        heartRate: form.heartRate ? Number(form.heartRate) : undefined,
-        spo2: form.spo2 ? Number(form.spo2) : undefined,
-        weightKg: form.weightKg ? Number(form.weightKg) : undefined,
+        systolic: form.systolicBp ? Number(form.systolicBp) : undefined,
+        diastolic: form.diastolicBp ? Number(form.diastolicBp) : undefined,
+        heart_rate: form.heartRate ? Number(form.heartRate) : undefined,
+        sp02: form.spo2 ? Number(form.spo2) : undefined,
+        weight: form.weightKg ? Number(form.weightKg) : undefined,
         note: form.note || undefined
       })
     });
@@ -59,11 +60,11 @@ export default function PatientDashboard() {
     .slice(-30)
     .map((v) => ({
       date: new Date(v.recorded_at).toLocaleDateString(),
-      systolic: v.systolic_bp,
-      diastolic: v.diastolic_bp,
+      systolic: v.systolic,
+      diastolic: v.diastolic,
       hr: v.heart_rate,
-      spo2: v.spo2,
-      weight: v.weight_kg
+      spo2: v.sp02,
+      weight: v.weight
     }));
 
   const latest = items[0];
@@ -83,19 +84,19 @@ export default function PatientDashboard() {
 
             <div className="bg-blue-50 rounded-xl p-4 text-center">
               <Activity className="h-6 w-6 text-blue-500 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-blue-700">{latest ? `${latest.systolic_bp ?? "-"}/${latest.diastolic_bp ?? "-"}` : "-"}</div>
+              <div className="text-2xl font-bold text-blue-700">{latest ? `${latest.systolic ?? "-"}/${latest.diastolic ?? "-"}` : "-"}</div>
               <div className="text-xs text-blue-500/80">{t("bloodPressureLabel" as any)}</div>
             </div>
 
             <div className="bg-emerald-50 rounded-xl p-4 text-center">
               <Wind className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-emerald-700">{latest?.spo2 ?? "-"}%</div>
+              <div className="text-2xl font-bold text-emerald-700">{latest?.sp02 ?? "-"}%</div>
               <div className="text-xs text-emerald-500/80">{t("oxygenSat" as any)}</div>
             </div>
 
             <div className="bg-amber-50 rounded-xl p-4 text-center">
               <Scale className="h-6 w-6 text-amber-500 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-amber-700">{latest?.weight_kg ?? "-"} {t("kg" as any)}</div>
+              <div className="text-2xl font-bold text-amber-700">{latest?.weight ?? "-"} {t("kg" as any)}</div>
               <div className="text-xs text-amber-500/80">{t("weightLabel" as any)}</div>
             </div>
           </div>
