@@ -8,9 +8,9 @@ export const authRouter = Router();
 authRouter.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
-        const result = await query('SELECT id, username, email, full_name as name, role, password_hash as password FROM users WHERE username = $1 OR email = $1', [username]);
+        const result = await query('SELECT id, username, email, full_name as name, role, password_hash FROM users WHERE username = $1 OR email = $1', [username]);
         const user = result.rows[0];
-        if (!user || !(await bcrypt.compare(password, user.password))) {
+        if (!user || !(await bcrypt.compare(password, user.password_hash))) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
         const token = jwt.sign(

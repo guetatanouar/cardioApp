@@ -116,6 +116,23 @@ patientsRouter.get('/:id', authenticateToken, async (req, res) => {
     }
 });
 
+patientsRouter.put('/:id/self', authenticateToken, async (req, res) => {
+    const user = (req as any).user;
+    if (user.role !== 'patient' || user.patientId !== req.params.id) {
+        return res.status(403).json({ message: 'Accès refusé' });
+    }
+    const { phone, email, address, emergency_contact, allergies, medical_history } = req.body;
+    try {
+        await query(
+            'UPDATE patients SET phone=$1, email=$2, address=$3, emergency_contact=$4, allergies=$5, medical_history=$6 WHERE id=$7',
+            [phone, email, address, emergency_contact, allergies ? JSON.stringify(allergies) : null, medical_history ? JSON.stringify(medical_history) : null, req.params.id]
+        );
+        res.json({ message: 'Profil mis à jour' });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 patientsRouter.put('/:id', authenticateToken, requirePermission('patients', 'write'), async (req, res) => {
     const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, pathology, severity_status } = req.body;
 

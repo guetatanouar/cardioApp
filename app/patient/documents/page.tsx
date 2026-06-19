@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-
 import { apiFetch, apiUpload } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/storage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PatientHeader } from "@/components/patient/patient-header";
 
 export default function PatientDocumentsPage() {
   const session = typeof window !== "undefined" ? getSession() : null;
@@ -42,38 +42,42 @@ export default function PatientDocumentsPage() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Mes documents</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center gap-2">
-          <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-10 rounded-md border border-input bg-transparent px-3 text-sm">
-            <option value="Ordonnance">Ordonnance</option>
-            <option value="Radio">Radio</option>
-            <option value="Analyse">Analyse</option>
-            <option value="Echographie">Echographie</option>
-            <option value="Autre">Autre</option>
-          </select>
-          <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-          <Button onClick={upload} disabled={!file}>Upload</Button>
-        </div>
-
-        <div className="divide-y divide-border">
-          {items.map((d) => (
-            <div key={d.id} className="flex items-center justify-between gap-3 py-3">
-              <div>
-                <a className="text-sm underline" href={d.file_url} target="_blank" rel="noreferrer">
-                  {d.file_name}
-                </a>
-                <div className="text-xs text-muted-foreground">{d.category}</div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border">
+        <PatientHeader />
+        <div className="p-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Mes documents</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-10 rounded-md border border-input bg-transparent px-3 text-sm">
+                  <option value="Ordonnance">Ordonnance</option>
+                  <option value="Radio">Radio</option>
+                  <option value="Analyse">Analyse</option>
+                  <option value="Echographie">Echographie</option>
+                  <option value="Autre">Autre</option>
+                </select>
+                <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                <Button onClick={upload} disabled={!file}>Upload</Button>
               </div>
-              <Button variant="outline" size="sm" onClick={() => remove(d.id)}>Delete</Button>
-            </div>
-          ))}
-          {items.length === 0 ? <div className="py-8 text-sm text-muted-foreground">Empty</div> : null}
+              <div className="divide-y divide-border">
+                {items.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between gap-3 py-3">
+                    <div>
+                      <a className="text-sm underline" href={d.file_url} target="_blank" rel="noreferrer">{d.file_name}</a>
+                      <div className="text-xs text-muted-foreground">{d.category}</div>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => remove(d.id)}>Delete</Button>
+                  </div>
+                ))}
+                {items.length === 0 ? <div className="py-8 text-sm text-muted-foreground">Empty</div> : null}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

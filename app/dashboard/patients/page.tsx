@@ -140,8 +140,9 @@ export default function PatientsPage() {
   }
 
   React.useEffect(() => {
-    load();
-  }, [page]);
+    const timer = setTimeout(() => load(), 300);
+    return () => clearTimeout(timer);
+  }, [page, q]);
 
   async function loadDetail(patientId: string) {
     setDetailLoading(true);

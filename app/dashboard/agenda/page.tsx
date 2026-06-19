@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Plus, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, Search, Users, UserPlus, Phone, XCircle, Check } from "lucide-react";
 
 import { apiFetch } from "@/lib/api/client";
 import { dispatchNotification } from "@/lib/notifications";
@@ -281,9 +281,7 @@ export default function AgendaPage() {
   function typeColorDot(type: string) {
     if (type === "consultation") return "bg-blue-500";
     if (type === "suivi") return "bg-green-500";
-    if (type === "urgence") return "bg-red-500";
-    if (type === "bilan") return "bg-purple-500";
-    if (type === "echographie") return "bg-orange-500";
+    
     return "bg-blue-500";
   }
 
@@ -306,19 +304,20 @@ export default function AgendaPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      {searchQuery && (
-        <div className="flex items-center gap-2 px-1">
-          <span className="text-sm text-muted-foreground">Recherche:</span>
-          <span className="text-sm font-medium">{searchQuery}</span>
-          <button
-            onClick={() => setSearchQuery("")}
-            className="text-xs text-blue-600 hover:underline ml-2"
-          >
-            Effacer
-          </button>
-          <span className="text-xs text-muted-foreground ml-auto">{filteredItems.length} résultat(s)</span>
+      <div className="flex items-center gap-2 px-1">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Rechercher un patient..."
+            className="pl-8 h-9 text-sm"
+          />
         </div>
-      )}
+        {searchQuery && (
+          <span className="text-xs text-muted-foreground">{filteredItems.length} résultat(s)</span>
+        )}
+      </div>
       <div className="flex gap-5 h-[calc(100vh-6rem)] justify-center -mt-5">
         <div className="flex-1 max-w-4xl h-[550px]">
           <Card className="h-full">
@@ -393,18 +392,7 @@ export default function AgendaPage() {
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                   <span>Suivi</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-                  <span>Urgence</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
-                  <span>Bilan</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-                  <span>Échocardiographie</span>
-                </div>
+            
               </div>
             </CardContent>
           </Card>
@@ -436,12 +424,7 @@ export default function AgendaPage() {
                         a.type === "consultation"
                           ? "border-l-blue-500"
                           : a.type === "suivi"
-                            ? "border-l-green-500"
-                            : a.type === "urgence"
-                              ? "border-l-red-500"
-                              : a.type === "bilan"
-                                ? "border-l-purple-500"
-                                : "border-l-orange-500";
+                        
 
                       return (
                         <div
@@ -573,14 +556,7 @@ export default function AgendaPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border bg-white p-3 shadow-sm flex items-center gap-4">
-          <div className="text-2xl font-bold text-red-600">
-            {filteredItems.filter(a => a.type === "urgence" || a.status === "urgent").length}
-          </div>
-          <p className="text-xs font-medium text-muted-foreground">
-            Urgences
-          </p>
-        </div>
+    
 
         <div className="rounded-xl border bg-white p-3 shadow-sm flex items-center gap-4">
           <div className="text-2xl font-bold text-orange-500">
@@ -641,9 +617,7 @@ export default function AgendaPage() {
                 >
                   <option value="suivi">Suivi</option>
                   <option value="consultation">Consultation</option>
-                  <option value="controle">Contrôle</option>
-                  <option value="echographie">Échographie</option>
-                  <option value="urgence">Urgence</option>
+              
                 </select>
               </div>
               <div>
