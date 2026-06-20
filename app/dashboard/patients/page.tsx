@@ -32,7 +32,6 @@ type PatientListItem = {
   first_name: string;
   last_name: string;
   date_of_birth: string;
-  severity_status: "critique" | "surveillance" | "stable";
   pathology: string | null;
   phone: string | null;
   email: string | null;
@@ -50,8 +49,8 @@ export default function PatientsPage() {
   const hasAccess = usePagePermission("can_view_patients");
   const searchParams = useSearchParams();
   const [q, setQ] = React.useState(searchParams.get("q") ?? "");
-  const [severityFilter, setSeverityFilter] = React.useState<"all" | "critique" | "surveillance" | "stable">("all");
   const [pathologyFilter, setPathologyFilter] = React.useState("");
+  const [consultationDate, setConsultationDate] = React.useState("");
   const [page, setPage] = React.useState(1);
   const pageSize = 12;
 
@@ -81,7 +80,7 @@ export default function PatientsPage() {
 
   const [editMode, setEditMode] = React.useState(false);
   const [editForm, setEditForm] = React.useState({
-    phone: "", email: "", address: "", country: "", emergency_contact: "", pathology: "", allergies: "", medical_history: "", severity_status: "stable" as "critique" | "surveillance" | "stable"
+    phone: "", email: "", address: "", country: "", emergency_contact: "", pathology: "", allergies: "", medical_history: ""
   });
   const [editSaving, setEditSaving] = React.useState(false);
   const [editError, setEditError] = React.useState<string | null>(null);
@@ -127,8 +126,10 @@ export default function PatientsPage() {
   async function load(customQ = q, customPage = page) {
     setLoading(true);
     try {
-      const res = await apiFetch<PatientListItem[] | { items: PatientListItem[]; total: number }>(
-        `/api/patients?page=${customPage}&pageSize=${pageSize}&q=${encodeURIComponent(customQ)}`
+      const params = new URLSearchParams({ page: String(customPage), pageSize: String(pageSize), q: customQ });
+    if (consultationDate) params.set('consultationDate', consultationDate);
+    const res = await apiFetch<PatientListItem[] | { items: PatientListItem[]; total: number }>(
+        `/api/patients?${params}`
       );
       const patientItems = Array.isArray(res) ? res : (res as any).items ?? [];
       const patientTotal = Array.isArray(res) ? res.length : (res as any).total ?? 0;
@@ -142,7 +143,7 @@ export default function PatientsPage() {
   React.useEffect(() => {
     const timer = setTimeout(() => load(), 300);
     return () => clearTimeout(timer);
-  }, [page, q]);
+  }, [page, q, consultationDate]);
 
   async function loadDetail(patientId: string) {
     setDetailLoading(true);
@@ -272,7 +273,6 @@ export default function PatientsPage() {
   }, [searchParams]);
 
   const filteredItems = (items || []).filter((p) => {
-    if (severityFilter !== "all" && p.severity_status !== severityFilter) return false;
     if (pathologyFilter.trim() && !(p.pathology ?? "").toLowerCase().includes(pathologyFilter.trim().toLowerCase())) return false;
     if (q.trim()) {
       const search = q.toLowerCase();
@@ -417,8 +417,8 @@ export default function PatientsPage() {
       setNewPatientMeds([]);
       setNewPatientAccount({ username: "", password: "" });
       await load();
-    } catch {
-      setCreateError("Impossible de creer le patient");
+    } catch (e: any) {
+      try { const msg = JSON.parse(e.message); setCreateError(msg.message); } catch { setCreateError("Impossible de créer le patient"); }
     } finally {
       setCreating(false);
     }
@@ -435,7 +435,6 @@ export default function PatientsPage() {
       pathology: detail.patient.pathology || "",
       allergies: Array.isArray(detail.patient.allergies) ? detail.patient.allergies.join(", ") : (detail.patient.allergies || ""),
       medical_history: Array.isArray(detail.patient.medical_history) ? detail.patient.medical_history.join(", ") : (detail.patient.medical_history || ""),
-      severity_status: detail.patient.severity_status || "stable"
     });
     setEditError(null);
     setEditMode(true);
@@ -462,7 +461,6 @@ export default function PatientsPage() {
           pathology: editForm.pathology || undefined,
           allergies: editForm.allergies || null,
           medical_history: editForm.medical_history || null,
-          severity_status: editForm.severity_status
         })
       });
       setEditMode(false);
@@ -473,8 +471,8 @@ export default function PatientsPage() {
         type: "success"
       });
       await loadDetail(selectedId);
-    } catch {
-      setEditError("Erreur lors de la modification");
+    } catch (e: any) {
+      try { const msg = JSON.parse(e.message); setEditError(msg.message); } catch { setEditError("Erreur lors de la modification"); }
     } finally {
       setEditSaving(false);
     }
@@ -511,20 +509,13 @@ export default function PatientsPage() {
     }
   }
 
-  function severityClass(status: PatientListItem["severity_status"]) {
-    if (status === "critique") return "bg-red-100 text-red-700";
-    if (status === "surveillance") return "bg-amber-100 text-amber-700";
-    return "bg-emerald-100 text-emerald-700";
-  }
-
   function exportCsv() {
-    const header = ["id", "last_name", "first_name", "date_of_birth", "severity_status", "pathology", "phone", "email"];
+    const header = ["id", "last_name", "first_name", "date_of_birth", "pathology", "phone", "email"];
     const rows = filteredItems.map((p) => [
       p.id,
       p.last_name,
       p.first_name,
       p.date_of_birth,
-      p.severity_status,
       p.pathology ?? "",
       p.phone ?? "",
       p.email ?? ""
@@ -564,16 +555,18 @@ export default function PatientsPage() {
             onChange={(e) => setPathologyFilter(e.target.value)}
             className="md:max-w-56"
           />
-          <select
-            value={severityFilter}
-            onChange={(e) => setSeverityFilter(e.target.value as "all" | "critique" | "surveillance" | "stable")}
-            className="h-10 rounded-md border border-input bg-transparent px-3 text-sm md:w-44"
-          >
-            <option value="all">Toutes severites</option>
-            <option value="critique">Critique</option>
-            <option value="surveillance">Surveillance</option>
-            <option value="stable">Stable</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Date consultation</span>
+            <Input
+              type="date"
+              value={consultationDate}
+              onChange={(e) => { setConsultationDate(e.target.value); setPage(1); }}
+              className="md:w-44"
+            />
+            {consultationDate && (
+              <button onClick={() => { setConsultationDate(""); setPage(1); }} className="text-xs text-blue-600 hover:underline whitespace-nowrap">Effacer</button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 md:ml-auto">
@@ -876,9 +869,6 @@ export default function PatientsPage() {
                     </div>
                     <div className="text-xs text-muted-foreground">{new Date(p.date_of_birth).toLocaleDateString()}</div>
                   </div>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${severityClass(p.severity_status)}`}>
-                    {p.severity_status}
-                  </span>
                 </div>
 
                 <div className="mt-3 space-y-1 text-sm text-muted-foreground">
@@ -1024,18 +1014,6 @@ export default function PatientsPage() {
                     <div>
                       <label className="text-sm text-muted-foreground mb-1 block">Historique medical (separe par virgules)</label>
                       <Input value={editForm.medical_history} onChange={(e) => setEditForm((s) => ({ ...s, medical_history: e.target.value }))} />
-                    </div>
-                    <div>
-                      <label className="text-sm text-muted-foreground mb-1 block">Severite</label>
-                      <select
-                        value={editForm.severity_status}
-                        onChange={(e) => setEditForm((s) => ({ ...s, severity_status: e.target.value as "critique" | "surveillance" | "stable" }))}
-                        className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-                      >
-                        <option value="stable">Stable</option>
-                        <option value="surveillance">Surveillance</option>
-                        <option value="critique">Critique</option>
-                      </select>
                     </div>
                   </div>
                   {editError ? <div className="text-sm text-destructive">{editError}</div> : null}
