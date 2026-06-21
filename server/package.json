@@ -1,6 +1,7 @@
 {
   "name": "cardiomanager-server",
   "version": "1.0.0",
+  "type": "module",
   "description": "Backend Express for CardioManager",
   "main": "index.ts",
   "scripts": {
