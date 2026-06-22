@@ -24,6 +24,9 @@ export function requirePermission(resource, action = 'read') {
         // Admin always passes
         if (user.role === 'admin')
             return next();
+        // Patients can access chat (their own channel)
+        if (user.role === 'patient' && resource === 'chat')
+            return next();
         // Only secretaries need row-level permission checks
         if (user.role !== 'secretaire') {
             return res.status(403).json({ error: 'Accès refusé' });
