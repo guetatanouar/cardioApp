@@ -1,12 +1,16 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   Phone,
   Mail,
   AlertCircle,
   History,
   Save,
+  FileText,
+  Activity,
+  MessageCircle,
 } from "lucide-react";
 
 import { apiFetch } from "@/lib/api/client";
@@ -21,6 +25,7 @@ export default function PatientProfile() {
   const { t } = useI18n();
   const session = typeof window !== "undefined" ? getSession() : null;
   const patientId = session?.userId;
+  const router = useRouter();
 
   const [data, setData] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
@@ -103,6 +108,14 @@ export default function PatientProfile() {
     : "14/03/1965";
   const countryInfo = p.country ? getCountryByCode(p.country) : null;
   const country = countryInfo ? `${countryInfo.flag} ${countryInfo.name}` : (p.country || "France");
+  const address = p.address || "12 Rue des Lilas, Lyon";
+  const emergencyContact = p.emergency_contact || "Marie Dupont - 0661234568";
+  const allergies: string[] = Array.isArray(p.allergies) && p.allergies.length > 0
+    ? p.allergies
+    : ["Pénicilline", "Aspirine"];
+  const medicalHistory: string[] = Array.isArray(p.medical_history) && p.medical_history.length > 0
+    ? p.medical_history
+    : ["Hypertension artérielle", "Diabète type 2"];
   const mappedConsultations = consultations.length > 0
     ? consultations
     : [
@@ -115,6 +128,67 @@ export default function PatientProfile() {
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border">
         <PatientHeader />
 
+        {/* Header */}
+        <div className="p-6 border-b">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-green-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+                {initials}
+              </div>
+
+              <div>
+                <h1 className="text-xl font-semibold">
+                  {fullName}
+                </h1>
+
+                <p className="text-sm text-gray-500">
+                  {age !== null ? `${age} ans` : "61 ans"} • {gender} • {bloodGroup}
+                </p>
+
+                <p className="text-sm text-gray-400">
+                  {editPhone || p.phone || "—"} · {editEmail || p.email || "—"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 text-sm font-medium">
+                {allergies.length} allergie(s)
+              </span>
+
+              <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium">
+                {mappedConsultations.length} consultation(s)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b">
+          <button className="px-6 py-4 border-b-2 border-green-600 text-green-700 font-medium">
+            Mon dossier
+          </button>
+
+          <button onClick={() => router.push("/patient/documents")} className="px-6 py-4 text-gray-600 flex items-center gap-2 hover:text-gray-900">
+            <FileText size={18} />
+            Mes documents
+          </button>
+
+          <button onClick={() => router.push("/patient/vitals")} className="px-6 py-4 text-gray-600 flex items-center gap-2 hover:text-gray-900">
+            <Activity size={18} />
+            Mes constantes
+          </button>
+
+          <button onClick={() => router.push("/patient/chat")} className="px-6 py-4 text-gray-600 flex items-center gap-2 hover:text-gray-900">
+            <MessageCircle size={18} />
+            Chat médecin
+            <span className="bg-red-500 text-white text-xs rounded-full px-2">
+              1
+            </span>
+          </button>
+        </div>
+
+        {/* Content */}
         <div className="p-6 space-y-6">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="bg-gray-50 rounded-xl p-4">
@@ -170,8 +244,14 @@ export default function PatientProfile() {
             </h3>
             <div className="space-y-3">
               {mappedConsultations.map((consultation: any, index: number) => (
-                <div key={index} className="border rounded-xl p-4 hover:bg-gray-50 transition">
-                  <h4 className="font-medium">{consultation.title || consultation.motif}</h4>
+                <div
+                  key={index}
+                  className="border rounded-xl p-4 hover:bg-gray-50 transition"
+                >
+                  <h4 className="font-medium">
+                    {consultation.title || consultation.motif}
+                  </h4>
+                  {consultation.ecole ? <p className="text-xs text-gray-400 mt-0.5">Ecole: {consultation.ecole}</p> : null}
                   <p className="text-sm text-gray-500 mt-1">
                     {consultation.date ? new Date(consultation.date).toLocaleDateString("fr-FR") : consultation.date} · {consultation.doctor || consultation.author || "Dr. Étienne Tremblay"}
                   </p>

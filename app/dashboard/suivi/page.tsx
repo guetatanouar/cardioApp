@@ -213,6 +213,7 @@ export default function SuiviPage() {
                       {new Date(c.created_at).toLocaleString()} - {c.author || "Medecin"}
                     </div>
                     <div className="mt-1 font-medium">{c.motif || c.reason || "Consultation"}</div>
+                    {c.ecole ? <div className="text-xs text-muted-foreground mt-0.5">Ecole: {c.ecole}</div> : null}
                     {c.diagnostic && <div className="text-sm text-muted-foreground">Diagnostic: {c.diagnostic}</div>}
                     {c.traitement && <div className="text-sm text-muted-foreground">Traitement: {c.traitement}</div>}
                   </div>

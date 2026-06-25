@@ -111,8 +111,8 @@ patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write
 
     try {
         await query(
-            'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
-            [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, country, pathology, severity_status || 'stable']
+            'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, pathology, severity_status || 'stable']
         );
         const user = (req as any).user;
         createNotification({

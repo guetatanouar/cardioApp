@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Line, LineChart, ResponsiveContainer, Tooltip } from "recharts";
 import { Heart, Activity, Scale, Wind, Plus } from "lucide-react";
 
@@ -12,7 +13,17 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientHeader } from "@/components/patient/patient-header";
 
-export default function PatientDashboard() {
+export default function PatientHome() {
+  const router = useRouter();
+
+  React.useEffect(() => {
+    router.replace("/patient/profile");
+  }, [router]);
+
+  return null;
+}
+
+export function PatientDashboard() {
   const { t } = useI18n();
   const session = typeof window !== "undefined" ? getSession() : null;
   const patientId = session?.userId;
@@ -33,9 +44,7 @@ export default function PatientDashboard() {
     setItems(Array.isArray(res) ? res : []);
   }
 
-  React.useEffect(() => {
-    load();
-  }, [patientId]);
+  React.useEffect(() => { load(); }, [patientId]);
 
   async function submit() {
     if (!patientId) return;
