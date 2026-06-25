@@ -54,7 +54,7 @@ export default function PatientChatPage() {
   }
 
   function isMine(msg: any) {
-    return msg.sender_id === session?.userId;
+    return msg.sender_role === "patient";
   }
 
   function formatTime(dateStr: string) {
