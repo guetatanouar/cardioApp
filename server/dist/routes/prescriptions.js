@@ -1,31 +1,28 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.prescriptionsRouter = void 0;
-const express_1 = require("express");
-const pool_js_1 = require("../db/pool.js");
-const auth_js_1 = require("../middleware/auth.js");
-const permissions_js_1 = require("../middleware/permissions.js");
-const createNotification_js_1 = require("../lib/createNotification.js");
-exports.prescriptionsRouter = (0, express_1.Router)();
-exports.prescriptionsRouter.get('/', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('prescriptions'), async (req, res) => {
+import { Router } from 'express';
+import { query } from '../db/pool.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/permissions.js';
+import { createNotification } from '../lib/createNotification.js';
+export const prescriptionsRouter = Router();
+prescriptionsRouter.get('/', authenticateToken, requirePermission('prescriptions'), async (req, res) => {
     const { patientId } = req.query;
     try {
-        const result = await (0, pool_js_1.query)('SELECT * FROM prescriptions WHERE patient_id = $1 ORDER BY date DESC', [patientId]);
+        const result = await query('SELECT * FROM prescriptions WHERE patient_id = $1 ORDER BY date DESC', [patientId]);
         res.json(result.rows);
     }
     catch (err) {
         res.status(500).json({ message: 'Server error' });
     }
 });
-exports.prescriptionsRouter.post('/', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('prescriptions', 'write'), async (req, res) => {
+prescriptionsRouter.post('/', authenticateToken, requirePermission('prescriptions', 'write'), async (req, res) => {
     const { patientId, generalNotes, items } = req.body;
     const id = `rx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
-        await (0, pool_js_1.query)('INSERT INTO prescriptions (id, patient_id, patient_name, date, doctor_name, medications, notes) VALUES ($1, $2, $3, $4, $5, $6, $7)', [id, patientId, "Patient", new Date().toISOString().split('T')[0], "Dr. Étienne Tremblay", JSON.stringify(items), generalNotes]);
+        await query('INSERT INTO prescriptions (id, patient_id, patient_name, date, doctor_name, medications, notes) VALUES ($1, $2, $3, $4, $5, $6, $7)', [id, patientId, "Patient", new Date().toISOString().split('T')[0], "Dr. Étienne Tremblay", JSON.stringify(items), generalNotes]);
         const user = req.user;
-        const patient = await (0, pool_js_1.query)('SELECT first_name, last_name FROM patients WHERE id = $1', [patientId]);
+        const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [patientId]);
         const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : patientId;
-        (0, createNotification_js_1.createNotification)({
+        createNotification({
             type: 'prescription_created',
             title: 'Ordonnance créée',
             message: `Nouvelle ordonnance pour ${pName}`,

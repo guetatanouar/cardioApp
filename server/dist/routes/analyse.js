@@ -1,16 +1,10 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.analyseRouter = void 0;
-const express_1 = require("express");
-const multer_1 = __importDefault(require("multer"));
-const pool_js_1 = require("../db/pool.js");
-const auth_js_1 = require("../middleware/auth.js");
-const permissions_js_1 = require("../middleware/permissions.js");
-const upload = (0, multer_1.default)({ dest: 'uploads/' });
-exports.analyseRouter = (0, express_1.Router)();
+import { Router } from 'express';
+import multer from 'multer';
+import { query } from '../db/pool.js';
+import { authenticateToken } from '../middleware/auth.js';
+import { requirePermission } from '../middleware/permissions.js';
+const upload = multer({ dest: 'uploads/' });
+export const analyseRouter = Router();
 function generateReport(patient, vitals, documents) {
     const pathology = patient.pathology || "non spécifiée";
     const severity = patient.severity_status;
@@ -116,9 +110,9 @@ function generateReport(patient, vitals, documents) {
     }
     return { summary, findings, observations, alerts };
 }
-exports.analyseRouter.get('/patients', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('documents'), async (_req, res) => {
+analyseRouter.get('/patients', authenticateToken, requirePermission('documents'), async (_req, res) => {
     try {
-        const patients = await (0, pool_js_1.query)(`SELECT p.id, p.first_name, p.last_name, p.severity_status, p.pathology,
+        const patients = await query(`SELECT p.id, p.first_name, p.last_name, p.severity_status, p.pathology,
               COALESCE(
                 json_agg(
                   json_build_object(
@@ -140,9 +134,9 @@ exports.analyseRouter.get('/patients', auth_js_1.authenticateToken, (0, permissi
         res.status(500).json({ message: 'Server error' });
     }
 });
-exports.analyseRouter.get('/reports', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('documents'), async (_req, res) => {
+analyseRouter.get('/reports', authenticateToken, requirePermission('documents'), async (_req, res) => {
     try {
-        const result = await (0, pool_js_1.query)(`SELECT ar.*, p.first_name, p.last_name
+        const result = await query(`SELECT ar.*, p.first_name, p.last_name
        FROM analysis_reports ar
        JOIN patients p ON p.id = ar.patient_id
        ORDER BY ar.created_at DESC`);
@@ -153,9 +147,9 @@ exports.analyseRouter.get('/reports', auth_js_1.authenticateToken, (0, permissio
         res.status(500).json({ message: 'Server error' });
     }
 });
-exports.analyseRouter.get('/reports/:id', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('documents'), async (req, res) => {
+analyseRouter.get('/reports/:id', authenticateToken, requirePermission('documents'), async (req, res) => {
     try {
-        const result = await (0, pool_js_1.query)(`SELECT ar.*, p.first_name, p.last_name
+        const result = await query(`SELECT ar.*, p.first_name, p.last_name
        FROM analysis_reports ar
        JOIN patients p ON p.id = ar.patient_id
        WHERE ar.id = $1`, [req.params.id]);
@@ -168,21 +162,21 @@ exports.analyseRouter.get('/reports/:id', auth_js_1.authenticateToken, (0, permi
         res.status(500).json({ message: 'Server error' });
     }
 });
-exports.analyseRouter.post('/analyze', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('documents'), upload.single('file'), async (req, res) => {
+analyseRouter.post('/analyze', authenticateToken, requirePermission('documents'), upload.single('file'), async (req, res) => {
     try {
         const { patientId, documentIds } = req.body;
         const uploadedFile = req.file;
         const docIds = documentIds ? JSON.parse(documentIds) : [];
         if (uploadedFile) {
             const docId = `doc_${Date.now().toString(36)}`;
-            await (0, pool_js_1.query)('INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)', [docId, patientId, uploadedFile.originalname, 'analyse', String(uploadedFile.size), uploadedFile.path]);
+            await query('INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)', [docId, patientId, uploadedFile.originalname, 'analyse', String(uploadedFile.size), uploadedFile.path]);
             docIds.push(docId);
         }
-        const patientResult = await (0, pool_js_1.query)('SELECT id, first_name, last_name, pathology, severity_status, blood_type, date_of_birth FROM patients WHERE id = $1', [patientId]);
+        const patientResult = await query('SELECT id, first_name, last_name, pathology, severity_status, blood_type, date_of_birth FROM patients WHERE id = $1', [patientId]);
         const patient = patientResult.rows[0];
-        const vitalsResult = await (0, pool_js_1.query)('SELECT systolic, diastolic, heart_rate, sp02, weight FROM vital_entries WHERE patient_id = $1 ORDER BY recorded_at DESC LIMIT 1', [patientId]);
+        const vitalsResult = await query('SELECT systolic, diastolic, heart_rate, sp02, weight FROM vital_entries WHERE patient_id = $1 ORDER BY recorded_at DESC LIMIT 1', [patientId]);
         const vitals = vitalsResult.rows;
-        const docsResult = await (0, pool_js_1.query)('SELECT id, name, category FROM documents WHERE id = ANY($1::text[])', [docIds]);
+        const docsResult = await query('SELECT id, name, category FROM documents WHERE id = ANY($1::text[])', [docIds]);
         const docs = docsResult.rows;
         const report = patient
             ? generateReport(patient, vitals, docs)
@@ -193,7 +187,7 @@ exports.analyseRouter.post('/analyze', auth_js_1.authenticateToken, (0, permissi
                 alerts: []
             };
         const reportId = `rpt_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`;
-        await (0, pool_js_1.query)(`INSERT INTO analysis_reports (id, patient_id, document_ids, report_content, created_by)
+        await query(`INSERT INTO analysis_reports (id, patient_id, document_ids, report_content, created_by)
        VALUES ($1, $2, $3, $4, $5)`, [reportId, patientId, JSON.stringify(docIds), JSON.stringify(report), req.user?.id || null]);
         res.status(201).json({ id: reportId, report, documents: docIds });
     }
@@ -202,17 +196,17 @@ exports.analyseRouter.post('/analyze', auth_js_1.authenticateToken, (0, permissi
         res.status(500).json({ message: 'Server error' });
     }
 });
-exports.analyseRouter.post('/analyze-existing', auth_js_1.authenticateToken, (0, permissions_js_1.requirePermission)('documents'), async (req, res) => {
+analyseRouter.post('/analyze-existing', authenticateToken, requirePermission('documents'), async (req, res) => {
     try {
         const { patientId, documentIds } = req.body;
         if (!patientId || !documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
             return res.status(400).json({ message: 'patientId and documentIds are required' });
         }
-        const patientResult = await (0, pool_js_1.query)('SELECT id, first_name, last_name, pathology, severity_status, blood_type, date_of_birth FROM patients WHERE id = $1', [patientId]);
+        const patientResult = await query('SELECT id, first_name, last_name, pathology, severity_status, blood_type, date_of_birth FROM patients WHERE id = $1', [patientId]);
         const patient = patientResult.rows[0];
-        const vitalsResult = await (0, pool_js_1.query)('SELECT systolic, diastolic, heart_rate, sp02, weight FROM vital_entries WHERE patient_id = $1 ORDER BY recorded_at DESC LIMIT 1', [patientId]);
+        const vitalsResult = await query('SELECT systolic, diastolic, heart_rate, sp02, weight FROM vital_entries WHERE patient_id = $1 ORDER BY recorded_at DESC LIMIT 1', [patientId]);
         const vitals = vitalsResult.rows;
-        const docsResult = await (0, pool_js_1.query)('SELECT id, name, category FROM documents WHERE id = ANY($1::text[])', [documentIds]);
+        const docsResult = await query('SELECT id, name, category FROM documents WHERE id = ANY($1::text[])', [documentIds]);
         const docs = docsResult.rows;
         const report = patient
             ? generateReport(patient, vitals, docs)
@@ -223,7 +217,7 @@ exports.analyseRouter.post('/analyze-existing', auth_js_1.authenticateToken, (0,
                 alerts: []
             };
         const reportId = `rpt_${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 4)}`;
-        await (0, pool_js_1.query)(`INSERT INTO analysis_reports (id, patient_id, document_ids, report_content, created_by)
+        await query(`INSERT INTO analysis_reports (id, patient_id, document_ids, report_content, created_by)
        VALUES ($1, $2, $3, $4, $5)`, [reportId, patientId, JSON.stringify(documentIds), JSON.stringify(report), req.user?.id || null]);
         res.status(201).json({ id: reportId, report });
     }

@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.requirePermission = requirePermission;
-const pool_js_1 = require("../db/pool.js");
+import { query } from '../db/pool.js';
 const permMap = {
     patients: 'can_view_patients',
     'patients:write': 'can_edit_patients',
@@ -19,7 +16,7 @@ const permMap = {
     'documents:write': 'can_upload_documents',
     consultations: 'can_view_consultations'
 };
-function requirePermission(resource, action = 'read') {
+export function requirePermission(resource, action = 'read') {
     return async (req, res, next) => {
         const user = req.user;
         if (!user)
@@ -36,7 +33,7 @@ function requirePermission(resource, action = 'read') {
         if (!dbKey)
             return next();
         try {
-            const result = await (0, pool_js_1.query)(`SELECT ${dbKey} as allowed FROM secretaire_permissions WHERE user_id = $1`, [user.id]);
+            const result = await query(`SELECT ${dbKey} as allowed FROM secretaire_permissions WHERE user_id = $1`, [user.id]);
             const allowed = result.rows[0]?.allowed;
             if (!allowed)
                 return res.status(403).json({ error: 'Permission denied' });

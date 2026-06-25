@@ -1,13 +1,7 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.startUnreadMessageCron = startUnreadMessageCron;
-const node_cron_1 = __importDefault(require("node-cron"));
-const nodemailer_1 = __importDefault(require("nodemailer"));
-const pool_js_1 = require("../db/pool.js");
-const transporter = nodemailer_1.default.createTransport({
+import cron from 'node-cron';
+import nodemailer from 'nodemailer';
+import { query } from '../db/pool.js';
+const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.ethereal.email',
     port: Number(process.env.SMTP_PORT) || 587,
     secure: process.env.SMTP_SECURE === 'true',
@@ -35,7 +29,7 @@ async function sendEmail(to, subject, text) {
 }
 async function notifyUnreadMessages() {
     try {
-        const result = await (0, pool_js_1.query)(`SELECT cm.*, u.full_name as sender_name, p.email as patient_email
+        const result = await query(`SELECT cm.*, u.full_name as sender_name, p.email as patient_email
        FROM chat_messages cm
        LEFT JOIN users u ON cm.sender_id = u.id
        LEFT JOIN patients p ON cm.patient_id = p.id
@@ -44,7 +38,7 @@ async function notifyUnreadMessages() {
         const messages = result.rows;
         if (messages.length === 0)
             return;
-        const staffUsers = (await (0, pool_js_1.query)(`SELECT id, full_name, email, role FROM users WHERE role IN ('admin', 'secretaire')`)).rows;
+        const staffUsers = (await query(`SELECT id, full_name, email, role FROM users WHERE role IN ('admin', 'secretaire')`)).rows;
         const notifiedIds = [];
         for (const msg of messages) {
             if (msg.channel === 'staff') {
@@ -63,7 +57,7 @@ async function notifyUnreadMessages() {
         }
         if (notifiedIds.length > 0) {
             const placeholders = notifiedIds.map((_, i) => `$${i + 1}`).join(',');
-            await (0, pool_js_1.query)(`UPDATE chat_messages SET notified = TRUE WHERE id IN (${placeholders})`, notifiedIds);
+            await query(`UPDATE chat_messages SET notified = TRUE WHERE id IN (${placeholders})`, notifiedIds);
             console.log(`[Email Notif] Marked ${notifiedIds.length} messages as notified`);
         }
     }
@@ -71,9 +65,9 @@ async function notifyUnreadMessages() {
         console.error('[Email Notif] Error:', err);
     }
 }
-function startUnreadMessageCron() {
+export function startUnreadMessageCron() {
     const interval = process.env.CRON_INTERVAL || '*/2 * * * *';
-    node_cron_1.default.schedule(interval, () => {
+    cron.schedule(interval, () => {
         notifyUnreadMessages();
     });
     console.log(`[Email Notif] Cron scheduled: ${interval}`);
