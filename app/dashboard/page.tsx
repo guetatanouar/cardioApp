@@ -39,6 +39,7 @@ type DashboardSummary = {
   }[];
   unreadStaffMessages: number;
   criticalAlerts: {
+    id: string;
     patient_id: string;
     first_name: string;
     last_name: string;
@@ -277,7 +278,7 @@ export default function DashboardPage() {
               {filteredAlerts.length > 0 ? (
                 filteredAlerts.map((a) => (
                   <div
-                    key={a.patient_id}
+                    key={a.id}
                     className="px-5 py-4 border-b bg-red-50"
                   >
                     <div className="font-medium text-red-700">

@@ -8,6 +8,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+dotenv_1.default.config({ path: path_1.default.resolve(process.cwd(), 'server', '.env') });
 // Ensure uploads directory exists
 const uploadsDir = path_1.default.resolve('uploads');
 if (!fs_1.default.existsSync(uploadsDir)) {
@@ -25,7 +26,6 @@ const documents_js_1 = require("./routes/documents.js");
 const analyse_js_1 = require("./routes/analyse.js");
 const settings_js_1 = require("./routes/settings.js");
 const notifications_js_1 = require("./routes/notifications.js");
-dotenv_1.default.config();
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 4000;
 app.use((0, cors_1.default)({

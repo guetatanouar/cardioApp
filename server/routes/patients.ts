@@ -31,27 +31,82 @@ function validateCountry(country: string): boolean {
   return KNOWN_COUNTRIES.includes(country);
 }
 
+function normalizeEmail(email: string): string {
+  return email.toString().trim().toLowerCase();
+}
+
+function normalizePhone(phone: string): string {
+  return phone.toString().replace(/\s/g, '').trim();
+}
+
+async function checkDuplicatePatient(data: { email?: string; first_name: string; last_name: string; phone?: string; excludeId?: string }) {
+  const email = data.email ? normalizeEmail(data.email) : '';
+  const phone = data.phone ? normalizePhone(data.phone) : '';
+
+  if (email) {
+    const existing = await query(
+      'SELECT id, email, first_name, last_name, phone, created_at, severity_status FROM patients WHERE email = $1' + (data.excludeId ? ' AND id != $2' : ''),
+      data.excludeId ? [email, data.excludeId] : [email]
+    );
+    if (existing.rows.length > 0) {
+      return { isDuplicate: true, existingPatient: existing.rows[0], reason: `Même email: ${email}`, duplicateType: 'EMAIL' };
+    }
+  }
+
+  if (phone && data.first_name && data.last_name) {
+    const existing = await query(
+      'SELECT id, email, first_name, last_name, phone, created_at, severity_status FROM patients WHERE first_name = $1 AND last_name = $2 AND phone = $3' + (data.excludeId ? ' AND id != $4' : ''),
+      data.excludeId ? [data.first_name, data.last_name, phone, data.excludeId] : [data.first_name, data.last_name, phone]
+    );
+    if (existing.rows.length > 0) {
+      return { isDuplicate: true, existingPatient: existing.rows[0], reason: `Même nom (${data.first_name} ${data.last_name}) et téléphone (${phone})`, duplicateType: 'NAME_PHONE' };
+    }
+  }
+
+  return { isDuplicate: false, duplicateType: 'NONE' };
+}
+
 patientsRouter.get('/', authenticateToken, requirePermission('patients'), async (req, res) => {
     try {
-        const result = await query('SELECT * FROM patients ORDER BY created_at DESC');
+        const { consultationDate } = req.query;
+        let sql = 'SELECT DISTINCT p.* FROM patients p';
+        const params: any[] = [];
+        if (consultationDate) {
+            sql += ' JOIN consultations c ON c.patient_id = p.id WHERE c.date = $1';
+            params.push(consultationDate);
+        }
+        sql += ' ORDER BY p.created_at DESC';
+        const result = await query(sql, params);
         res.json(result.rows);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
 patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write'), async (req, res) => {
-    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status } = req.body;
+    let { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status } = req.body;
     const id = `P${Date.now().toString(36)}${Math.random().toString(36).substr(2, 4)}`;
 
-    if (email && !validateEmail(email)) {
-      return res.status(400).json({ message: 'Format d\'email invalide' });
+    if (email) {
+      email = normalizeEmail(email);
+      if (!validateEmail(email)) return res.status(400).json({ message: 'Format d\'email invalide' });
     }
-    if (phone && !validatePhone(phone)) {
-      return res.status(400).json({ message: 'Format de numéro de téléphone invalide' });
+    if (phone) {
+      phone = normalizePhone(phone);
+      if (!validatePhone(phone)) return res.status(400).json({ message: 'Format de numéro de téléphone invalide' });
     }
     if (country && !validateCountry(country)) {
       return res.status(400).json({ message: 'Pays non reconnu' });
+    }
+
+    const dupCheck = await checkDuplicatePatient({ email, first_name, last_name, phone });
+    if (dupCheck.isDuplicate) {
+      return res.status(409).json({
+        message: dupCheck.duplicateType === 'EMAIL' ? 'Cet email est déjà utilisé' : 'Un patient avec le même nom et téléphone existe déjà',
+        duplicateType: dupCheck.duplicateType,
+        existingPatient: dupCheck.existingPatient
+      });
     }
 
     try {
@@ -69,8 +124,14 @@ patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write
             patient_id: id,
         });
         res.status(201).json({ id, message: 'Patient created' });
-    } catch (err) {
+    } catch (err: any) {
         console.error(err);
+        if (err?.code === '23505') {
+            const detail = err.detail || '';
+            if (detail.includes('email')) return res.status(409).json({ message: 'Cet email est déjà utilisé' });
+            if (detail.includes('phone')) return res.status(409).json({ message: 'Ce numéro de téléphone est déjà utilisé' });
+            return res.status(409).json({ message: 'Donnée en conflit' });
+        }
         res.status(500).json({ message: 'Server error', error: (err as Error).message });
     }
 });
@@ -78,11 +139,9 @@ patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write
 patientsRouter.get('/:id', authenticateToken, async (req, res) => {
     try {
         const user = (req as any).user;
-        // Patients can only access their own record
         if (user.role === 'patient' && user.patientId !== req.params.id) {
             return res.status(403).json({ error: 'Accès refusé' });
         }
-        // Staff need the patients permission
         if (user.role !== 'patient') {
             const permResult = await query(
                 `SELECT can_view_patients FROM secretaire_permissions WHERE user_id = $1`,
@@ -121,29 +180,56 @@ patientsRouter.put('/:id/self', authenticateToken, async (req, res) => {
     if (user.role !== 'patient' || user.patientId !== req.params.id) {
         return res.status(403).json({ message: 'Accès refusé' });
     }
-    const { phone, email, address, emergency_contact, allergies, medical_history } = req.body;
+    let { phone, email, address, emergency_contact, allergies, medical_history } = req.body;
+
+    if (email) {
+      email = normalizeEmail(email);
+      if (!validateEmail(email)) return res.status(400).json({ message: 'Format d\'email invalide' });
+    }
+    if (phone) {
+      phone = normalizePhone(phone);
+      if (!validatePhone(phone)) return res.status(400).json({ message: 'Format de numéro de téléphone invalide' });
+    }
+
     try {
         await query(
             'UPDATE patients SET phone=$1, email=$2, address=$3, emergency_contact=$4, allergies=$5, medical_history=$6 WHERE id=$7',
             [phone, email, address, emergency_contact, allergies ? JSON.stringify(allergies) : null, medical_history ? JSON.stringify(medical_history) : null, req.params.id]
         );
         res.json({ message: 'Profil mis à jour' });
-    } catch (err) {
+    } catch (err: any) {
+        if (err?.code === '23505') {
+            const detail = err.detail || '';
+            if (detail.includes('email')) return res.status(409).json({ message: 'Cet email est déjà utilisé' });
+            if (detail.includes('phone')) return res.status(409).json({ message: 'Ce numéro de téléphone est déjà utilisé' });
+            return res.status(409).json({ message: 'Donnée en conflit' });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 });
 
 patientsRouter.put('/:id', authenticateToken, requirePermission('patients', 'write'), async (req, res) => {
-    const { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, pathology, severity_status } = req.body;
+    let { first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, pathology, severity_status } = req.body;
 
-    if (email && !validateEmail(email)) {
-      return res.status(400).json({ message: 'Format d\'email invalide' });
+    if (email) {
+      email = normalizeEmail(email);
+      if (!validateEmail(email)) return res.status(400).json({ message: 'Format d\'email invalide' });
     }
-    if (phone && !validatePhone(phone)) {
-      return res.status(400).json({ message: 'Format de numéro de téléphone invalide' });
+    if (phone) {
+      phone = normalizePhone(phone);
+      if (!validatePhone(phone)) return res.status(400).json({ message: 'Format de numéro de téléphone invalide' });
     }
     if (country && !validateCountry(country)) {
       return res.status(400).json({ message: 'Pays non reconnu' });
+    }
+
+    const dupCheck = await checkDuplicatePatient({ email, first_name, last_name, phone, excludeId: req.params.id });
+    if (dupCheck.isDuplicate) {
+      return res.status(409).json({
+        message: dupCheck.duplicateType === 'EMAIL' ? 'Cet email est déjà utilisé' : 'Un patient avec le même nom et téléphone existe déjà',
+        duplicateType: dupCheck.duplicateType,
+        existingPatient: dupCheck.existingPatient
+      });
     }
 
     try {
@@ -152,7 +238,13 @@ patientsRouter.put('/:id', authenticateToken, requirePermission('patients', 'wri
             [first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, emergency_contact, allergies, medical_history, pathology, severity_status, req.params.id]
         );
         res.json({ message: 'Patient updated' });
-    } catch (err) {
+    } catch (err: any) {
+        if (err?.code === '23505') {
+            const detail = err.detail || '';
+            if (detail.includes('email')) return res.status(409).json({ message: 'Cet email est déjà utilisé' });
+            if (detail.includes('phone')) return res.status(409).json({ message: 'Ce numéro de téléphone est déjà utilisé' });
+            return res.status(409).json({ message: 'Donnée en conflit' });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 });

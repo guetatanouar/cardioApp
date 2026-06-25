@@ -7,7 +7,7 @@ exports.query = exports.pool = void 0;
 const pg_1 = __importDefault(require("pg"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
-dotenv_1.default.config({ path: path_1.default.resolve(process.cwd(), '.env') });
+dotenv_1.default.config({ path: path_1.default.resolve(process.cwd(), 'server', '.env') });
 console.log('DATABASE_URL:', process.env.DATABASE_URL);
 const { Pool } = pg_1.default;
 exports.pool = new Pool({
