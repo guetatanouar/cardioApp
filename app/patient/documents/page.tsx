@@ -13,7 +13,7 @@ export default function PatientDocumentsPage() {
 
   const [items, setItems] = React.useState<any[]>([]);
   const [file, setFile] = React.useState<File | null>(null);
-  const [category, setCategory] = React.useState("Analyse");
+  const [category, setCategory] = React.useState("analyse");
 
   async function load() {
     if (!patientId) return;
@@ -53,11 +53,10 @@ export default function PatientDocumentsPage() {
             <CardContent className="space-y-3">
               <div className="flex items-center gap-2">
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-10 rounded-md border border-input bg-transparent px-3 text-sm">
-                  <option value="Ordonnance">Ordonnance</option>
-                  <option value="Radio">Radio</option>
-                  <option value="Analyse">Analyse</option>
-                  <option value="Echographie">Echographie</option>
-                  <option value="Autre">Autre</option>
+                  <option value="analyse">Analyse</option>
+                  <option value="radio">Radio</option>
+                  <option value="echographie">Échographie</option>
+                  <option value="autre">Autre</option>
                 </select>
                 <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
                 <Button onClick={upload} disabled={!file}>Upload</Button>
@@ -66,8 +65,8 @@ export default function PatientDocumentsPage() {
                 {items.map((d) => (
                   <div key={d.id} className="flex items-center justify-between gap-3 py-3">
                     <div>
-                      <a className="text-sm underline" href={d.file_url} target="_blank" rel="noreferrer">{d.file_name}</a>
-                      <div className="text-xs text-muted-foreground">{d.category}</div>
+                      <a className="text-sm underline" href={`http://localhost:4000/${d.file_path}`} target="_blank" rel="noreferrer">{d.name}</a>
+                      <div className="text-xs text-muted-foreground">{d.category} — {d.size}</div>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => remove(d.id)}>Delete</Button>
                   </div>
