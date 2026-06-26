@@ -4,13 +4,11 @@ import * as React from "react";
 
 import { apiFetch } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/storage";
-import { useI18n } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PatientHeader } from "@/components/patient/patient-header";
 
 export default function PatientChatPage() {
-  const { t } = useI18n();
   const session = typeof window !== "undefined" ? getSession() : null;
   const patientId = session?.userId;
   const channel = patientId ? `patient:${patientId}` : "";

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Plus, Clock, Search, Users, UserPlus, Phone, XCircle, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Clock, Search } from "lucide-react";
 
 import { apiFetch } from "@/lib/api/client";
 import { dispatchNotification } from "@/lib/notifications";

@@ -108,14 +108,9 @@ export default function PatientProfile() {
     : "14/03/1965";
   const countryInfo = p.country ? getCountryByCode(p.country) : null;
   const country = countryInfo ? `${countryInfo.flag} ${countryInfo.name}` : (p.country || "France");
-  const address = p.address || "12 Rue des Lilas, Lyon";
-  const emergencyContact = p.emergency_contact || "Marie Dupont - 0661234568";
   const allergies: string[] = Array.isArray(p.allergies) && p.allergies.length > 0
     ? p.allergies
     : ["Pénicilline", "Aspirine"];
-  const medicalHistory: string[] = Array.isArray(p.medical_history) && p.medical_history.length > 0
-    ? p.medical_history
-    : ["Hypertension artérielle", "Diabète type 2"];
   const mappedConsultations = consultations.length > 0
     ? consultations
     : [

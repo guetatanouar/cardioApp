@@ -16,30 +16,33 @@ documentsRouter.get('/:patientId', authenticateToken, requirePermission('documen
     }
 });
 documentsRouter.post('/:patientId', authenticateToken, requirePermission('documents', 'write'), upload.single('file'), async (req, res) => {
+    const id = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const file = req.file;
     if (!file)
         return res.status(400).json({ message: 'No file provided' });
-    const docId = `doc_${Date.now().toString(36)}`;
     const { category } = req.body;
+    const filePath = file.path;
+    const name = file.originalname;
+    const size = file.size ? `${(file.size / 1024).toFixed(1)} KB` : null;
     try {
-        await query('INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)', [docId, req.params.patientId, file.originalname, category || 'autre', String(file.size), file.path]);
+        await query('INSERT INTO documents (id, patient_id, name, category, size, file_path) VALUES ($1, $2, $3, $4, $5, $6)', [id, req.params.patientId, name, category || 'autre', size, filePath]);
         const user = req.user;
         const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [req.params.patientId]);
         const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : req.params.patientId;
         createNotification({
             type: 'document_uploaded',
             title: 'Document ajouté',
-            message: `${file.originalname} ajouté pour ${pName}`,
+            message: `${name} ajouté pour ${pName}`,
             actor_name: user?.name,
             actor_role: user?.role,
             patient_id: req.params.patientId,
-            related_id: docId,
+            related_id: id,
         });
         res.status(201).json({ message: 'Document uploaded' });
     }
     catch (err) {
-        console.error('Document upload error:', err);
-        res.status(500).json({ message: 'Server error', error: err.message });
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 documentsRouter.delete('/:id', authenticateToken, requirePermission('documents', 'write'), async (req, res) => {

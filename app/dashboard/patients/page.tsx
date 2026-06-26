@@ -80,7 +80,7 @@ export default function PatientsPage() {
 
   const [editMode, setEditMode] = React.useState(false);
   const [editForm, setEditForm] = React.useState({
-    phone: "", email: "", address: "", emergency_contact: "", pathology: "", allergies: "", medical_history: ""
+    phone: "", email: "", address: "", country: "", emergency_contact: "", pathology: "", allergies: "", medical_history: ""
   });
   const [editSaving, setEditSaving] = React.useState(false);
   const [editError, setEditError] = React.useState<string | null>(null);
@@ -108,7 +108,8 @@ export default function PatientsPage() {
     email: "",
     address: "",
     pathology: "",
-    severityStatus: "stable" as "critique" | "surveillance" | "stable"
+    severityStatus: "stable" as "critique" | "surveillance" | "stable",
+    country: ""
   });
   const [newPatientVitals, setNewPatientVitals] = React.useState({
     systolic: "",
@@ -407,7 +408,8 @@ export default function PatientsPage() {
         email: "",
         address: "",
         pathology: "",
-        severityStatus: "stable"
+        severityStatus: "stable",
+        country: ""
       });
       setNewPatientVitals({ systolic: "", diastolic: "", heartRate: "", sp02: "", weight: "" });
       setNewPatientDoc(null);
@@ -428,6 +430,7 @@ export default function PatientsPage() {
       phone: detail.patient.phone || "",
       email: detail.patient.email || "",
       address: detail.patient.address || "",
+      country: detail.patient.country || "",
       emergency_contact: detail.patient.emergency_contact || "",
       pathology: detail.patient.pathology || "",
       allergies: Array.isArray(detail.patient.allergies) ? detail.patient.allergies.join(", ") : (detail.patient.allergies || ""),

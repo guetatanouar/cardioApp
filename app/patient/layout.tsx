@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { getSession, clearSession } from "@/lib/auth/storage";
 import { LogOut } from "lucide-react";
 

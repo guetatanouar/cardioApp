@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { FileText, Activity, MessageCircle } from "lucide-react";
+import { Activity, MessageCircle } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/storage";
 import { useI18n } from "@/lib/i18n/client";
