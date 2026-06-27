@@ -67,6 +67,20 @@ export default function AgendaPage() {
     reason: ""
   });
 
+  const [editModalOpen, setEditModalOpen] = React.useState(false);
+  const [editingAppointment, setEditingAppointment] = React.useState<Appointment | null>(null);
+  const [editForm, setEditForm] = React.useState({
+    patientId: "",
+    date: "",
+    time: "",
+    durationMinutes: "30",
+    type: "suivi",
+    reason: ""
+  });
+
+  const [cancelConfirmOpen, setCancelConfirmOpen] = React.useState(false);
+  const [cancellingId, setCancellingId] = React.useState<string | null>(null);
+
   async function loadAppointments() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -203,6 +217,63 @@ export default function AgendaPage() {
         type: "error"
       });
     }
+  }
+
+  async function updateAppointment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingAppointment) return;
+    if (!editForm.patientId || !editForm.date || !editForm.time) {
+      dispatchNotification({
+        id: "error-fields",
+        title: "Champs obligatoires",
+        detail: "Veuillez remplir tous les champs",
+        type: "error"
+      });
+      return;
+    }
+    try {
+      await apiFetch(`/api/appointments/${editingAppointment.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientId: editForm.patientId,
+          date: editForm.date,
+          time: editForm.time,
+          durationMinutes: Number(editForm.durationMinutes),
+          type: editForm.type,
+          reason: editForm.reason || null
+        })
+      });
+      dispatchNotification({
+        id: `appt-updated-${Date.now()}`,
+        title: "Rendez-vous modifié",
+        detail: `${editingAppointment.last_name} ${editingAppointment.first_name}`,
+        type: "success"
+      });
+      setEditModalOpen(false);
+      setEditingAppointment(null);
+      await loadAppointments();
+    } catch (error: any) {
+      dispatchNotification({
+        id: "update-error",
+        title: "Erreur",
+        detail: error?.message || "Impossible de modifier le rendez-vous",
+        type: "error"
+      });
+    }
+  }
+
+  function openEditModal(a: Appointment) {
+    setEditingAppointment(a);
+    setEditForm({
+      patientId: a.patient_id,
+      date: a.date,
+      time: a.time,
+      durationMinutes: String(a.duration),
+      type: a.type,
+      reason: a.reason || ""
+    });
+    setEditModalOpen(true);
   }
 
   function getDaysInMonth(year: number, month: number) {
@@ -462,20 +533,42 @@ export default function AgendaPage() {
                           </div>
                           {a.status !== "cancelled" && a.status !== "complete" && (
                             <div className="mt-3 pt-3 border-t border-slate-50 flex justify-end gap-3">
-                              <button
-                                type="button"
-                                className="text-[10px] font-bold text-green-600 hover:text-green-800 uppercase tracking-widest hover:underline"
-                                onClick={() => completeAppointment(a.id)}
-                              >
-                                {t("complete")}
-                              </button>
-                              <button
-                                type="button"
-                                className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-widest hover:underline"
-                                onClick={() => cancelAppointment(a.id)}
-                              >
-                                {t("cancel")}
-                              </button>
+                              {(() => {
+                                const todayStr = new Date().toISOString().split("T")[0];
+                                const isPast = a.date < todayStr;
+                                if (isPast) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      className="text-[10px] font-bold text-green-600 hover:text-green-800 uppercase tracking-widest hover:underline"
+                                      onClick={() => completeAppointment(a.id)}
+                                    >
+                                      {t("complete")}
+                                    </button>
+                                  );
+                                }
+                                return (
+                                  <>
+                                    <button
+                                      type="button"
+                                      className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-widest hover:underline"
+                                      onClick={() => openEditModal(a)}
+                                    >
+                                      {t("edit")}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-widest hover:underline"
+                                      onClick={() => {
+                                        setCancellingId(a.id);
+                                        setCancelConfirmOpen(true);
+                                      }}
+                                    >
+                                      {t("cancel")}
+                                    </button>
+                                  </>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
@@ -644,6 +737,113 @@ export default function AgendaPage() {
               <Button type="submit" className="bg-blue-600 hover:bg-blue-700">{t("save")}</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le rendez-vous</DialogTitle>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={updateAppointment}>
+            <div>
+              <label className="text-sm font-medium">{t("patient")}</label>
+              <select
+                value={editForm.patientId}
+                onChange={(e) => setEditForm((s) => ({ ...s, patientId: e.target.value }))}
+                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                required
+              >
+                {patients.map((p) => (
+                  <option key={p.id} value={p.id}>{p.last_name} {p.first_name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">{t("date")}</label>
+                <Input
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm((s) => ({ ...s, date: e.target.value }))}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">{t("time")}</label>
+                <Input
+                  type="time"
+                  value={editForm.time}
+                  onChange={(e) => setEditForm((s) => ({ ...s, time: e.target.value }))}
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">{t("type")}</label>
+                <select
+                  value={editForm.type}
+                  onChange={(e) => setEditForm((s) => ({ ...s, type: e.target.value }))}
+                  className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="suivi">Suivi</option>
+                  <option value="consultation">Consultation</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">{t("duration")} (min)</label>
+                <Input
+                  type="number"
+                  value={editForm.durationMinutes}
+                  onChange={(e) => setEditForm((s) => ({ ...s, durationMinutes: e.target.value }))}
+                  min="15"
+                  max="120"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">{t("motif")}</label>
+              <Input
+                value={editForm.reason}
+                onChange={(e) => setEditForm((s) => ({ ...s, reason: e.target.value }))}
+                placeholder="Motif du rendez-vous"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setEditModalOpen(false)}>{t("cancel")}</Button>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">{t("save")}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={cancelConfirmOpen} onOpenChange={setCancelConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer l'annulation</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Êtes-vous sûr de vouloir annuler ce rendez-vous ?
+          </p>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => setCancelConfirmOpen(false)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              type="button"
+              className="bg-red-600 hover:bg-red-700"
+              onClick={async () => {
+                if (cancellingId) {
+                  await cancelAppointment(cancellingId);
+                  setCancellingId(null);
+                  setCancelConfirmOpen(false);
+                }
+              }}
+            >
+              Confirmer
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
