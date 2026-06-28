@@ -42,15 +42,9 @@ export function Sidebar() {
       <div>
         {/* Logo */}
         <div className="p-5 border-b border-white/10">
-          <div className="bg-white rounded-lg p-3 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold">
-              C
-            </div>
-            <div>
-              <h2 className="text-[#2f3b8f] font-bold text-sm">CareMManager</h2>
-              <p className="text-gray-500 text-xs">Medical Dashboard</p>
-            </div>
-          </div>
+          <Link href="/dashboard">
+            <img src="/logo.svg" alt="CardioManager" className="h-9 w-auto brightness-0 invert" />
+          </Link>
         </div>
 
         {/* Menu */}
