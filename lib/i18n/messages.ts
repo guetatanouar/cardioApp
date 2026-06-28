@@ -250,7 +250,9 @@ export const messages = {
     myChat: "Chat médecin",
     uploadViewDocs: "Téléchargez et consultez vos documents",
     chatWithDoctor: "Discutez avec votre cardiologue",
-    consultationHistory: "Historique de vos consultations"
+    consultationHistory: "Historique de vos consultations",
+    details: "Détails",
+    appointmentDetails: "Détails du rendez-vous"
   },
   en: {
     appName: "CardioManager",
@@ -499,7 +501,9 @@ export const messages = {
     myChat: "Doctor chat",
     uploadViewDocs: "Upload and view your documents",
     chatWithDoctor: "Chat with your cardiologist",
-    consultationHistory: "Your consultation history"
+    consultationHistory: "Your consultation history",
+    details: "Details",
+    appointmentDetails: "Appointment Details"
   },
   ar: {
     appName: "CardioManager",
@@ -748,7 +752,9 @@ export const messages = {
     myChat: "دردشة الطبيب",
     uploadViewDocs: "رفع وعرض مستنداتك",
     chatWithDoctor: "تحدث مع طبيبك",
-    consultationHistory: "سجل استشاراتك"
+    consultationHistory: "سجل استشاراتك",
+    details: "التفاصيل",
+    appointmentDetails: "تفاصيل الموعد"
   }
 } as const;
 
