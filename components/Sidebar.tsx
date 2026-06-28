@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import NavbarLogo from "@/components/NavbarLogo";
 import {
   LayoutDashboard,
   UserCircle,
@@ -42,9 +43,7 @@ export function Sidebar() {
       <div>
         {/* Logo */}
         <div className="p-5 border-b border-white/10">
-          <Link href="/dashboard">
-            <img src="/logo.svg" alt="CardioManager" className="h-9 w-auto brightness-0 invert" />
-          </Link>
+          <NavbarLogo href="/dashboard" inverted />
         </div>
 
         {/* Menu */}

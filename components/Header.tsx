@@ -13,6 +13,7 @@ import { useTheme } from "next-themes";
 import { clearSession, getSession } from "@/lib/auth/storage";
 import { useI18n, locales } from "@/lib/i18n/client";
 import { apiFetch } from "@/lib/api/client";
+import NavbarLogo from "@/components/NavbarLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -126,7 +127,7 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
       <div className="flex items-center gap-4 w-full max-w-md">
         {isPatientPortal && (
           <div className="flex items-center mr-4">
-            <img src="/logo.svg" alt="CardioManager" className="h-9 w-auto" />
+            <NavbarLogo href="/patient" />
           </div>
         )}
         {!isPatientPortal && (

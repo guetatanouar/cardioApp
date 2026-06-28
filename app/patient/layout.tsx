@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { getSession, clearSession } from "@/lib/auth/storage";
 import { LogOut } from "lucide-react";
+import NavbarLogo from "@/components/NavbarLogo";
 
 export default function PatientLayout({
   children,
@@ -41,7 +42,7 @@ export default function PatientLayout({
   return (
     <div className="min-h-screen bg-background">
       <div className="h-14 bg-green-600 flex items-center justify-between px-6 shadow-sm">
-        <span className="text-white font-bold text-lg">CardioManager</span>
+        <NavbarLogo href="/patient" inverted />
         <button
           onClick={() => { clearSession(); router.replace("/patient/login"); }}
           className="flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium transition"

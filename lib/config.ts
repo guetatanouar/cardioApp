@@ -8,7 +8,7 @@ export const config = {
   // App Metadata
   app: {
     name: process.env.NEXT_PUBLIC_APP_NAME || "CardioManager",
-    description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Gestion de cabinet",
+    description: process.env.NEXT_PUBLIC_APP_DESCRIPTION || "Plateforme de gestion des patients, rendez-vous et prescriptions pour cabinet de cardiologie",
     version: process.env.NEXT_PUBLIC_APP_VERSION || "1.0.0"
   },
 
