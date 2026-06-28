@@ -9,9 +9,10 @@ import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/cn";
 
 const tabs = [
+  { href: "/patient", key: "myVitals", icon: Activity },
   { href: "/patient/profile", key: "myFile" },
   { href: "/patient/documents", key: "documents" },
-  { href: "/patient", key: "myVitals", icon: Activity },
+  { href: "/patient/consultations", key: "consultations" },
   { href: "/patient/chat", key: "doctorChat", icon: MessageCircle },
 ];
 
@@ -22,10 +23,24 @@ export function PatientHeader() {
   const session = typeof window !== "undefined" ? getSession() : null;
   const patientId = session?.userId;
   const [data, setData] = React.useState<any>(null);
+  const [unreadChat, setUnreadChat] = React.useState(0);
 
   React.useEffect(() => {
     if (!patientId) return;
     apiFetch<any>(`/api/patients/${patientId}`).then(setData).catch(() => {});
+  }, [patientId]);
+
+  React.useEffect(() => {
+    if (!patientId) return;
+    const channel = `patient:${patientId}`;
+    async function load() {
+      const res = await apiFetch<any[] | { items: any[] }>(`/api/chat?channel=${encodeURIComponent(channel)}`);
+      const items = Array.isArray(res) ? res : (res as any).items ?? [];
+      setUnreadChat(items.filter((m: any) => !m.is_read && m.sender_role !== "patient").length);
+    }
+    load().catch(() => {});
+    const t = setInterval(load, 5000);
+    return () => clearInterval(t);
   }, [patientId]);
 
   const p = data?.patient;
@@ -78,7 +93,7 @@ export function PatientHeader() {
               key={tab.href}
               onClick={() => router.push(tab.href)}
               className={cn(
-                "px-6 py-4 flex items-center gap-2 text-sm",
+                "px-6 py-4 flex items-center gap-2 text-sm relative",
                 active
                   ? "border-b-2 border-green-600 text-green-700 font-medium"
                   : "text-gray-600 hover:text-gray-900"
@@ -86,6 +101,11 @@ export function PatientHeader() {
             >
               {Icon && <Icon size={18} />}
               {t(tab.key as any)}
+              {tab.href === "/patient/chat" && unreadChat > 0 && (
+                <span className="ml-1 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  {unreadChat}
+                </span>
+              )}
             </button>
           );
         })}

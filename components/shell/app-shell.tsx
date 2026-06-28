@@ -16,6 +16,7 @@ import {
   Settings,
   Users,
   Microscope,
+  Upload,
   UserPlus,
   Stethoscope,
   Activity,
@@ -55,7 +56,9 @@ const allStaffNav = [
 
 const patientNav = [
   { href: "/patient", icon: LayoutDashboard, labelKey: "Tableau de bord" },
-  { href: "/patient/documents", icon: FileText, labelKey: "documents" },
+  { href: "/patient/profile", icon: FileText, labelKey: "myFile" },
+  { href: "/patient/documents", icon: Upload, labelKey: "documents" },
+  { href: "/patient/consultations", icon: Stethoscope, labelKey: "consultations" },
   { href: "/patient/chat", icon: MessageSquare, labelKey: "chat" }
 ];
 
@@ -119,10 +122,16 @@ const getHeaderTitleInfo = (pathname: string) => {
     return { title: "Tableau de bord", subtitle: "Tableau de bord général" };
   }
   if (pathname.includes("/patient/documents")) {
-    return { title: "Mes Documents", subtitle: "Consultez vos ordonnances" };
+    return { title: "myDocs", subtitle: "uploadViewDocs" };
   }
   if (pathname.includes("/patient/chat")) {
-    return { title: "Mon Cardiologue", subtitle: "Discutez en direct avec le cabinet" };
+    return { title: "myChat", subtitle: "chatWithDoctor" };
+  }
+  if (pathname.includes("/patient/profile")) {
+    return { title: "myInfo", subtitle: "personalInfo" };
+  }
+  if (pathname.includes("/patient/consultations")) {
+    return { title: "consultations", subtitle: "consultationHistory" };
   }
   if (pathname.includes("/patient")) {
     return { title: "patientSpace", subtitle: "healthFollowUp" };

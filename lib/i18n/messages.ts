@@ -161,6 +161,7 @@ export const messages = {
     totalPatients: "Total Patients",
     appointmentsTodayShort: "RDV aujourd'hui",
     urgentCases: "Cas urgents",
+    consultations: "Consultations",
     consultationsPerMonth: "Consultations / mois",
     todaysAppointments: "Rendez-vous du jour",
     seeAll: "Voir tous",
@@ -246,7 +247,10 @@ export const messages = {
     healthFollowUp: "Suivi de votre santé",
     myInfo: "Mon dossier",
     myDocs: "Mes documents",
-    myChat: "Chat médecin"
+    myChat: "Chat médecin",
+    uploadViewDocs: "Téléchargez et consultez vos documents",
+    chatWithDoctor: "Discutez avec votre cardiologue",
+    consultationHistory: "Historique de vos consultations"
   },
   en: {
     appName: "CardioManager",
@@ -406,6 +410,7 @@ export const messages = {
     totalPatients: "Total Patients",
     appointmentsTodayShort: "Appointments today",
     urgentCases: "Urgent cases",
+    consultations: "Consultations",
     consultationsPerMonth: "Consultations / month",
     todaysAppointments: "Today's appointments",
     seeAll: "See all",
@@ -491,7 +496,10 @@ export const messages = {
     healthFollowUp: "Health monitoring",
     myInfo: "My file",
     myDocs: "My documents",
-    myChat: "Doctor chat"
+    myChat: "Doctor chat",
+    uploadViewDocs: "Upload and view your documents",
+    chatWithDoctor: "Chat with your cardiologist",
+    consultationHistory: "Your consultation history"
   },
   ar: {
     appName: "CardioManager",
@@ -651,6 +659,7 @@ export const messages = {
     totalPatients: "إجمالي المرضى",
     appointmentsTodayShort: "مواعيد اليوم",
     urgentCases: "حالات عاجلة",
+    consultations: "الاستشارات",
     consultationsPerMonth: "الاستشارات / الشهر",
     todaysAppointments: "مواعيد اليوم",
     seeAll: "عرض الكل",
@@ -736,7 +745,10 @@ export const messages = {
     healthFollowUp: "متابعة صحتك",
     myInfo: "ملفي",
     myDocs: "مستنداتي",
-    myChat: "دردشة الطبيب"
+    myChat: "دردشة الطبيب",
+    uploadViewDocs: "رفع وعرض مستنداتك",
+    chatWithDoctor: "تحدث مع طبيبك",
+    consultationHistory: "سجل استشاراتك"
   }
 } as const;
 
