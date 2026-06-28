@@ -1,0 +1,41 @@
+ID;Module;Fonctionnalité;Test;Critère de succès;Lien
+NRT-001;Authentification;Connexion Staff;Se connecter en tant qu'admin (admin/admin123);Redirection vers /dashboard, menu complet visible;https://app.businessrationalsolutions.ca/login
+NRT-002;Authentification;Connexion Secrétaire;Se connecter en tant que secretaire (secretaire/sec123);Redirection vers /dashboard, permissions appliquées;https://app.businessrationalsolutions.ca/login
+NRT-003;Authentification;Connexion Patient;Se connecter sur /patient/login avec un compte patient;Redirection vers /patient/profile;https://app.businessrationalsolutions.ca/patient/login
+NRT-004;Authentification;Déconnexion;Cliquer sur déconnexion dans le menu utilisateur;Retour à la page de login, session effacée;https://app.businessrationalsolutions.ca/login
+NRT-005;Authentification;Protection route;Accéder à /dashboard sans être connecté;Redirection vers /login;https://app.businessrationalsolutions.ca/dashboard
+NRT-006;Authentification;Protection route patient;Accéder à /patient sans être connecté;Redirection vers /patient/login;https://app.businessrationalsolutions.ca/patient
+NRT-007;Authentification;Accès refusé;Se connecter en secretaire sans permission "Modifier patients" et tenter de modifier un patient;Redirection vers /access-denied;https://app.businessrationalsolutions.ca/access-denied
+NRT-008;Dashboard;Vue d'ensemble;Se connecter en admin et consulter le tableau de bord;Voir les statistiques : nb patients, rdv du jour, alertes, messages;https://app.businessrationalsolutions.ca/dashboard
+NRT-009;Dashboard;Navigation;Utiliser le menu latéral pour naviguer entre toutes les sections;Chaque clic ouvre la page correspondante sans erreur;https://app.businessrationalsolutions.ca/dashboard
+NRT-010;Dashboard;Langue;Changer la langue (fr/en/ar) depuis le header;L'interface se traduit immédiatement;https://app.businessrationalsolutions.ca/dashboard
+NRT-011;Dashboard;Thème;Basculer entre thème clair et sombre;Le thème change immédiatement;https://app.businessrationalsolutions.ca/dashboard
+NRT-012;Patients;Liste des patients;Ouvrir /dashboard/patients;Liste affichée avec nom, téléphone, sévérité;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-013;Patients;Création patient (étape 1);Cliquer "Ajouter patient", remplir nom, prénom, date naissance, genre, pathologie, pays, adresse;Champs validés, passage à l'étape 2;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-014;Patients;Création patient (étape 2);Sélectionner groupe sanguin;Passage à l'étape 3;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-015;Patients;Création patient (étape 3);Remplir constantes (tension, pouls, SpO2, poids) et optionnel document + médicament + compte;Patient créé, visible dans la liste;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-016;Patients;Détail patient;Cliquer sur un patient dans la liste;Voir les infos détaillées : consultations, constantes, documents, ordonnances;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-017;Patients;Modification patient;Cliquer "Modifier", changer un champ (email, adresse, pays), enregistrer;Modification persistée, affichée dans le détail;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-018;Patients;Ajout consultation;Dans le détail patient, ajouter une consultation (date, motif, diagnostic, traitement);Consultation ajoutée dans l'historique;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-019;Patients;Suppression patient;Supprimer un patient;Patient retiré de la liste;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-020;Patients;Recherche;Utiliser la barre de recherche patients;Filtre la liste en temps réel;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-021;Agenda;Vue agenda;Ouvrir /dashboard/agenda;Calendrier affiché avec les rendez-vous;https://app.businessrationalsolutions.ca/dashboard/agenda
+NRT-022;Agenda;Ajout rendez-vous;Cliquer sur un créneau, remplir les infos patient + date;Rendez-vous créé dans l'agenda;https://app.businessrationalsolutions.ca/dashboard/agenda
+NRT-023;Agenda;Modification rendez-vous;Modifier le statut ou la date d'un rendez-vous;Changement persisté;https://app.businessrationalsolutions.ca/dashboard/agenda
+NRT-024;Chat;Messagerie staff;Ouvrir /dashboard/chat, envoyer un message dans le canal staff;Message affiché, notification reçue;https://app.businessrationalsolutions.ca/dashboard/chat
+NRT-025;Chat;Messagerie patient;Depuis le détail patient, envoyer un message au patient;Message visible dans le chat patient;https://app.businessrationalsolutions.ca/dashboard/chat
+NRT-026;Prescriptions;Création ordonnance;Ouvrir /dashboard/prescriptions, sélectionner patient, ajouter médicament + dosage;Ordonnance créée;https://app.businessrationalsolutions.ca/dashboard/prescriptions
+NRT-027;Prescriptions;Export PDF;Cliquer "Télécharger PDF" sur une ordonnance;Fichier PDF généré et téléchargé;https://app.businessrationalsolutions.ca/dashboard/prescriptions
+NRT-028;Analyse;Analyse documents;Ouvrir /dashboard/analyse, uploader un document médical;Analyse lancée, rapport généré;https://app.businessrationalsolutions.ca/dashboard/analyse
+NRT-029;Analyse;Liste rapports;Consulter la liste des rapports d'analyse;Rapports affichés avec date et patient;https://app.businessrationalsolutions.ca/dashboard/analyse
+NRT-030;Suivi;Suivi patient (suive);Ouvrir /dashboard/suive, visualiser les constantes d'un patient;Graphiques et historique des constantes affichés;https://app.businessrationalsolutions.ca/dashboard/suive
+NRT-031;Documents;Upload document;Dans le détail patient, uploader un document (analyse, radio, echo);Document listé dans l'onglet Documents;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-032;Documents;Suppression document;Supprimer un document depuis le détail patient;Document retiré de la liste;https://app.businessrationalsolutions.ca/dashboard/patients
+NRT-033;Paramètres;Profil staff;Ouvrir /dashboard/parametres, modifier son profil (nom, email);Profil mis à jour;https://app.businessrationalsolutions.ca/dashboard/parametres
+NRT-034;Paramètres;Mot de passe;Changer le mot de passe depuis les paramètres;Mot de passe modifié, reconnexion possible avec le nouveau;https://app.businessrationalsolutions.ca/dashboard/parametres
+NRT-035;Paramètres;Permissions secrétaire;Admin : modifier les permissions d'un secretaire;Permissions sauvegardées et appliquées;https://app.businessrationalsolutions.ca/dashboard/parametres
+NRT-036;Paramètres;Compte patient;Créer un compte patient depuis les paramètres;Compte créé, connexion patient possible;https://app.businessrationalsolutions.ca/dashboard/parametres
+NRT-037;Patient;Profil patient;Se connecter en patient, voir son profil;Infos personnelles affichées, modification possible;https://app.businessrationalsolutions.ca/patient/profile
+NRT-038;Patient;Constantes;Enregistrer une constante (tension, pouls, poids);Constante enregistrée, graphique mis à jour;https://app.businessrationalsolutions.ca/patient/vitals
+NRT-039;Patient;Documents patients;Consulter et télécharger ses documents;Documents listés, téléchargement possible;https://app.businessrationalsolutions.ca/patient/documents
+NRT-040;Patient;Chat patient;Envoyer un message au médecin depuis l'espace patient;Message reçu dans le dashboard staff;https://app.businessrationalsolutions.ca/patient/chat

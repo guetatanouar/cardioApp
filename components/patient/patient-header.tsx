@@ -9,8 +9,8 @@ import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/cn";
 
 const tabs = [
-  { href: "/patient", key: "myVitals", icon: Activity },
   { href: "/patient/profile", key: "myFile" },
+  { href: "/patient", key: "myVitals", icon: Activity },
   { href: "/patient/documents", key: "documents" },
   { href: "/patient/consultations", key: "consultations" },
   { href: "/patient/chat", key: "doctorChat", icon: MessageCircle },

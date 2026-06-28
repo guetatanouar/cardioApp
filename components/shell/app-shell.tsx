@@ -55,8 +55,8 @@ const allStaffNav = [
 ];
 
 const patientNav = [
-  { href: "/patient", icon: LayoutDashboard, labelKey: "Tableau de bord" },
   { href: "/patient/profile", icon: FileText, labelKey: "myFile" },
+  { href: "/patient", icon: Activity, labelKey: "myVitals" },
   { href: "/patient/documents", icon: Upload, labelKey: "documents" },
   { href: "/patient/consultations", icon: Stethoscope, labelKey: "consultations" },
   { href: "/patient/chat", icon: MessageSquare, labelKey: "chat" }
@@ -423,27 +423,87 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </div>
                 <span className="font-semibold text-sm">{t("appName" as any)}</span>
               </div>
-              <button
-                className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors"
-                onClick={() => {
-                  clearSession();
-                  router.replace("/login");
-                }}
-              >
-                <LogOut className="h-4 w-4" />
-                {t("logout" as any)}
-              </button>
+              <div className="flex items-center gap-3">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex h-8 items-center justify-center gap-1 rounded-full bg-white/20 pl-1.5 pr-2 text-white transition-all hover:bg-white/30 focus:outline-none active:scale-95">
+                      {renderFlag(locale)}
+                      <ChevronDown className="h-3 w-3 opacity-80" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-auto">
+                    <div className="flex gap-1 p-1">
+                      <button type="button" onClick={() => { setLocale("fr"); }} className={cn("rounded-md p-2 transition-colors flex items-center justify-center", locale === "fr" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted")}>{renderFlag("fr")}</button>
+                      <button type="button" onClick={() => { setLocale("en"); }} className={cn("rounded-md p-2 transition-colors flex items-center justify-center", locale === "en" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted")}>{renderFlag("en")}</button>
+                      <button type="button" onClick={() => { setLocale("ar"); }} className={cn("rounded-md p-2 transition-colors flex items-center justify-center", locale === "ar" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted")}>{renderFlag("ar")}</button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="relative flex h-8 w-8 items-center justify-center rounded-full text-white/80 hover:bg-white/20 transition-all focus:outline-none active:scale-95">
+                      <Bell className="h-5 w-5" />
+                      {totalNotif > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-emerald-600">
+                          {totalNotif}
+                        </span>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80">
+                    <DropdownMenuLabel className="flex items-center justify-between">
+                      <span>Notifications</span>
+                      {totalNotif > 0 && (
+                        <button type="button" className="text-[10px] font-medium text-primary" onClick={async () => { await apiFetch("/api/notifications/mark-read", { method: "POST" }).catch(() => {}); setNotifications([]); }}>
+                          Tout marquer comme lu
+                        </button>
+                      )}
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <div className="max-h-72 overflow-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-2 py-4 text-center text-sm text-muted-foreground">Aucune notification</div>
+                      ) : (
+                        notifications.map((n: HeaderNotification) => {
+                          let Icon = Bell;
+                          if (n.type === "patient_created") Icon = UserPlus;
+                          else if (n.type === "consultation_added") Icon = Stethoscope;
+                          else if (n.type === "vitals_added") Icon = Activity;
+                          else if (n.type === "document_uploaded") Icon = FileUp;
+                          else if (n.type === "prescription_created") Icon = Pill;
+                          else if (n.type === "chat_message") Icon = MessageCircle;
+                          else if (n.type === "critical_alert") Icon = Heart;
+                          else if (n.type === "urgent_appointment") Icon = CalendarDays;
+                          return (
+                            <div key={n.id} className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2">
+                              <Icon className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium">{n.title}</div>
+                                <div className="text-xs text-muted-foreground truncate">{n.detail}</div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <button
+                  className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors"
+                  onClick={() => { clearSession(); router.replace("/login"); }}
+                >
+                  <LogOut className="h-4 w-4" />
+                  {t("logout" as any)}
+                </button>
+              </div>
             </div>
           )}
+          {!isPatientRoute && (
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/50 bg-background/95 px-6 backdrop-blur">
             {/* Left side: Page Title and Subtitle */}
             <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
-              <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">
-                {isPatientRoute ? t(headerInfo.title as any) : headerInfo.title}
-              </h1>
-              <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-medium leading-none">
-                {isPatientRoute ? t(headerInfo.subtitle as any) : headerInfo.subtitle}
-              </span>
+              <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">{headerInfo.title}</h1>
+              <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-medium leading-none">{headerInfo.subtitle}</span>
             </div>
 
             <div className="flex items-center gap-3">
@@ -457,36 +517,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-auto">
                   <div className="flex gap-1 p-1">
-                    <button
-                      type="button"
-                      onClick={() => { setLocale("fr"); }}
-                      className={cn(
-                        "rounded-md p-2 transition-colors flex items-center justify-center",
-                        locale === "fr" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted"
-                      )}
-                    >
-                      {renderFlag("fr")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setLocale("en"); }}
-                      className={cn(
-                        "rounded-md p-2 transition-colors flex items-center justify-center",
-                        locale === "en" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted"
-                      )}
-                    >
-                      {renderFlag("en")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setLocale("ar"); }}
-                      className={cn(
-                        "rounded-md p-2 transition-colors flex items-center justify-center",
-                        locale === "ar" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted"
-                      )}
-                    >
-                      {renderFlag("ar")}
-                    </button>
+                    <button type="button" onClick={() => { setLocale("fr"); }} className={cn("rounded-md p-2 transition-colors flex items-center justify-center", locale === "fr" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted")}>{renderFlag("fr")}</button>
+                    <button type="button" onClick={() => { setLocale("en"); }} className={cn("rounded-md p-2 transition-colors flex items-center justify-center", locale === "en" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted")}>{renderFlag("en")}</button>
+                    <button type="button" onClick={() => { setLocale("ar"); }} className={cn("rounded-md p-2 transition-colors flex items-center justify-center", locale === "ar" ? "bg-blue-100 ring-2 ring-blue-500" : "hover:bg-muted")}>{renderFlag("ar")}</button>
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -506,14 +539,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <DropdownMenuLabel className="flex items-center justify-between">
                     <span>Notifications</span>
                     {totalNotif > 0 && (
-                      <button
-                        type="button"
-                        className="text-[10px] font-medium text-primary"
-                        onClick={async () => {
-                          await apiFetch("/api/notifications/mark-read", { method: "POST" }).catch(() => {});
-                          setNotifications([]);
-                        }}
-                      >
+                      <button type="button" className="text-[10px] font-medium text-primary" onClick={async () => { await apiFetch("/api/notifications/mark-read", { method: "POST" }).catch(() => {}); setNotifications([]); }}>
                         Tout marquer comme lu
                       </button>
                     )}
@@ -571,19 +597,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     Mon profil
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive"
-                    onClick={() => {
-                      clearSession();
-                      router.replace("/login");
-                    }}
-                  >
+                  <DropdownMenuItem className="text-destructive" onClick={() => { clearSession(); router.replace("/login"); }}>
                     Déconnexion
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </header>
+          )}
 
           <main className="p-6">
             <Toaster position="top-right" richColors />
