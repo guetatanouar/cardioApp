@@ -338,15 +338,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}>
           <div className="flex flex-col flex-1 min-h-0">
             <div className="p-5 border-b border-white/10">
-              <div className="bg-white rounded-lg p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold">
-                  C
-                </div>
-                <div>
-                  <h2 className="text-[#2f3b8f] font-bold text-sm">CareMManager</h2>
-                  <p className="text-gray-500 text-xs">Medical Dashboard</p>
-                </div>
-              </div>
+              <Link href="/dashboard" className="block">
+                <img src="/logo.svg" alt="CardioManager" className="h-9 w-auto brightness-0 invert" />
+              </Link>
             </div>
 
             <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
@@ -418,10 +412,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {isPatientRoute && (
             <div className="bg-emerald-600 text-white px-6 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-emerald-600">
-                  <Heart className="h-5 w-5 fill-emerald-600" strokeWidth={0} />
-                </div>
-                <span className="font-semibold text-sm">{t("appName" as any)}</span>
+                <img src="/logo.svg" alt="CardioManager" className="h-8 w-auto brightness-0 invert" />
               </div>
               <div className="flex items-center gap-3">
                 <DropdownMenu>
@@ -500,10 +491,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
           {!isPatientRoute && (
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/50 bg-background/95 px-6 backdrop-blur">
-            {/* Left side: Page Title and Subtitle */}
-            <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
-              <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">{headerInfo.title}</h1>
-              <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-medium leading-none">{headerInfo.subtitle}</span>
+            {/* Left side: Logo + Page Title and Subtitle */}
+            <div className="flex items-center gap-4">
+              <Link href="/dashboard" className="flex-shrink-0">
+                <img src="/logo.svg" alt="CardioManager" className="h-8 w-auto hidden sm:block" />
+                <img src="/logo-icon.svg" alt="CardioManager" className="h-8 w-auto sm:hidden" />
+              </Link>
+              <div className="hidden sm:block w-px h-8 bg-border/60" />
+              <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
+                <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">{headerInfo.title}</h1>
+                <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-medium leading-none">{headerInfo.subtitle}</span>
+              </div>
             </div>
 
             <div className="flex items-center gap-3">

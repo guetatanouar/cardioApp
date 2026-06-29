@@ -7,7 +7,6 @@ import {
   Moon,
   Search,
   Sun,
-  Activity,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -126,11 +125,8 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-3 border-b border-border/50 bg-background/80 px-6 backdrop-blur-xl shadow-sm transition-all">
       <div className="flex items-center gap-4 w-full max-w-md">
         {isPatientPortal && (
-          <div className="flex items-center gap-3 mr-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600 shadow-md">
-              <Activity className="h-5 w-5 text-white" />
-            </div>
-            <span className="font-bold tracking-tight text-lg hidden sm:inline text-foreground">CardioManager</span>
+          <div className="flex items-center mr-4">
+            <img src="/logo.svg" alt="CardioManager" className="h-9 w-auto" />
           </div>
         )}
         {!isPatientPortal && (
