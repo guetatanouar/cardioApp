@@ -5,10 +5,15 @@ const config: Config = {
   content: [
     "./app/**/*.{ts,tsx}",
     "./components/**/*.{ts,tsx}",
-    "./lib/**/*.{ts,tsx}"
+    "./lib/**/*.{ts,tsx}",
+    "./assets/**/*.{ts,tsx}"
   ],
   theme: {
     extend: {
+      width: {
+        "logo-sm": "120px",
+        "logo-lg": "200px"
+      },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"]

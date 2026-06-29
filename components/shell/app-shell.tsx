@@ -33,6 +33,7 @@ import { getDir } from "@/lib/i18n/messages";
 import { apiFetch } from "@/lib/api/client";
 import { addNotificationListener } from "@/lib/notifications";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import NavbarLogo from "@/components/NavbarLogo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -338,9 +339,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}>
           <div className="flex flex-col flex-1 min-h-0">
             <div className="p-5 border-b border-white/10">
-              <Link href="/dashboard" className="block">
-                <img src="/logo.svg" alt="CardioManager" className="h-9 w-auto brightness-0 invert" />
-              </Link>
+              <NavbarLogo href="/dashboard" inverted />
             </div>
 
             <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
