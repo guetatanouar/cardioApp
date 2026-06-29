@@ -18,8 +18,27 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: config.app.name,
-  description: config.app.description
+  title: {
+    default: "CareMManager - Gestion de cabinet de cardiologie",
+    template: "%s | CareMManager",
+  },
+  description: "CareMManager, spécialiste de la gestion de cabinet de cardiologie. Gérez vos patients, rendez-vous et prescriptions depuis une plateforme sécurisée.",
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: "CareMManager - Gestion de cabinet de cardiologie",
+    description: "CareMManager, spécialiste de la gestion de cabinet de cardiologie.",
+    type: "website",
+    locale: "fr_FR",
+    siteName: "CareMManager",
+  },
+  icons: {
+    icon: "/logo-icon.svg",
+    shortcut: "/logo-icon.svg",
+    apple: "/logo-icon.svg"
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

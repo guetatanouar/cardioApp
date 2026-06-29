@@ -338,15 +338,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}>
           <div className="flex flex-col flex-1 min-h-0">
             <div className="p-5 border-b border-white/10">
-              <div className="bg-white rounded-lg p-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-bold">
-                  C
-                </div>
-                <div>
-                  <h2 className="text-[#2f3b8f] font-bold text-sm">CareMManager</h2>
-                  <p className="text-gray-500 text-xs">Medical Dashboard</p>
-                </div>
-              </div>
+              <NavbarLogo href="/dashboard" inverted />
             </div>
 
             <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
