@@ -58,6 +58,8 @@ export default function AgendaPage() {
   const [searchQuery, setSearchQuery] = React.useState(searchParams.get("q") ?? "");
 
   const [modalOpen, setModalOpen] = React.useState(false);
+  const [detailModalOpen, setDetailModalOpen] = React.useState(false);
+  const [detailAppointment, setDetailAppointment] = React.useState<Appointment | null>(null);
   const [form, setForm] = React.useState({
     patientId: "",
     date: "",
@@ -478,6 +480,20 @@ export default function AgendaPage() {
                               </button>
                             </div>
                           )}
+                          {a.status === "complete" && (
+                            <div className="mt-3 pt-3 border-t border-slate-50 flex justify-end">
+                              <button
+                                type="button"
+                                className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-widest hover:underline"
+                                onClick={() => {
+                                  setDetailAppointment(a);
+                                  setDetailModalOpen(true);
+                                }}
+                              >
+                                {t("details")}
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -644,6 +660,61 @@ export default function AgendaPage() {
               <Button type="submit" className="bg-blue-600 hover:bg-blue-700">{t("save")}</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("appointmentDetails")}</DialogTitle>
+          </DialogHeader>
+          {detailAppointment && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t("patient")}</label>
+                  <p className="text-sm font-semibold">{detailAppointment.last_name} {detailAppointment.first_name}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t("status")}</label>
+                  <p className="text-sm">
+                    <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider", statusBadge(detailAppointment.status))}>
+                      {statusLabel(detailAppointment.status)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t("date")}</label>
+                  <p className="text-sm">{detailAppointment.date}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t("time")}</label>
+                  <p className="text-sm font-semibold text-blue-600">{parseAppointmentDateTime(detailAppointment).timeStr}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t("type")}</label>
+                  <p className="text-sm capitalize">{detailAppointment.type}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t("duration")} (min)</label>
+                  <p className="text-sm">{detailAppointment.duration}</p>
+                </div>
+              </div>
+              {detailAppointment.reason && (
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">{t("motif")}</label>
+                  <p className="text-sm">{detailAppointment.reason}</p>
+                </div>
+              )}
+              <div className="flex justify-end pt-2">
+                <Button type="button" variant="outline" onClick={() => setDetailModalOpen(false)}>{t("close")}</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
