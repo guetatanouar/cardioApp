@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import NavbarLogo from "@/components/NavbarLogo";
 import {
   Bell,
   CalendarDays,
@@ -411,7 +412,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {isPatientRoute && (
             <div className="bg-emerald-600 text-white px-6 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <img src="/logo.svg" alt="CardioManager" className="h-8 w-auto brightness-0 invert" />
+                <NavbarLogo href="/patient" inverted />
               </div>
               <div className="flex items-center gap-3">
                 <DropdownMenu>
@@ -492,10 +493,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/50 bg-background/95 px-6 backdrop-blur">
             {/* Left side: Logo + Page Title and Subtitle */}
             <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="flex-shrink-0">
-                <img src="/logo.svg" alt="CardioManager" className="h-8 w-auto hidden sm:block" />
-                <img src="/logo-icon.svg" alt="CardioManager" className="h-8 w-auto sm:hidden" />
-              </Link>
+              <div className="hidden sm:flex">
+                <NavbarLogo href="/dashboard" />
+              </div>
+              <div className="flex sm:hidden">
+                <NavbarLogo href="/dashboard" iconOnly />
+              </div>
               <div className="hidden sm:block w-px h-8 bg-border/60" />
               <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
                 <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">{headerInfo.title}</h1>
