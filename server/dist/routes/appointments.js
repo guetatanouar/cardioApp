@@ -50,10 +50,25 @@ appointmentsRouter.post('/', authenticateToken, requirePermission('appointments'
     if (isNaN(date.getTime())) {
         return res.status(400).json({ message: 'Invalid startsAt date' });
     }
+    const now = new Date();
+    if (date <= now) {
+        return res.status(400).json({ message: 'Impossible de créer un rendez-vous dans le passé' });
+    }
     const dateStr = date.toISOString().split('T')[0];
     const timeStr = date.toTimeString().slice(0, 5);
+    const duration = durationMinutes ?? 30;
+    const startMinutes = parseInt(timeStr.split(':')[0]) * 60 + parseInt(timeStr.split(':')[1]);
+    const endMinutes = startMinutes + duration;
+    const endTimeStr = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+    const overlapCheck = await query(`SELECT id FROM appointments
+         WHERE date = $1
+           AND status != 'cancelled'
+           AND (time::time, time::time + (duration || ' minutes')::interval) OVERLAPS ($2::time, $3::time)`, [dateStr, timeStr, endTimeStr]);
+    if (overlapCheck.rows.length > 0) {
+        return res.status(409).json({ message: 'Ce créneau horaire est déjà occupé par un autre rendez-vous' });
+    }
     try {
-        await query('INSERT INTO appointments (id, patient_id, date, time, duration, type, status, reason, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [id, patientId, dateStr, timeStr, durationMinutes ?? 30, type, status ?? 'scheduled', reason ?? null, notes ?? null]);
+        await query('INSERT INTO appointments (id, patient_id, date, time, duration, type, status, reason, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)', [id, patientId, dateStr, timeStr, duration, type, status ?? 'scheduled', reason ?? null, notes ?? null]);
         const user = req.user;
         const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [patientId]);
         const pName = patient.rows.length ? `${patient.rows[0].first_name} ${patient.rows[0].last_name}` : patientId;
@@ -73,11 +88,36 @@ appointmentsRouter.post('/', authenticateToken, requirePermission('appointments'
         res.status(500).json({ message: 'Server error' });
     }
 });
+appointmentsRouter.delete('/:id', authenticateToken, requirePermission('appointments', 'delete'), async (req, res) => {
+    try {
+        const result = await query('DELETE FROM appointments WHERE id = $1', [req.params.id]);
+        if (result.rowCount === 0) {
+            return res.status(404).json({ message: 'Rendez-vous introuvable' });
+        }
+        res.json({ message: 'Rendez-vous supprimé' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 appointmentsRouter.put('/:id', authenticateToken, requirePermission('appointments', 'write'), async (req, res) => {
     const { status, patientId, date, time, durationMinutes, type, reason, notes } = req.body;
     try {
         if (patientId) {
-            await query('UPDATE appointments SET patient_id=$1, date=$2, time=$3, duration=$4, type=$5, reason=$6, notes=$7 WHERE id=$8', [patientId, date, time, durationMinutes ?? 30, type, reason ?? null, notes ?? null, req.params.id]);
+            const duration = durationMinutes ?? 30;
+            const startMinutes = parseInt(time.split(':')[0]) * 60 + parseInt(time.split(':')[1]);
+            const endMinutes = startMinutes + duration;
+            const endTimeStr = `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`;
+            const overlapCheck = await query(`SELECT id FROM appointments
+                 WHERE date = $1
+                   AND id != $2
+                   AND status != 'cancelled'
+                   AND (time::time, time::time + (duration || ' minutes')::interval) OVERLAPS ($3::time, $4::time)`, [date, req.params.id, time, endTimeStr]);
+            if (overlapCheck.rows.length > 0) {
+                return res.status(409).json({ message: 'Ce créneau horaire est déjà occupé par un autre rendez-vous' });
+            }
+            await query('UPDATE appointments SET patient_id=$1, date=$2, time=$3, duration=$4, type=$5, reason=$6, notes=$7 WHERE id=$8', [patientId, date, time, duration, type, reason ?? null, notes ?? null, req.params.id]);
         }
         else {
             await query('UPDATE appointments SET status=$1 WHERE id=$2', [status, req.params.id]);
