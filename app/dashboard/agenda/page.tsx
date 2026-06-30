@@ -917,8 +917,6 @@ export default function AgendaPage() {
           </div>
         </DialogContent>
       </Dialog>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
