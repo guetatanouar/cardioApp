@@ -1,10 +1,11 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 
 import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/lib/i18n/client";
+import { config } from "@/lib/config";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -16,28 +17,19 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono"
 });
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f172a" }
-  ]
-};
-
 export const metadata: Metadata = {
   title: {
-    default: "CareMManager - Tableau de bord médical",
-    template: "%s | CareMManager"
+    default: "CareMManager - Gestion de cabinet de cardiologie",
+    template: "%s | CareMManager",
   },
-  description: "Plateforme de gestion des patients, rendez-vous et prescriptions pour cabinet de cardiologie",
+  description: "CareMManager, spécialiste de la gestion de cabinet de cardiologie. Gérez vos patients, rendez-vous et prescriptions depuis une plateforme sécurisée.",
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
-    title: "CareMManager - Tableau de bord médical",
-    description: "Plateforme de gestion des patients, rendez-vous et prescriptions pour cabinet de cardiologie",
+    title: "CareMManager - Gestion de cabinet de cardiologie",
+    description: "CareMManager, spécialiste de la gestion de cabinet de cardiologie.",
     type: "website",
     locale: "fr_FR",
     siteName: "CareMManager",
