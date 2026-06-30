@@ -74,18 +74,12 @@ appointmentsRouter.post('/', authenticateToken, requirePermission('appointments'
     }
 });
 appointmentsRouter.put('/:id', authenticateToken, requirePermission('appointments', 'write'), async (req, res) => {
-    const { status, patientId, date, time, durationMinutes, type, reason, notes } = req.body;
+    const { status } = req.body;
     try {
-        if (patientId) {
-            await query('UPDATE appointments SET patient_id=$1, date=$2, time=$3, duration=$4, type=$5, reason=$6, notes=$7 WHERE id=$8', [patientId, date, time, durationMinutes ?? 30, type, reason ?? null, notes ?? null, req.params.id]);
-        }
-        else {
-            await query('UPDATE appointments SET status=$1 WHERE id=$2', [status, req.params.id]);
-        }
+        await query('UPDATE appointments SET status=$1 WHERE id=$2', [status, req.params.id]);
         res.json({ message: 'Appointment updated' });
     }
     catch (err) {
-        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
 });

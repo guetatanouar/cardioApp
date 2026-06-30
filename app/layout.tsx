@@ -17,22 +17,24 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono"
 });
 
+const title = `${config.app.name} - ${config.app.description}`;
+
 export const metadata: Metadata = {
   title: {
-    default: "CareMManager - Gestion de cabinet de cardiologie",
-    template: "%s | CareMManager",
+    default: title,
+    template: `%s | ${config.app.name}`,
   },
-  description: "CareMManager, spécialiste de la gestion de cabinet de cardiologie. Gérez vos patients, rendez-vous et prescriptions depuis une plateforme sécurisée.",
+  description: `${config.app.name}, spécialiste de la gestion de cabinet de cardiologie. Gérez vos patients, rendez-vous et prescriptions depuis une plateforme sécurisée.`,
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
-    title: "CareMManager - Gestion de cabinet de cardiologie",
-    description: "CareMManager, spécialiste de la gestion de cabinet de cardiologie.",
+    title,
+    description: `${config.app.name}, spécialiste de la gestion de cabinet de cardiologie.`,
     type: "website",
     locale: "fr_FR",
-    siteName: "CareMManager",
+    siteName: config.app.name,
   },
   icons: {
     icon: "/logo-icon.svg",

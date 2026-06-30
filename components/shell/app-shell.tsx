@@ -34,7 +34,6 @@ import { getDir } from "@/lib/i18n/messages";
 import { apiFetch } from "@/lib/api/client";
 import { addNotificationListener } from "@/lib/notifications";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import NavbarLogo from "@/components/NavbarLogo";
 import {
   DropdownMenu,
   DropdownMenuContent,

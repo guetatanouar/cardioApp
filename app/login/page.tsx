@@ -8,13 +8,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/lib/api/client";
-import { setSession, SecretairePermissions } from "@/lib/auth/storage";
+import { getSession, setSession, SecretairePermissions } from "@/lib/auth/storage";
 import { useI18n } from "@/lib/i18n/client";
 import { config } from "@/lib/config";
 
 export default function LoginPage() {
   const router = useRouter();
   useI18n();
+
+  React.useEffect(() => {
+    const session = getSession();
+    if (session) {
+      router.replace(session.role === "patient" ? "/patient" : "/dashboard");
+    }
+  }, [router]);
 
   const [mode, setMode] = React.useState<"staff" | "patient">("staff");
   const [staffProfile, setStaffProfile] = React.useState<"admin" | "secretaire">("admin");
