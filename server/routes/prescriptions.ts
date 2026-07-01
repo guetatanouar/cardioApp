@@ -22,7 +22,7 @@ prescriptionsRouter.post('/', authenticateToken, requirePermission('prescription
     try {
         await query(
             'INSERT INTO prescriptions (id, patient_id, patient_name, date, doctor_name, medications, notes) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-            [id, patientId, "Patient", new Date().toISOString().split('T')[0], "Dr. Étienne Tremblay", JSON.stringify(items), generalNotes]
+            [id, patientId, "Patient", new Date().toISOString().split('T')[0], (req as any).user?.name || 'Dr.', JSON.stringify(items), generalNotes]
         );
         const user = (req as any).user;
         const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [patientId]);

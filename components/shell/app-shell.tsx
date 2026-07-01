@@ -45,6 +45,13 @@ import {
 
 type HeaderNotification = { id: string; title: string; detail: string; type?: string; is_read?: boolean };
 
+type DoctorProfile = {
+  fullName: string;
+  specialty?: string;
+  first_name?: string;
+  last_name?: string;
+};
+
 const allStaffNav = [
   { href: "/dashboard", icon: LayoutDashboard, labelKey: "Tableau de bord", permKey: undefined },
   { href: "/dashboard/patients", icon: Users, labelKey: "patients", permKey: "can_view_patients" },
@@ -165,6 +172,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [notifications, setNotifications] = React.useState<HeaderNotification[]>([]);
   const [chatUnreadCount, setChatUnreadCount] = React.useState(0);
+  const [doctorProfile, setDoctorProfile] = React.useState<DoctorProfile | null>(null);
 
   async function refreshHeaderData() {
     if (!session || isAuthRoute) return;
@@ -290,6 +298,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [session?.role, session?.userId, isAuthRoute]);
 
   React.useEffect(() => {
+    if (!session || session.role !== "admin" || isAuthRoute) return;
+    apiFetch<DoctorProfile>("/api/settings/profile")
+      .then(setDoctorProfile)
+      .catch(() => undefined);
+  }, [session?.role, isAuthRoute]);
+
+  React.useEffect(() => {
     const cleanup = addNotificationListener((notification) => {
       setNotifications((prev) => {
         const exists = prev.some((n) => n.id === notification.id);
@@ -341,6 +356,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <div className="p-5 border-b border-white/10">
               <NavbarLogo href="/dashboard" inverted />
             </div>
+
+            {session?.role === "admin" && doctorProfile && (
+              <div className="px-5 pt-4 pb-2 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white font-bold text-sm">
+                    {doctorProfile.fullName
+                      .split(" ")
+                      .filter(Boolean)
+                      .slice(0, 2)
+                      .map((x) => x[0])
+                      .join("")
+                      .toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-white truncate">
+                      Dr. {doctorProfile.fullName}
+                    </p>
+                    <p className="text-[11px] text-white/60 truncate">
+                      {doctorProfile.specialty || "Cardiologue"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
               {navItems.map((item) => {
