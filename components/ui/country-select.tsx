@@ -16,6 +16,17 @@ interface CountrySelectProps {
   className?: string;
 }
 
+function FlagImage({ code, className = "h-4 w-6 shrink-0 rounded-sm object-cover" }: { code: string; className?: string }) {
+  return (
+    <img
+      src={`https://flagcdn.com/w40/${code.toLowerCase()}.png`}
+      alt={code}
+      className={className}
+      loading="lazy"
+    />
+  );
+}
+
 export function CountrySelect({ value, onChange, className = "" }: CountrySelectProps) {
   const selected = getCountryByCode(value);
 
@@ -28,9 +39,9 @@ export function CountrySelect({ value, onChange, className = "" }: CountrySelect
         >
           {selected ? (
             <>
-              <span className="text-base leading-none">{selected.flag}</span>
-              <span className="flex-1 text-left">{selected.name}</span>
-              <span className="text-xs text-muted-foreground">{selected.prefix}</span>
+              <FlagImage code={selected.code} />
+              <span className="flex-1 text-left truncate">{selected.name}</span>
+              <span className="text-xs font-mono text-muted-foreground shrink-0">{selected.code}</span>
             </>
           ) : (
             <span className="text-muted-foreground">Sélectionner un pays</span>
@@ -44,9 +55,9 @@ export function CountrySelect({ value, onChange, className = "" }: CountrySelect
         <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
           {countries.map((c) => (
             <DropdownMenuRadioItem key={c.code} value={c.code} className="gap-2">
-              <span className="text-base">{c.flag}</span>
+              <FlagImage code={c.code} />
               <span className="flex-1">{c.name}</span>
-              <span className="text-xs text-muted-foreground">{c.prefix}</span>
+              <span className="text-xs font-mono text-muted-foreground">{c.code}</span>
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

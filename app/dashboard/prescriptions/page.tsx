@@ -10,6 +10,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FileText, Plus, Trash2, Printer, Download, Search, X } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -21,6 +22,8 @@ export default function PrescriptionsPage() {
   const [patientId, setPatientId] = React.useState("");
   const [items, setItems] = React.useState<any[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
 
   const [showNew, setShowNew] = React.useState(false);
   const [generalNotes, setGeneralNotes] = React.useState("");
@@ -80,6 +83,29 @@ export default function PrescriptionsPage() {
     setGeneralNotes("");
     setMedicines([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
     await load();
+  }
+
+  async function deletePrescription(id: string) {
+    setDeletingId(id);
+    try {
+      await apiFetch(`/api/prescriptions/${id}`, { method: "DELETE" });
+      dispatchNotification({
+        id: `presc-del-${Date.now()}`,
+        title: "Ordonnance supprimée",
+        detail: "L'ordonnance a été supprimée",
+        type: "success"
+      });
+      await load();
+    } catch {
+      dispatchNotification({
+        id: `presc-del-err-${Date.now()}`,
+        title: "Erreur",
+        detail: "Impossible de supprimer l'ordonnance",
+        type: "error"
+      });
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   const exportPdfPrescription = (p: any) => {
@@ -203,6 +229,14 @@ export default function PrescriptionsPage() {
                       <Printer className="mr-1 h-4 w-4" />
                       {t("print")}
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={deletingId === p.id}
+                      onClick={() => setConfirmDeleteId(p.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
                 </div>
               );
@@ -299,6 +333,17 @@ export default function PrescriptionsPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(o) => { if (!o) setConfirmDeleteId(null); }}
+        title="Supprimer l'ordonnance"
+        description="Cette action est irreversible. Voulez-vous vraiment supprimer cette ordonnance ?"
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="destructive"
+        onConfirm={() => { if (confirmDeleteId) deletePrescription(confirmDeleteId); }}
+      />
     </div>
   );
 }

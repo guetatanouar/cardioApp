@@ -7,7 +7,7 @@ import {
   parsePhoneNumber,
 } from "libphonenumber-js";
 import { cn } from "@/lib/cn";
-import { countries } from "@/lib/countries";
+import { countries, getPhoneLengthError, getPhoneMaxDigits } from "@/lib/countries";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,13 +58,31 @@ export function PhoneInput({
 
   const selected = countryList.find((c) => c.code === country);
 
+  const countryError = React.useMemo(() => {
+    if (!value) return null;
+    const digits = value.replace(/\D/g, "");
+    const maxDigits = getPhoneMaxDigits(country);
+    if (maxDigits !== null && digits.length > maxDigits) {
+      return getPhoneLengthError(country);
+    }
+    return null;
+  }, [value, country]);
+
+  const displayError = error || countryError;
+
   function handleNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.value.replace(/[^\d+]/g, "");
+    const maxDigits = getPhoneMaxDigits(country);
     try {
       const parsed = parsePhoneNumber(raw.startsWith("+") ? raw : `+${raw}`, country);
-      if (parsed && parsed.nationalNumber.length > 15) return;
+      if (parsed) {
+        const nationalLen = parsed.nationalNumber.length;
+        if (maxDigits !== null && nationalLen > maxDigits) return;
+        if (maxDigits === null && nationalLen > 15) return;
+      }
     } catch {
       const digitsOnly = raw.replace(/\D/g, "");
+      if (maxDigits !== null && digitsOnly.length > maxDigits) return;
       if (digitsOnly.length > 15) return;
     }
     const formatter = new AsYouType(country);
@@ -93,7 +111,7 @@ export function PhoneInput({
             disabled={disabled}
             className="flex items-center gap-1.5 rounded-l-xl border border-r-0 border-input bg-background/80 px-3 py-2 text-sm hover:bg-accent/50 disabled:opacity-50 shrink-0 outline-none"
           >
-            <span className="text-base leading-none">{selected?.flag}</span>
+            <img src={`https://flagcdn.com/w40/${selected!.code.toLowerCase()}.png`} alt={selected!.code} className="h-4 w-6 rounded-sm object-cover" />
             <span className="text-xs text-muted-foreground">{selected?.prefix}</span>
             <svg className="h-3 w-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -125,7 +143,7 @@ export function PhoneInput({
         )}
       />
     </div>
-    {error ? <p className="text-red-500 text-sm mt-1">{error}</p> : null}
+    {displayError ? <p className="text-red-500 text-sm mt-1">{displayError}</p> : null}
   </div>
   );
 }

@@ -11,7 +11,20 @@ const KNOWN_COUNTRIES = [
     'CA', 'US', 'FR', 'BE', 'CH', 'DZ', 'MA', 'TN', 'GB', 'DE', 'IT', 'ES',
     'NL', 'PT', 'SE', 'AT', 'DK', 'FI', 'IE', 'LU', 'GR', 'PL', 'CZ', 'HU',
     'RO', 'BG', 'HR', 'SK', 'SI', 'EE', 'LV', 'LT', 'MT', 'SA', 'AE', 'QA',
-    'EG', 'LB', 'SY', 'TR'
+    'EG', 'LB', 'SY', 'TR', 'AF', 'AL', 'AD', 'AO', 'AG', 'AR', 'AM', 'AU',
+    'AZ', 'BS', 'BH', 'BD', 'BB', 'BY', 'BZ', 'BJ', 'BT', 'BO', 'BA', 'BW',
+    'BR', 'BN', 'BF', 'BI', 'KH', 'CM', 'CV', 'CF', 'TD', 'CL', 'CN', 'CO',
+    'KM', 'CG', 'CD', 'CR', 'CI', 'CU', 'CY', 'DJ', 'DM', 'DO', 'EC', 'SV',
+    'GQ', 'ER', 'ET', 'FJ', 'GA', 'GM', 'GE', 'GH', 'GD', 'GT', 'GN', 'GW',
+    'GY', 'HT', 'HN', 'HK', 'IS', 'IN', 'ID', 'IR', 'IQ', 'IL', 'JM', 'JP',
+    'JO', 'KZ', 'KE', 'KI', 'KW', 'KG', 'LA', 'LS', 'LR', 'LY', 'LI', 'MO',
+    'MK', 'MG', 'MW', 'MY', 'MV', 'ML', 'MR', 'MU', 'MX', 'FM', 'MD', 'MC',
+    'MN', 'ME', 'MZ', 'MM', 'NA', 'NR', 'NP', 'NZ', 'NI', 'NE', 'NG', 'KP',
+    'NO', 'OM', 'PK', 'PW', 'PA', 'PG', 'PY', 'PE', 'PH', 'PR', 'KR', 'RU',
+    'RW', 'KN', 'LC', 'VC', 'WS', 'SM', 'ST', 'SN', 'RS', 'SC', 'SL', 'SG',
+    'SO', 'ZA', 'SS', 'SD', 'SR', 'SZ', 'TW', 'TJ', 'TZ', 'TH', 'TL', 'TG',
+    'TO', 'TT', 'TM', 'TV', 'UG', 'UA', 'UY', 'UZ', 'VU', 'VA', 'VE', 'VN',
+    'YE', 'ZM', 'ZW'
 ];
 function validateEmail(email) {
     return EMAIL_REGEX.test(email);
@@ -93,7 +106,7 @@ patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write
         });
     }
     try {
-        await query('INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)', [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, pathology, severity_status || 'stable']);
+        await query('INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)', [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, country, pathology, severity_status || 'stable']);
         const user = req.user;
         createNotification({
             type: 'patient_created',
@@ -271,8 +284,28 @@ patientsRouter.post('/:id/consultations', authenticateToken, requirePermission('
         res.status(500).json({ message: 'Server error' });
     }
 });
+function validateVitalRange(value, min, max, label) {
+    if (value === undefined || value === null)
+        return null;
+    const num = Number(value);
+    if (isNaN(num))
+        return `${label} doit être un nombre`;
+    if (num < min || num > max)
+        return `${label} doit être entre ${min} et ${max}`;
+    return null;
+}
 patientsRouter.post('/:id/vitals', authenticateToken, requirePermission('vitals', 'write'), async (req, res) => {
     const { systolic, diastolic, heart_rate, weight, sp02, note } = req.body;
+    const errors = [
+        validateVitalRange(systolic, 60, 250, 'Tension systolique'),
+        validateVitalRange(diastolic, 30, 150, 'Tension diastolique'),
+        validateVitalRange(heart_rate, 20, 250, 'Fréquence cardiaque'),
+        validateVitalRange(sp02, 0, 100, 'SpO2'),
+        validateVitalRange(weight, 0, 500, 'Poids'),
+    ].filter(Boolean);
+    if (errors.length > 0) {
+        return res.status(400).json({ message: errors.join('; ') });
+    }
     const id = `v_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
         await query('INSERT INTO vital_entries (id, patient_id, systolic, diastolic, heart_rate, weight, sp02, note) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', [id, req.params.id, systolic, diastolic, heart_rate, weight, sp02, note]);
@@ -289,6 +322,39 @@ patientsRouter.post('/:id/vitals', authenticateToken, requirePermission('vitals'
             related_id: id,
         });
         res.status(201).json({ message: 'Vital entry added' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+patientsRouter.put('/:id/vitals/:vitalId', authenticateToken, requirePermission('vitals', 'write'), async (req, res) => {
+    const { systolic, diastolic, heart_rate, weight, sp02, note } = req.body;
+    const errors = [
+        validateVitalRange(systolic, 60, 250, 'Tension systolique'),
+        validateVitalRange(diastolic, 30, 150, 'Tension diastolique'),
+        validateVitalRange(heart_rate, 20, 250, 'Fréquence cardiaque'),
+        validateVitalRange(sp02, 0, 100, 'SpO2'),
+        validateVitalRange(weight, 0, 500, 'Poids'),
+    ].filter(Boolean);
+    if (errors.length > 0) {
+        return res.status(400).json({ message: errors.join('; ') });
+    }
+    try {
+        await query('UPDATE vital_entries SET systolic=$1, diastolic=$2, heart_rate=$3, weight=$4, sp02=$5, note=$6 WHERE id=$7 AND patient_id=$8', [systolic, diastolic, heart_rate, weight, sp02, note, req.params.vitalId, req.params.id]);
+        res.json({ message: 'Vital entry updated' });
+    }
+    catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+patientsRouter.delete('/:id/vitals/:vitalId', authenticateToken, requirePermission('vitals', 'delete'), async (req, res) => {
+    try {
+        const result = await query('DELETE FROM vital_entries WHERE id = $1 AND patient_id = $2 RETURNING id', [req.params.vitalId, req.params.id]);
+        if (result.rows.length === 0)
+            return res.status(404).json({ message: 'Entrée non trouvée' });
+        res.json({ message: 'Vital entry deleted' });
     }
     catch (err) {
         console.error(err);

@@ -12,6 +12,7 @@ import {
 } from "recharts";
 
 import { apiFetch, apiUpload } from "@/lib/api/client";
+import { config } from "@/lib/config";
 import { dispatchNotification } from "@/lib/notifications";
 import { usePagePermission } from "@/lib/auth/usePermissions";
 import { getSession } from "@/lib/auth/storage";
@@ -23,7 +24,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
-import { FileText, Plus, Trash2, Download, Upload } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { DocumentPreview } from "@/components/ui/document-preview";
+import { FileText, Plus, Trash2, Download, Upload, Eye, EyeOff } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -65,6 +68,27 @@ export default function PatientsPage() {
   const [detailError, setDetailError] = React.useState<string | null>(null);
 
   const [vitalsPeriod, setVitalsPeriod] = React.useState<"1M" | "3M" | "6M" | "1Y">("3M");
+  const [editVitalId, setEditVitalId] = React.useState<string | null>(null);
+  const [editVitalForm, setEditVitalForm] = React.useState({
+    systolic: "", diastolic: "", heart_rate: "", sp02: "", weight: "", note: ""
+  });
+  const [deletingVitalId, setDeletingVitalId] = React.useState<string | null>(null);
+  const [confirmVitalDeleteId, setConfirmVitalDeleteId] = React.useState<string | null>(null);
+
+  async function deleteVital(id: string) {
+    if (!selectedId) return;
+    setDeletingVitalId(id);
+    try {
+      await apiFetch(`/api/patients/${selectedId}/vitals/${id}`, { method: "DELETE" });
+      dispatchNotification({ id: `vital-del-${Date.now()}`, title: "Mesure supprimée", detail: "Valeur supprimée", type: "success" });
+      if (selectedId) await loadDetail(selectedId);
+    } catch {
+      dispatchNotification({ id: `vital-del-err-${Date.now()}`, title: "Erreur", detail: "Impossible de supprimer", type: "error" });
+    } finally {
+      setDeletingVitalId(null);
+    }
+  }
+  const [savingVital, setSavingVital] = React.useState(false);
 
   const [chatItems, setChatItems] = React.useState<any[]>([]);
   const [chatText, setChatText] = React.useState("");
@@ -76,6 +100,8 @@ export default function PatientsPage() {
   const [accountError, setAccountError] = React.useState<string | null>(null);
   const [accountForm, setAccountForm] = React.useState({ username: "", password: "" });
   const [resetPassword, setResetPassword] = React.useState("");
+  const [showResetPassword, setShowResetPassword] = React.useState(false);
+  const [showNewPassword, setShowNewPassword] = React.useState(false);
   const [accountSaving, setAccountSaving] = React.useState(false);
 
   const [editMode, setEditMode] = React.useState(false);
@@ -166,6 +192,7 @@ export default function PatientsPage() {
       const res = await apiFetch<{ item: any | null }>(`/api/settings/patient-accounts/${patientId}`);
       setAccount(res.item);
       setAccountForm({ username: res.item?.username ?? "", password: "" });
+      setResetPassword("");
     } catch {
       setAccount(null);
       setAccountError("Impossible de charger l'accès patient");
@@ -318,6 +345,7 @@ export default function PatientsPage() {
         phone: createForm.phone || undefined,
         email: createForm.email || undefined,
         address: createForm.address || undefined,
+        country: createForm.country || undefined,
         pathology: createForm.pathology || undefined,
         severity_status: createForm.severityStatus
       };
@@ -456,10 +484,12 @@ export default function PatientsPage() {
           phone: editForm.phone || undefined,
           email: editForm.email || undefined,
           address: editForm.address || undefined,
+          country: editForm.country || undefined,
           emergency_contact: editForm.emergency_contact || undefined,
           pathology: editForm.pathology || undefined,
           allergies: editForm.allergies || null,
           medical_history: editForm.medical_history || null,
+          severity_status: detail.patient.severity_status,
         })
       });
       setEditMode(false);
@@ -677,7 +707,9 @@ export default function PatientsPage() {
                           <label className="text-sm text-muted-foreground mb-1 block">Tension systolique</label>
                           <Input
                             type="number"
-                            placeholder="mm Hg"
+                            min={60}
+                            max={250}
+                            placeholder="mm Hg (60-250)"
                             value={newPatientVitals.systolic}
                             onChange={(e) => setNewPatientVitals((s) => ({ ...s, systolic: e.target.value }))}
                           />
@@ -686,7 +718,9 @@ export default function PatientsPage() {
                           <label className="text-sm text-muted-foreground mb-1 block">Tension diastolique</label>
                           <Input
                             type="number"
-                            placeholder="mm Hg"
+                            min={30}
+                            max={150}
+                            placeholder="mm Hg (30-150)"
                             value={newPatientVitals.diastolic}
                             onChange={(e) => setNewPatientVitals((s) => ({ ...s, diastolic: e.target.value }))}
                           />
@@ -695,7 +729,9 @@ export default function PatientsPage() {
                           <label className="text-sm text-muted-foreground mb-1 block">Frequence cardiaque</label>
                           <Input
                             type="number"
-                            placeholder="bpm"
+                            min={20}
+                            max={250}
+                            placeholder="bpm (20-250)"
                             value={newPatientVitals.heartRate}
                             onChange={(e) => setNewPatientVitals((s) => ({ ...s, heartRate: e.target.value }))}
                           />
@@ -704,7 +740,9 @@ export default function PatientsPage() {
                           <label className="text-sm text-muted-foreground mb-1 block">SpO2</label>
                           <Input
                             type="number"
-                            placeholder="%"
+                            min={0}
+                            max={100}
+                            placeholder="% (0-100)"
                             value={newPatientVitals.sp02}
                             onChange={(e) => setNewPatientVitals((s) => ({ ...s, sp02: e.target.value }))}
                           />
@@ -713,6 +751,8 @@ export default function PatientsPage() {
                           <label className="text-sm text-muted-foreground mb-1 block">Poids</label>
                           <Input
                             type="number"
+                            min={0}
+                            max={500}
                             step="0.1"
                             placeholder="kg"
                             value={newPatientVitals.weight}
@@ -724,11 +764,25 @@ export default function PatientsPage() {
                       <div>
                         <label className="text-sm text-muted-foreground mb-1 block">Document</label>
                         <div className="flex items-center gap-2">
-                          <Input
-                            type="file"
-                            onChange={(e) => setNewPatientDoc(e.target.files?.[0] ?? null)}
-                            className="flex-1"
-                          />
+                          {newPatientDoc ? (
+                            <div className="flex-1 flex items-center gap-2 rounded-md border border-input bg-background/80 px-3 py-2 text-sm">
+                              <FileText className="h-4 w-4 text-primary shrink-0" />
+                              <span className="truncate flex-1">{newPatientDoc.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => setNewPatientDoc(null)}
+                                className="text-destructive hover:text-destructive/80 shrink-0"
+                              >
+                                X
+                              </button>
+                            </div>
+                          ) : (
+                            <Input
+                              type="file"
+                              onChange={(e) => setNewPatientDoc(e.target.files?.[0] ?? null)}
+                              className="flex-1"
+                            />
+                          )}
                           <select
                             value={newPatientDocCategory}
                             onChange={(e) => setNewPatientDocCategory(e.target.value)}
@@ -1042,7 +1096,7 @@ export default function PatientsPage() {
                     </div>
                     <div>
                       <div className="text-muted-foreground">Pays</div>
-                      <div>{(() => { const c = getCountryByCode(detail.patient.country); return c ? <><span className="text-base mr-1">{c.flag}</span>{c.name}</> : (detail.patient.country ?? "—"); })()}</div>
+                      <div>{(() => { const c = getCountryByCode(detail.patient.country); return c ? <><img src={`https://flagcdn.com/w40/${c.code.toLowerCase()}.png`} alt={c.code} className="inline-block h-4 w-6 rounded-sm object-cover mr-1.5 align-middle" />{c.name} <span className="text-xs text-muted-foreground">({c.code})</span></> : (detail.patient.country ?? "—"); })()}</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">Contact urgence</div>
@@ -1342,7 +1396,103 @@ export default function PatientsPage() {
                       </Card>
                     </div>
 
-                    {rows.length === 0 ? <div className="text-sm text-muted-foreground">Aucune donnee</div> : null}
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Donnees detaillees</CardTitle>
+                      </CardHeader>
+                      <CardContent className="max-h-72 overflow-y-auto">
+                        {rows.length === 0 ? (
+                          <div className="text-sm text-muted-foreground py-4 text-center">Aucune donnee</div>
+                        ) : (
+                          <div className="space-y-2">
+                            {[...rows].reverse().map((v: any) => (
+                              editVitalId === v.id ? (
+                                <div key={v.id} className="rounded-lg border border-border p-3 space-y-2">
+                                  <div className="grid grid-cols-5 gap-2">
+                                    <div>
+                                      <label className="text-xs text-muted-foreground">Sys</label>
+                                      <input type="number" value={editVitalForm.systolic} onChange={(e) => setEditVitalForm((s) => ({ ...s, systolic: e.target.value }))} className="w-full rounded border border-input bg-transparent px-2 py-1 text-sm" />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-muted-foreground">Dia</label>
+                                      <input type="number" value={editVitalForm.diastolic} onChange={(e) => setEditVitalForm((s) => ({ ...s, diastolic: e.target.value }))} className="w-full rounded border border-input bg-transparent px-2 py-1 text-sm" />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-muted-foreground">FC</label>
+                                      <input type="number" value={editVitalForm.heart_rate} onChange={(e) => setEditVitalForm((s) => ({ ...s, heart_rate: e.target.value }))} className="w-full rounded border border-input bg-transparent px-2 py-1 text-sm" />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-muted-foreground">SpO2</label>
+                                      <input type="number" value={editVitalForm.sp02} onChange={(e) => setEditVitalForm((s) => ({ ...s, sp02: e.target.value }))} className="w-full rounded border border-input bg-transparent px-2 py-1 text-sm" />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-muted-foreground">Poids</label>
+                                      <input type="number" step="0.1" value={editVitalForm.weight} onChange={(e) => setEditVitalForm((s) => ({ ...s, weight: e.target.value }))} className="w-full rounded border border-input bg-transparent px-2 py-1 text-sm" />
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end gap-2">
+                                    <Button type="button" variant="outline" size="sm" onClick={() => setEditVitalId(null)}>Annuler</Button>
+                                    <Button type="button" size="sm" disabled={savingVital} onClick={async () => {
+                                      if (!selectedId) return;
+                                      setSavingVital(true);
+                                      try {
+                                        await apiFetch(`/api/patients/${selectedId}/vitals/${v.id}`, {
+                                          method: "PUT",
+                                          body: JSON.stringify({
+                                            systolic: editVitalForm.systolic ? Number(editVitalForm.systolic) : undefined,
+                                            diastolic: editVitalForm.diastolic ? Number(editVitalForm.diastolic) : undefined,
+                                            heart_rate: editVitalForm.heart_rate ? Number(editVitalForm.heart_rate) : undefined,
+                                            sp02: editVitalForm.sp02 ? Number(editVitalForm.sp02) : undefined,
+                                            weight: editVitalForm.weight ? Number(editVitalForm.weight) : undefined,
+                                            note: editVitalForm.note || undefined,
+                                          })
+                                        });
+                                        setEditVitalId(null);
+                                        dispatchNotification({ id: `vital-edit-${Date.now()}`, title: "Vital modifié", detail: "Mesure mise à jour", type: "success" });
+                                        await loadDetail(selectedId);
+                                      } catch {
+                                        dispatchNotification({ id: `vital-edit-err-${Date.now()}`, title: "Erreur", detail: "Impossible de modifier la mesure", type: "error" });
+                                      } finally {
+                                        setSavingVital(false);
+                                      }
+                                    }}>{savingVital ? "..." : "Sauvegarder"}</Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div key={v.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                                  <div className="flex flex-wrap gap-4 text-sm">
+                                    <div><span className="text-muted-foreground text-xs">{new Date(v.recorded_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span></div>
+                                    <div>Sys: <strong>{v.systolic ?? "—"}</strong></div>
+                                    <div>Dia: <strong>{v.diastolic ?? "—"}</strong></div>
+                                    <div>FC: <strong>{v.heart_rate ?? "—"}</strong></div>
+                                    <div>SpO2: <strong>{v.sp02 ?? "—"}</strong></div>
+                                    <div>Poids: <strong>{v.weight ?? "—"}</strong></div>
+                                  </div>
+                                  <div className="flex gap-1 shrink-0">
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => {
+                                      setEditVitalId(v.id);
+                                      setEditVitalForm({
+                                        systolic: v.systolic ?? "",
+                                        diastolic: v.diastolic ?? "",
+                                        heart_rate: v.heart_rate ?? "",
+                                        sp02: v.sp02 ?? "",
+                                        weight: v.weight ?? "",
+                                        note: v.note ?? "",
+                                      });
+                                    }}>
+                                      Modifier
+                                    </Button>
+                                    <Button type="button" variant="ghost" size="sm" disabled={deletingVitalId === v.id} onClick={() => setConfirmVitalDeleteId(v.id)}>
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
                 );
               })()
@@ -1455,12 +1605,18 @@ export default function PatientsPage() {
 
                       <div className="space-y-3">
                         <div className="text-sm font-medium">Réinitialiser le mot de passe</div>
-                        <Input
-                          type="password"
-                          placeholder="Nouveau mot de passe"
-                          value={resetPassword}
-                          onChange={(e) => setResetPassword(e.target.value)}
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showResetPassword ? "text" : "password"}
+                            placeholder={account ? "********" : "Nouveau mot de passe"}
+                            value={resetPassword}
+                            onChange={(e) => setResetPassword(e.target.value)}
+                            className="pr-10"
+                          />
+                          <button type="button" onClick={() => setShowResetPassword(!showResetPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                         <Button
                           size="sm"
                           disabled={!resetPassword.trim() || accountSaving}
@@ -1473,7 +1629,12 @@ export default function PatientsPage() {
                                 body: JSON.stringify({ password: resetPassword })
                               });
                               setResetPassword("");
-                              alert("Mot de passe réinitialisé avec succès");
+                              dispatchNotification({
+                                id: `reset-${Date.now()}`,
+                                title: "Mot de passe réinitialisé",
+                                detail: "Le mot de passe a été réinitialisé avec succès",
+                                type: "success"
+                              });
                             } catch {
                               setAccountError("Erreur lors de la réinitialisation");
                             } finally {
@@ -1505,12 +1666,18 @@ export default function PatientsPage() {
                         </div>
                         <div>
                           <label className="text-sm text-muted-foreground mb-1 block">Mot de passe initial</label>
-                          <Input
-                            type="password"
-                            placeholder="Mot de passe"
-                            value={accountForm.password}
-                            onChange={(e) => setAccountForm((s) => ({ ...s, password: e.target.value }))}
-                          />
+                          <div className="relative">
+                            <Input
+                              type={showNewPassword ? "text" : "password"}
+                              placeholder="Mot de passe"
+                              value={accountForm.password}
+                              onChange={(e) => setAccountForm((s) => ({ ...s, password: e.target.value }))}
+                              className="pr-10"
+                            />
+                            <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
                         </div>
                         {accountError && (
                           <div className="text-sm text-destructive">{accountError}</div>
@@ -1551,6 +1718,17 @@ export default function PatientsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmVitalDeleteId !== null}
+        onOpenChange={(o) => { if (!o) setConfirmVitalDeleteId(null); }}
+        title="Supprimer la mesure"
+        description="Voulez-vous vraiment supprimer cette mesure ?"
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="destructive"
+        onConfirm={() => { if (confirmVitalDeleteId) deleteVital(confirmVitalDeleteId); }}
+      />
     </div>
   );
 }
@@ -1564,6 +1742,8 @@ function DocumentsTab({ patientId, documents, onRefresh }: {
   const [docFile, setDocFile] = React.useState<File | null>(null);
   const [docCategory, setDocCategory] = React.useState("analyse");
   const [deletingDoc, setDeletingDoc] = React.useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = React.useState<{ filePath: string; fileName: string } | null>(null);
+  const [fileInputKey, setFileInputKey] = React.useState(0);
 
   async function handleUpload() {
     if (!docFile) return;
@@ -1574,6 +1754,7 @@ function DocumentsTab({ patientId, documents, onRefresh }: {
       formData.append("category", docCategory);
       await apiUpload(`/api/documents/${patientId}`, formData);
       setDocFile(null);
+      setFileInputKey((k) => k + 1);
       dispatchNotification({
         id: `doc-upload-${Date.now()}`,
         title: "Document ajouté",
@@ -1630,7 +1811,15 @@ function DocumentsTab({ patientId, documents, onRefresh }: {
               {documents.map((d: any) => (
                 <div key={d.id} className="flex items-center justify-between rounded-lg border border-border p-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <FileText className="h-8 w-8 text-primary shrink-0" />
+                    {d.file_path && /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(d.file_path) ? (
+                      <img
+                        src={`${config.api.baseUrl}/${d.file_path}`}
+                        alt={d.name}
+                        className="h-10 w-10 shrink-0 rounded object-cover"
+                      />
+                    ) : (
+                      <FileText className="h-8 w-8 text-primary shrink-0" />
+                    )}
                     <div className="min-w-0">
                       <div className="text-sm font-medium truncate">{d.name}</div>
                       <div className="text-xs text-muted-foreground">
@@ -1638,15 +1827,26 @@ function DocumentsTab({ patientId, documents, onRefresh }: {
                       </div>
                     </div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={deletingDoc === d.id}
-                    onClick={() => handleDelete(d.id)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex gap-1 shrink-0">
+                    {d.file_path ? (
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDoc({ filePath: d.file_path, fileName: d.name })}
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={deletingDoc === d.id}
+                      onClick={() => handleDelete(d.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1662,6 +1862,7 @@ function DocumentsTab({ patientId, documents, onRefresh }: {
           <div>
             <label className="text-xs text-muted-foreground mb-0.5 block">Fichier</label>
             <Input
+              key={fileInputKey}
               type="file"
               onChange={(e) => setDocFile(e.target.files?.[0] ?? null)}
               className="text-sm"
@@ -1690,6 +1891,13 @@ function DocumentsTab({ patientId, documents, onRefresh }: {
           </Button>
         </CardContent>
       </Card>
+
+      <DocumentPreview
+        open={previewDoc !== null}
+        onOpenChange={(o) => { if (!o) setPreviewDoc(null); }}
+        filePath={previewDoc?.filePath ?? ""}
+        fileName={previewDoc?.fileName ?? ""}
+      />
     </div>
   );
 }
@@ -1701,6 +1909,8 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
   onRefresh: () => void;
 }) {
   const [showNew, setShowNew] = React.useState(false);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [generalNotes, setGeneralNotes] = React.useState("");
   const [medicines, setMedicines] = React.useState([
     { name: "", dosage: "", frequency: "", duration: "", instructions: "" }
@@ -1745,6 +1955,29 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
     const updated = [...medicines];
     updated[i] = { ...updated[i], [field]: value };
     setMedicines(updated);
+  }
+
+  async function deletePrescription(id: string) {
+    setDeletingId(id);
+    try {
+      await apiFetch(`/api/prescriptions/${id}`, { method: "DELETE" });
+      dispatchNotification({
+        id: `presc-del-${Date.now()}`,
+        title: "Ordonnance supprimée",
+        detail: "L'ordonnance a été supprimée",
+        type: "success"
+      });
+      onRefresh();
+    } catch {
+      dispatchNotification({
+        id: `presc-del-err-${Date.now()}`,
+        title: "Erreur",
+        detail: "Impossible de supprimer l'ordonnance",
+        type: "error"
+      });
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   function exportPdfPrescription(p: any) {
@@ -1814,6 +2047,14 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
                     <Button variant="outline" size="sm" onClick={() => exportPdfPrescription(p)}>
                       <Download className="mr-1 h-4 w-4" />
                       PDF
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={deletingId === p.id}
+                      onClick={() => setConfirmDeleteId(p.id)}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </div>
@@ -1897,6 +2138,17 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(o) => { if (!o) setConfirmDeleteId(null); }}
+        title="Supprimer l'ordonnance"
+        description="Cette action est irreversible. Voulez-vous vraiment supprimer cette ordonnance ?"
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="destructive"
+        onConfirm={() => { if (confirmDeleteId) deletePrescription(confirmDeleteId); }}
+      />
     </div>
   );
 }

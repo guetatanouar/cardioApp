@@ -12,8 +12,10 @@ const permMap: Record<string, string> = {
   'chat:send': 'can_send_chat',
   prescriptions: 'can_view_prescriptions',
   'prescriptions:write': 'can_edit_prescriptions',
+  'prescriptions:delete': 'can_edit_prescriptions',
   vitals: 'can_view_vitals',
   'vitals:write': 'can_edit_vitals',
+  'vitals:delete': 'can_edit_vitals',
   documents: 'can_view_documents',
   'documents:write': 'can_upload_documents',
   consultations: 'can_view_consultations'

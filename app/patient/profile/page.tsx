@@ -95,7 +95,7 @@ export default function PatientProfile() {
     ? new Date(p.date_of_birth).toLocaleDateString("fr-FR")
     : "14/03/1965";
   const countryInfo = p.country ? getCountryByCode(p.country) : null;
-  const country = countryInfo ? `${countryInfo.flag} ${countryInfo.name}` : (p.country || "France");
+  const country = countryInfo ? `${countryInfo.name} (${countryInfo.code})` : (p.country || "France");
   const mappedConsultations = consultations.length > 0
     ? consultations
     : [

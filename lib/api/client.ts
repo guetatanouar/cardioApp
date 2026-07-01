@@ -46,7 +46,7 @@ function getMockResponse<T>(path: string): T | null {
   // Handle /api/patients/:id pattern
   if (basePath.match(/\/api\/patients\/[^\/]+$/)) {
     return {
-      patient: { id: "1", first_name: "Ahmed", last_name: "Benali", date_of_birth: "1975-03-15", blood_type: "A+", phone: "+213550123456", email: "ahmed@email.com", address: "Alger", emergency_contact_name: "Wife", emergency_contact_phone: "+213550999999", allergies: "Pollen", medical_history: "Hypertension depuis 2010", pathology: "Hypertension", severity_status: "critique" },
+      patient: { id: "1", first_name: "Ahmed", last_name: "Benali", date_of_birth: "1975-03-15", blood_type: "A+", phone: "+213550123456", email: "ahmed@email.com", address: "Alger", country: "DZ", emergency_contact_name: "Wife", emergency_contact_phone: "+213550999999", allergies: "Pollen", medical_history: "Hypertension depuis 2010", pathology: "Hypertension", severity_status: "critique" },
       vitals: [
         { id: "1", recorded_at: new Date(Date.now() - 86400000).toISOString(), systolic_bp: 140, diastolic_bp: 90, heart_rate: 75, spo2: 98, weight_kg: 78.5 }
       ],

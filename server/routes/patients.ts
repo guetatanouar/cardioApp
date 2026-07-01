@@ -111,8 +111,8 @@ patientsRouter.post('/', authenticateToken, requirePermission('patients', 'write
 
     try {
         await query(
-            'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
-            [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, pathology, severity_status || 'stable']
+            'INSERT INTO patients (id, first_name, last_name, date_of_birth, gender, blood_type, phone, email, address, country, pathology, severity_status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
+            [id, first_name, last_name, date_of_birth, gender || 'M', blood_type, phone, email, address, country, pathology, severity_status || 'stable']
         );
         const user = (req as any).user;
         createNotification({
@@ -301,6 +301,14 @@ patientsRouter.post('/:id/consultations', authenticateToken, requirePermission('
     }
 });
 
+function validateVitalRange(value: any, min: number, max: number, label: string): string | null {
+    if (value === undefined || value === null) return null;
+    const num = Number(value);
+    if (isNaN(num)) return `${label} doit être un nombre`;
+    if (num < min || num > max) return `${label} doit être entre ${min} et ${max}`;
+    return null;
+}
+
 patientsRouter.post('/:id/vitals', authenticateToken, requirePermission('vitals', 'write'), async (req, res) => {
     const { systolic, diastolic, heart_rate, weight, sp02, note } = req.body;
     const id = `v_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -322,6 +330,44 @@ patientsRouter.post('/:id/vitals', authenticateToken, requirePermission('vitals'
             related_id: id,
         });
         res.status(201).json({ message: 'Vital entry added' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+patientsRouter.put('/:id/vitals/:vitalId', authenticateToken, requirePermission('vitals', 'write'), async (req, res) => {
+    const { systolic, diastolic, heart_rate, weight, sp02, note } = req.body;
+    const errors = [
+        validateVitalRange(systolic, 60, 250, 'Tension systolique'),
+        validateVitalRange(diastolic, 30, 150, 'Tension diastolique'),
+        validateVitalRange(heart_rate, 20, 250, 'Fréquence cardiaque'),
+        validateVitalRange(sp02, 0, 100, 'SpO2'),
+        validateVitalRange(weight, 0, 500, 'Poids'),
+    ].filter(Boolean);
+    if (errors.length > 0) {
+        return res.status(400).json({ message: errors.join('; ') });
+    }
+    try {
+        await query(
+            'UPDATE vital_entries SET systolic=$1, diastolic=$2, heart_rate=$3, weight=$4, sp02=$5, note=$6 WHERE id=$7 AND patient_id=$8',
+            [systolic, diastolic, heart_rate, weight, sp02, note, req.params.vitalId, req.params.id]
+        );
+        res.json({ message: 'Vital entry updated' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+patientsRouter.delete('/:id/vitals/:vitalId', authenticateToken, requirePermission('vitals', 'delete'), async (req, res) => {
+    try {
+        const result = await query(
+            'DELETE FROM vital_entries WHERE id = $1 AND patient_id = $2 RETURNING id',
+            [req.params.vitalId, req.params.id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ message: 'Entrée non trouvée' });
+        res.json({ message: 'Vital entry deleted' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: 'Server error' });
