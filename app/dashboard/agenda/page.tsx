@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Plus, Clock, Search } from "lucide-react";
 
 import { apiFetch } from "@/lib/api/client";
 import { dispatchNotification } from "@/lib/notifications";
+import { toast } from "sonner";
 import { usePagePermission } from "@/lib/auth/usePermissions";
 import { useI18n } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
@@ -82,6 +83,9 @@ export default function AgendaPage() {
 
   const [cancelConfirmOpen, setCancelConfirmOpen] = React.useState(false);
   const [cancellingId, setCancellingId] = React.useState<string | null>(null);
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
 
   async function loadAppointments() {
     const year = currentDate.getFullYear();
@@ -173,10 +177,21 @@ export default function AgendaPage() {
     } catch (error: any) {
       console.error("Erreur création RDV :", error);
 
+      if (error.status === 409) {
+        toast.error("Ce créneau est déjà réservé, veuillez en choisir un autre");
+        return;
+      }
+
+      let detail = error?.message || "Impossible de créer le rendez-vous";
+      try {
+        const parsed = JSON.parse(error.message);
+        if (parsed.message) detail = parsed.message;
+      } catch {}
+
       dispatchNotification({
         id: "create-error",
-        title: `Erreur (${error?.message?.includes("HTTP_") ? error.message.replace("HTTP_", "") : "?"})`,
-        detail: error?.message || "Impossible de créer le rendez-vous",
+        title: "Erreur",
+        detail,
         type: "error"
       });
     }
@@ -221,6 +236,33 @@ export default function AgendaPage() {
     }
   }
 
+  async function deleteAppointment(id: string) {
+    try {
+      await apiFetch(`/api/appointments/${id}`, {
+        method: "DELETE",
+      });
+      dispatchNotification({
+        id: `appt-deleted-${Date.now()}`,
+        title: "Rendez-vous supprimé",
+        detail: "Le rendez-vous a été supprimé avec succès",
+        type: "success"
+      });
+      await loadAppointments();
+    } catch (error: any) {
+      let detail = error?.message || "Impossible de supprimer le rendez-vous";
+      try {
+        const parsed = JSON.parse(error.message);
+        if (parsed.message) detail = parsed.message;
+      } catch {}
+      dispatchNotification({
+        id: "delete-error",
+        title: "Erreur",
+        detail,
+        type: "error"
+      });
+    }
+  }
+
   async function updateAppointment(e: React.FormEvent) {
     e.preventDefault();
     if (!editingAppointment) return;
@@ -256,10 +298,16 @@ export default function AgendaPage() {
       setEditingAppointment(null);
       await loadAppointments();
     } catch (error: any) {
+      let detail = error?.message || "Impossible de modifier le rendez-vous";
+      try {
+        const parsed = JSON.parse(error.message);
+        if (parsed.message) detail = parsed.message;
+      } catch {}
+
       dispatchNotification({
         id: "update-error",
         title: "Erreur",
-        detail: error?.message || "Impossible de modifier le rendez-vous",
+        detail,
         type: "error"
       });
     }
@@ -540,13 +588,25 @@ export default function AgendaPage() {
                                 const isPast = a.date < todayStr;
                                 if (isPast) {
                                   return (
-                                    <button
-                                      type="button"
-                                      className="text-[10px] font-bold text-green-600 hover:text-green-800 uppercase tracking-widest hover:underline"
-                                      onClick={() => completeAppointment(a.id)}
-                                    >
-                                      {t("complete")}
-                                    </button>
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="text-[10px] font-bold text-green-600 hover:text-green-800 uppercase tracking-widest hover:underline"
+                                        onClick={() => completeAppointment(a.id)}
+                                      >
+                                        {t("complete")}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="text-[10px] font-bold text-red-600 hover:text-red-800 uppercase tracking-widest hover:underline"
+                                        onClick={() => {
+                                          setDeletingId(a.id);
+                                          setDeleteConfirmOpen(true);
+                                        }}
+                                      >
+                                        Supprimer
+                                      </button>
+                                    </>
                                   );
                                 }
                                 return (
@@ -568,13 +628,23 @@ export default function AgendaPage() {
                                     >
                                       {t("cancel")}
                                     </button>
+                                    <button
+                                      type="button"
+                                      className="text-[10px] font-bold text-red-600 hover:text-red-800 uppercase tracking-widest hover:underline"
+                                      onClick={() => {
+                                        setDeletingId(a.id);
+                                        setDeleteConfirmOpen(true);
+                                      }}
+                                    >
+                                      Supprimer
+                                    </button>
                                   </>
                                 );
                               })()}
                             </div>
                           )}
                           {a.status === "complete" && (
-                            <div className="mt-3 pt-3 border-t border-slate-50 flex justify-end">
+                            <div className="mt-3 pt-3 border-t border-slate-50 flex justify-end gap-3">
                               <button
                                 type="button"
                                 className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-widest hover:underline"
@@ -584,6 +654,30 @@ export default function AgendaPage() {
                                 }}
                               >
                                 {t("details")}
+                              </button>
+                              <button
+                                type="button"
+                                className="text-[10px] font-bold text-red-600 hover:text-red-800 uppercase tracking-widest hover:underline"
+                                onClick={() => {
+                                  setDeletingId(a.id);
+                                  setDeleteConfirmOpen(true);
+                                }}
+                              >
+                                Supprimer
+                              </button>
+                            </div>
+                          )}
+                          {a.status === "cancelled" && (
+                            <div className="mt-3 pt-3 border-t border-slate-50 flex justify-end">
+                              <button
+                                type="button"
+                                className="text-[10px] font-bold text-red-600 hover:text-red-800 uppercase tracking-widest hover:underline"
+                                onClick={() => {
+                                  setDeletingId(a.id);
+                                  setDeleteConfirmOpen(true);
+                                }}
+                              >
+                                Supprimer
                               </button>
                             </div>
                           )}
@@ -703,6 +797,7 @@ export default function AgendaPage() {
                   type="date"
                   value={form.date}
                   onChange={(e) => setForm((s) => ({ ...s, date: e.target.value }))}
+                  min={new Date().toISOString().split("T")[0]}
                   required
                 />
               </div>
@@ -886,6 +981,35 @@ export default function AgendaPage() {
               <Button type="submit" className="bg-blue-600 hover:bg-blue-700">{t("save")}</Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Êtes-vous sûr de vouloir supprimer définitivement ce rendez-vous ?
+          </p>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => setDeleteConfirmOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              type="button"
+              className="bg-red-600 hover:bg-red-700"
+              onClick={async () => {
+                if (deletingId) {
+                  await deleteAppointment(deletingId);
+                  setDeletingId(null);
+                  setDeleteConfirmOpen(false);
+                }
+              }}
+            >
+              Supprimer
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

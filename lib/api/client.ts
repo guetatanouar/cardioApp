@@ -98,7 +98,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       if (isMutation) {
         console.error(`[API ERROR] ${init?.method} ${path} returned ${res.status}:`, text);
       }
-      throw new Error(text || `HTTP_${res.status}`);
+      const error = new Error(text || `HTTP_${res.status}`);
+      (error as any).status = res.status;
+      throw error;
     }
 
     return (await res.json()) as T;
