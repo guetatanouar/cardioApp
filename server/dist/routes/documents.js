@@ -1,10 +1,19 @@
 import { Router } from 'express';
-import multer from 'multer';
+import multer, { diskStorage } from 'multer';
+import path from 'path';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { requirePermission } from '../middleware/permissions.js';
 import { createNotification } from '../lib/createNotification.js';
-const upload = multer({ dest: 'uploads/' });
+const storage = diskStorage({
+    destination: 'uploads/',
+    filename: (_req, file, cb) => {
+        const ext = path.extname(file.originalname);
+        const name = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}${ext}`;
+        cb(null, name);
+    }
+});
+const upload = multer({ storage });
 export const documentsRouter = Router();
 documentsRouter.get('/:patientId', authenticateToken, requirePermission('documents'), async (req, res) => {
     try {
@@ -21,7 +30,7 @@ documentsRouter.post('/:patientId', authenticateToken, requirePermission('docume
     if (!file)
         return res.status(400).json({ message: 'No file provided' });
     const { category } = req.body;
-    const filePath = file.path;
+    const filePath = file.path.replace(/\\/g, '/');
     const name = file.originalname;
     const size = file.size ? `${(file.size / 1024).toFixed(1)} KB` : null;
     try {
