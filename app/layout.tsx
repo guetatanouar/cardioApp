@@ -18,25 +18,25 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "CareMManager - Gestion de cabinet de cardiologie",
-    template: "%s | CareMManager",
+    default: "CardioManager - Gestion de cabinet de cardiologie",
+    template: "%s | CardioManager",
   },
-  description: "CareMManager, spécialiste de la gestion de cabinet de cardiologie. Gérez vos patients, rendez-vous et prescriptions depuis une plateforme sécurisée.",
+  description: "CardioManager, spécialiste de la gestion de cabinet de cardiologie. Gérez vos patients, rendez-vous et prescriptions depuis une plateforme sécurisée.",
   robots: {
     index: true,
     follow: true,
   },
   openGraph: {
-    title: "CareMManager - Gestion de cabinet de cardiologie",
-    description: "CareMManager, spécialiste de la gestion de cabinet de cardiologie.",
+    title: "CardioManager - Gestion de cabinet de cardiologie",
+    description: "CardioManager, spécialiste de la gestion de cabinet de cardiologie.",
     type: "website",
     locale: "fr_FR",
-    siteName: "CareMManager",
+    siteName: "CardioManager",
   },
   icons: {
-    icon: "/logo-icon.svg",
-    shortcut: "/logo-icon.svg",
-    apple: "/logo-icon.svg"
+    icon: "/logo4.png",
+    shortcut: "/logo4.png",
+    apple: "/logo4.png"
   },
 };
 

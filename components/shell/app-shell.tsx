@@ -339,7 +339,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}>
           <div className="flex flex-col flex-1 min-h-0">
             <div className="p-5 border-b border-white/10">
-              <NavbarLogo href="/dashboard" inverted />
+              <NavbarLogo href="/dashboard" />
             </div>
 
             <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
