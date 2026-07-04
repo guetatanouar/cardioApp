@@ -274,7 +274,7 @@ export default function DashboardPage() {
               {t("patientAlerts")}
             </div>
 
-            <CardContent className="p-0">
+            <CardContent className="p-0 max-h-60 overflow-y-auto notif-scroll">
               {filteredAlerts.length > 0 ? (
                 filteredAlerts.map((a) => (
                   <div
