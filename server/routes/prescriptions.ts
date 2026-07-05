@@ -17,12 +17,12 @@ prescriptionsRouter.get('/', authenticateToken, requirePermission('prescriptions
 });
 
 prescriptionsRouter.post('/', authenticateToken, requirePermission('prescriptions', 'write'), async (req, res) => {
-    const { patientId, generalNotes, items } = req.body;
+    const { patientId, generalNotes, date, items } = req.body;
     const id = `rx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     try {
         await query(
             'INSERT INTO prescriptions (id, patient_id, patient_name, date, doctor_name, medications, notes) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-            [id, patientId, "Patient", new Date().toISOString().split('T')[0], (req as any).user?.name || 'Dr.', JSON.stringify(items), generalNotes]
+            [id, patientId, "Patient", date || new Date().toISOString().split('T')[0], (req as any).user?.name || 'Dr.', JSON.stringify(items), generalNotes]
         );
         const user = (req as any).user;
         const patient = await query('SELECT first_name, last_name FROM patients WHERE id = $1', [patientId]);

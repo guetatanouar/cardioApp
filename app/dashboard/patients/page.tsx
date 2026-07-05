@@ -1702,6 +1702,7 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
 }) {
   const [showNew, setShowNew] = React.useState(false);
   const [generalNotes, setGeneralNotes] = React.useState("");
+  const [prescriptionDate, setPrescriptionDate] = React.useState(new Date().toISOString().split("T")[0]);
   const [medicines, setMedicines] = React.useState([
     { name: "", dosage: "", frequency: "", duration: "", instructions: "" }
   ]);
@@ -1716,6 +1717,7 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
       body: JSON.stringify({
         patientId,
         generalNotes,
+        date: prescriptionDate,
         items: payloadItems
       })
     });
@@ -1729,6 +1731,7 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
 
     setShowNew(false);
     setGeneralNotes("");
+    setPrescriptionDate(new Date().toISOString().split("T")[0]);
     setMedicines([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
     onRefresh();
   }
@@ -1873,6 +1876,17 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
             </CardHeader>
             <CardContent>
               <form className="space-y-4" onSubmit={createPrescription}>
+                <div>
+                  <label className="text-sm">Date</label>
+                  <Input
+                    type="date"
+                    value={prescriptionDate}
+                    onChange={(e) => setPrescriptionDate(e.target.value)}
+                    className="mt-1"
+                    required
+                  />
+                </div>
+
                 <div>
                   <label className="text-sm">Medicaments</label>
                   <div className="mt-2 space-y-2">

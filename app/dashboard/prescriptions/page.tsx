@@ -24,6 +24,7 @@ export default function PrescriptionsPage() {
 
   const [showNew, setShowNew] = React.useState(false);
   const [generalNotes, setGeneralNotes] = React.useState("");
+  const [prescriptionDate, setPrescriptionDate] = React.useState(new Date().toISOString().split("T")[0]);
   const [medicines, setMedicines] = React.useState([
     { name: "", dosage: "", frequency: "", duration: "", instructions: "" }
   ]);
@@ -64,6 +65,7 @@ export default function PrescriptionsPage() {
       body: JSON.stringify({
         patientId,
         generalNotes,
+        date: prescriptionDate,
         items: payloadItems
       })
     });
@@ -78,6 +80,7 @@ export default function PrescriptionsPage() {
 
     setShowNew(false);
     setGeneralNotes("");
+    setPrescriptionDate(new Date().toISOString().split("T")[0]);
     setMedicines([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
     await load();
   }
@@ -273,6 +276,17 @@ export default function PrescriptionsPage() {
                       <option key={p.id} value={p.id}>{p.last_name} {p.first_name}</option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="text-sm">{t("date")}</label>
+                  <Input
+                    type="date"
+                    value={prescriptionDate}
+                    onChange={(e) => setPrescriptionDate(e.target.value)}
+                    className="mt-1"
+                    required
+                  />
                 </div>
 
                 <div>
