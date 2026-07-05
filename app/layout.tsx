@@ -5,7 +5,6 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/lib/i18n/client";
-import { config } from "@/lib/config";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -37,9 +36,9 @@ export const metadata: Metadata = {
     siteName: config.app.name,
   },
   icons: {
-    icon: "/logo-icon.svg",
-    shortcut: "/logo-icon.svg",
-    apple: "/logo-icon.svg"
+    icon: "/logo4.png",
+    shortcut: "/logo4.png",
+    apple: "/logo4.png"
   },
 };
 

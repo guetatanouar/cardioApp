@@ -274,6 +274,16 @@ patientsRouter.put('/:id/consultations/:consultationId', authenticateToken, requ
     }
 });
 
+patientsRouter.get('/:id/consultations', authenticateToken, async (req, res) => {
+    try {
+      const result = await query('SELECT * FROM consultations WHERE patient_id = $1 ORDER BY created_at DESC', [req.params.id]);
+      res.json({ items: result.rows });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
+    }
+  });
+
 patientsRouter.post('/:id/consultations', authenticateToken, requirePermission('consultations', 'write'), async (req, res) => {
     const { motif, ecole, examen, diagnostic, traitement, note, date } = req.body;
     const id = `c${Date.now().toString(36)}`;

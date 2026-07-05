@@ -33,6 +33,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { getDir } from "@/lib/i18n/messages";
 import { apiFetch } from "@/lib/api/client";
 import { addNotificationListener } from "@/lib/notifications";
+import NavbarLogo from "@/components/NavbarLogo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -43,7 +44,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
-type HeaderNotification = { id: string; title: string; detail: string; type?: string; is_read?: boolean };
+type HeaderNotification = { id: string; title: string; detail: string; type?: string; is_read?: boolean; patient_id?: string; related_id?: string };
 
 const allStaffNav = [
   { href: "/dashboard", icon: LayoutDashboard, labelKey: "Tableau de bord", permKey: undefined },
@@ -210,14 +211,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       title: n.title,
       detail: n.message || "",
       type: n.type,
-      is_read: n.is_read
+      is_read: n.is_read,
+      patient_id: n.patient_id,
+      related_id: n.related_id
     }));
 
     const alertRows = (summary.criticalAlerts || []).slice(0, 3).map((x) => ({
       id: `alert-${x.patient_id}`,
       title: `Alerte: ${x.last_name} ${x.first_name}`,
       detail: `${typeof x.spo2 === "number" ? `SpO2 ${x.spo2}%` : ""} ${typeof x.heart_rate === "number" ? `FC ${x.heart_rate} bpm` : ""}`.trim(),
-      type: "critical_alert"
+      type: "critical_alert",
+      patient_id: x.patient_id
     }));
 
     const urgentRows = (summary.appointmentsToday || [])
@@ -339,7 +343,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}>
           <div className="flex flex-col flex-1 min-h-0">
             <div className="p-5 border-b border-white/10">
-              <NavbarLogo href="/dashboard" inverted />
+              <NavbarLogo href="/dashboard" />
             </div>
 
             <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
@@ -440,7 +444,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       )}
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuContent align="end" className="w-80 overflow-visible">
                     <DropdownMenuLabel className="flex items-center justify-between">
                       <span>Notifications</span>
                       {totalNotif > 0 && (
@@ -450,33 +454,63 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       )}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <div className="max-h-72 overflow-auto">
-                      {notifications.length === 0 ? (
-                        <div className="px-2 py-4 text-center text-sm text-muted-foreground">Aucune notification</div>
-                      ) : (
-                        notifications.map((n: HeaderNotification) => {
-                          let Icon = Bell;
-                          if (n.type === "patient_created") Icon = UserPlus;
-                          else if (n.type === "consultation_added") Icon = Stethoscope;
-                          else if (n.type === "vitals_added") Icon = Activity;
-                          else if (n.type === "document_uploaded") Icon = FileUp;
-                          else if (n.type === "prescription_created") Icon = Pill;
-                          else if (n.type === "chat_message") Icon = MessageCircle;
-                          else if (n.type === "critical_alert") Icon = Heart;
-                          else if (n.type === "urgent_appointment") Icon = CalendarDays;
-                          return (
-                            <div key={n.id} className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2">
-                              <Icon className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
-                              <div className="min-w-0">
-                                <div className="text-sm font-medium">{n.title}</div>
-                                <div className="text-xs text-muted-foreground truncate">{n.detail}</div>
-                              </div>
+                    <div className="max-h-72 overflow-y-auto notif-scroll">
+                    {notifications.length === 0 ? (
+                      <div className="px-2 py-4 text-center text-sm text-muted-foreground">Aucune notification</div>
+                    ) : (
+                      notifications.map((n: HeaderNotification) => {
+                        let Icon = Bell;
+                        if (n.type === "patient_created") Icon = UserPlus;
+                        else if (n.type === "consultation_added") Icon = Stethoscope;
+                        else if (n.type === "vitals_added") Icon = Activity;
+                        else if (n.type === "document_uploaded") Icon = FileUp;
+                        else if (n.type === "prescription_created") Icon = Pill;
+                        else if (n.type === "chat_message") Icon = MessageCircle;
+                        else if (n.type === "critical_alert") Icon = Heart;
+                        else if (n.type === "urgent_appointment") Icon = CalendarDays;
+                        return (
+                          <div
+                            key={n.id}
+                            className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2 cursor-pointer hover:bg-accent transition-colors"
+                            onClick={() => {
+                              switch (n.type) {
+                                case "patient_created":
+                                case "vitals_added":
+                                  router.push("/dashboard/patients");
+                                  break;
+                                case "consultation_added":
+                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=consultations`);
+                                  break;
+                                case "document_uploaded":
+                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=documents`);
+                                  break;
+                                case "prescription_created":
+                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=ordonnances`);
+                                  break;
+                                case "chat_message":
+                                  router.push("/dashboard/chat");
+                                  break;
+                                case "appointment_created":
+                                case "urgent_appointment":
+                                  router.push("/dashboard/agenda");
+                                  break;
+                                case "critical_alert":
+                                  router.push("/dashboard");
+                                  break;
+                              }
+                            }}
+                          >
+                            <Icon className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium">{n.title}</div>
+                              <div className="text-xs text-muted-foreground truncate">{n.detail}</div>
                             </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </DropdownMenuContent>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </DropdownMenuContent>
                 </DropdownMenu>
                 <button
                   className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors"
