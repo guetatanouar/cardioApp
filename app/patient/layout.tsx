@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
-type HeaderNotification = { id: string; title: string; detail: string; type?: string; is_read?: boolean };
+type HeaderNotification = { id: string; title: string; detail: string; type?: string; is_read?: boolean; patient_id?: string; related_id?: string };
 
 const renderFlag = (lang: string) => {
   if (lang === "fr") {
@@ -100,7 +100,9 @@ export default function PatientLayout({
       title: n.title,
       detail: n.message || "",
       type: n.type,
-      is_read: n.is_read
+      is_read: n.is_read,
+      patient_id: n.patient_id,
+      related_id: n.related_id
     }));
     const messageRows = chatItems
       .filter((m: any) => m.sender_role !== "patient")
@@ -208,7 +210,34 @@ export default function PatientLayout({
                     else if (n.type === "critical_alert") Icon = Heart;
                     else if (n.type === "urgent_appointment") Icon = CalendarDays;
                     return (
-                      <div key={n.id} className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2">
+                      <div
+                        key={n.id}
+                        className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2 cursor-pointer hover:bg-accent transition-colors"
+                        onClick={() => {
+                          if (n.id.startsWith("notif-")) {
+                            const notifId = n.id.replace("notif-", "");
+                            apiFetch(`/api/notifications/${notifId}/read`, { method: "PUT" }).catch(() => {});
+                          }
+                          switch (n.type) {
+                            case "chat_message":
+                              router.push("/patient/chat");
+                              break;
+                            case "consultation_added":
+                            case "appointment_created":
+                              router.push("/patient/consultations");
+                              break;
+                            case "vitals_added":
+                              router.push("/patient");
+                              break;
+                            case "document_uploaded":
+                              router.push("/patient/documents");
+                              break;
+                            case "prescription_created":
+                              router.push("/patient/consultations");
+                              break;
+                          }
+                        }}
+                      >
                         <Icon className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
                         <div className="min-w-0">
                           <div className="text-sm font-medium">{n.title}</div>

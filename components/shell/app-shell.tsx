@@ -33,7 +33,6 @@ import { useI18n } from "@/lib/i18n/client";
 import { getDir } from "@/lib/i18n/messages";
 import { apiFetch } from "@/lib/api/client";
 import { addNotificationListener } from "@/lib/notifications";
-import NavbarLogo from "@/components/NavbarLogo";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -171,24 +170,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!session || isAuthRoute) return;
 
     if (session.role === "patient") {
-      const channel = `patient:${session.userId}`;
-      const chat = await apiFetch<any[] | { items: Array<{ id: string; sender_role: string; text: string; content: string; is_read: boolean }> }>(
-        `/api/chat?channel=${encodeURIComponent(channel)}`
-      );
+      const [chat, serverNotifs] = await Promise.all([
+        apiFetch<any[] | { items: Array<{ id: string; sender_role: string; text: string; content: string; is_read: boolean }> }>(
+          `/api/chat?channel=${encodeURIComponent(`patient:${session.userId}`)}`
+        ),
+        apiFetch<any[]>("/api/notifications")
+      ]);
       const chatItems = Array.isArray(chat) ? chat : (chat as any).items ?? [];
       const unread = chatItems.filter((m: any) => !m.is_read && m.sender_role !== "patient").length;
       setChatUnreadCount(unread);
-      setNotifications(
-        chatItems
-          .filter((m: any) => m.sender_role !== "patient")
-          .slice(-5)
-          .reverse()
-          .map((m: any) => ({
-            id: m.id,
-            title: "Nouveau message",
-            detail: m.text || m.content || ""
-          }))
-      );
+
+      const notifRows = (serverNotifs || []).slice(0, 5).map((n: any) => ({
+        id: `notif-${n.id}`,
+        title: n.title,
+        detail: n.message || ""
+      }));
+
+      const chatNotifs = chatItems
+        .filter((m: any) => m.sender_role !== "patient")
+        .slice(-5)
+        .reverse()
+        .map((m: any) => ({
+          id: m.id,
+          title: "Nouveau message",
+          detail: m.text || m.content || ""
+        }));
+
+      setNotifications([...notifRows, ...chatNotifs]);
       return;
     }
 
@@ -473,30 +481,57 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             key={n.id}
                             className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2 cursor-pointer hover:bg-accent transition-colors"
                             onClick={() => {
-                              switch (n.type) {
-                                case "patient_created":
-                                case "vitals_added":
-                                  router.push("/dashboard/patients");
-                                  break;
-                                case "consultation_added":
-                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=consultations`);
-                                  break;
-                                case "document_uploaded":
-                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=documents`);
-                                  break;
-                                case "prescription_created":
-                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=ordonnances`);
-                                  break;
-                                case "chat_message":
-                                  router.push("/dashboard/chat");
-                                  break;
-                                case "appointment_created":
-                                case "urgent_appointment":
-                                  router.push("/dashboard/agenda");
-                                  break;
-                                case "critical_alert":
-                                  router.push("/dashboard");
-                                  break;
+                              if (isPatientRoute) {
+                                switch (n.type) {
+                                  case "vitals_added":
+                                  case "critical_alert":
+                                    router.push("/patient");
+                                    break;
+                                  case "consultation_added":
+                                  case "appointment_created":
+                                  case "urgent_appointment":
+                                    router.push("/patient/consultations");
+                                    break;
+                                  case "document_uploaded":
+                                    router.push("/patient/documents");
+                                    break;
+                                  case "prescription_created":
+                                    router.push("/patient/profile");
+                                    break;
+                                  case "chat_message":
+                                    router.push("/patient/chat");
+                                    break;
+                                  default:
+                                    router.push("/patient");
+                                }
+                              } else {
+                                switch (n.type) {
+                                  case "patient_created":
+                                    router.push(`/dashboard/patients?patientId=${n.patient_id || ""}`);
+                                    break;
+                                  case "vitals_added":
+                                    router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=vitals`);
+                                    break;
+                                  case "consultation_added":
+                                    router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=consultations`);
+                                    break;
+                                  case "document_uploaded":
+                                    router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=documents`);
+                                    break;
+                                  case "prescription_created":
+                                    router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=ordonnances`);
+                                    break;
+                                  case "chat_message":
+                                    router.push("/dashboard/chat");
+                                    break;
+                                  case "appointment_created":
+                                  case "urgent_appointment":
+                                    router.push("/dashboard/agenda");
+                                    break;
+                                  case "critical_alert":
+                                    router.push("/dashboard");
+                                    break;
+                                }
                               }
                             }}
                           >
@@ -593,7 +628,47 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         else if (n.type === "critical_alert") Icon = Heart;
                         else if (n.type === "urgent_appointment") Icon = CalendarDays;
                         return (
-                          <div key={n.id} className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2">
+                          <div
+                            key={n.id}
+                            className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2 cursor-pointer hover:bg-accent transition-colors"
+                            onClick={() => {
+                              if (n.id.startsWith("notif-")) {
+                                const notifId = n.id.replace("notif-", "");
+                                apiFetch(`/api/notifications/${notifId}/read`, { method: "PUT" }).catch(() => {});
+                              }
+                              switch (n.type) {
+                                case "patient_created":
+                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}`);
+                                  break;
+                                case "vitals_added":
+                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=vitals`);
+                                  break;
+                                case "consultation_added":
+                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=consultations`);
+                                  break;
+                                case "document_uploaded":
+                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=documents`);
+                                  break;
+                                case "prescription_created":
+                                  router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=ordonnances`);
+                                  break;
+                                case "chat_message":
+                                  if (n.patient_id) {
+                                    router.push(`/dashboard/chat?patientId=${n.patient_id}`);
+                                  } else {
+                                    router.push("/dashboard/chat");
+                                  }
+                                  break;
+                                case "appointment_created":
+                                case "urgent_appointment":
+                                  router.push("/dashboard/agenda");
+                                  break;
+                                case "critical_alert":
+                                  router.push("/dashboard");
+                                  break;
+                              }
+                            }}
+                          >
                             <Icon className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
                             <div className="min-w-0">
                               <div className="text-sm font-medium">{n.title}</div>

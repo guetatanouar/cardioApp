@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/lib/i18n/client";
+import { config } from "@/lib/config";
 
 const inter = Inter({
   subsets: ["latin"],

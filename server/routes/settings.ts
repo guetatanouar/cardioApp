@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { query } from '../db/pool.js';
 import { authenticateToken } from '../middleware/auth.js';
 import bcrypt from 'bcryptjs';
+import emailService from '../lib/emailservices.js';
+import { emailTemplates } from '../lib/emailTemplates.js';
 
 export const settingsRouter = Router();
 
@@ -147,6 +149,44 @@ settingsRouter.post('/patient-accounts', async (req, res) => {
              ON CONFLICT (patient_id) DO UPDATE SET username = $2, password_hash = $3, is_active = TRUE`,
             [patientId, username, hashed]
         );
+
+        // Send welcome emails (non-blocking)
+        try {
+            const patientResult = await query(
+                'SELECT first_name, last_name, email FROM patients WHERE id = $1',
+                [patientId]
+            );
+
+            if (patientResult.rows.length > 0) {
+                const patient = patientResult.rows[0];
+                const appName = process.env.NEXT_SHORT_WEBSITE || 'CardioManager';
+                const senderEmail = process.env.EMAIL_SENDER || 'noreply@cardiomanager.fr';
+
+                // Send welcome email to patient
+                if (patient.email) {
+                    await emailService.sendEmail({
+                        to: patient.email,
+                        from: { email: senderEmail, name: appName },
+                        subject: `Bienvenue sur ${appName}`,
+                        html: emailTemplates.welcomePatientClient(patient.first_name, username, password)
+                    });
+                }
+
+                // Send notification to admin
+                const adminEmail = process.env.ADMIN_EMAIL;
+                if (adminEmail) {
+                    await emailService.sendEmail({
+                        to: adminEmail,
+                        from: { email: senderEmail, name: appName },
+                        subject: `Nouveau patient créé - ${patient.first_name} ${patient.last_name}`,
+                        html: emailTemplates.welcomePatientAdmin(patient.first_name, patient.last_name, patient.email, username)
+                    });
+                }
+            }
+        } catch (emailError) {
+            console.error('Error sending welcome email:', emailError);
+        }
+
         res.json({ success: true });
     } catch (error: any) {
         console.error('Error creating patient account:', error);

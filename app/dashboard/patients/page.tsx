@@ -294,10 +294,22 @@ export default function PatientsPage() {
 
   React.useEffect(() => {
     const initial = searchParams.get("q") ?? "";
+    const patientId = searchParams.get("patientId");
     setQ(initial);
     setPage(1);
     load(initial, 1).catch(() => undefined);
+    if (patientId) {
+      setSelectedId(patientId);
+    }
   }, [searchParams]);
+
+  React.useEffect(() => {
+    if (!selectedId) return;
+    const urlTab = searchParams.get("tab") as "dossier" | "consultations" | "vitals" | "documents" | "messages" | "access" | "ordonnances" | null;
+    if (urlTab) {
+      setTab(urlTab);
+    }
+  }, [selectedId, searchParams]);
 
   const filteredItems = (items || []).filter((p) => {
     if (pathologyFilter.trim() && !(p.pathology ?? "").toLowerCase().includes(pathologyFilter.trim().toLowerCase())) return false;

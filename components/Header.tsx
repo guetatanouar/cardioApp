@@ -3,10 +3,18 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
+  Activity,
   Bell,
+  CalendarDays,
+  FileUp,
+  Heart,
+  MessageCircle,
   Moon,
+  Pill,
   Search,
+  Stethoscope,
   Sun,
+  UserPlus,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -26,7 +34,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
-type HeaderNotification = { id: string; title: string; detail: string };
+type HeaderNotification = { id: string; title: string; detail: string; type?: string; patient_id?: string; related_id?: string };
 
 type ChatMessage = { id: string; content?: string; is_read: boolean; sender_role?: string; sender_id?: string };
 
@@ -62,7 +70,8 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
             .map((m: ChatMessage) => ({
               id: m.id,
               title: "Nouveau message",
-              detail: m.content || ""
+              detail: m.content || "",
+              type: "chat_message"
             }))
         );
         return;
@@ -83,13 +92,16 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
       const alertRows = (summary.criticalAlerts || []).slice(0, 3).map((x) => ({
         id: `alert-${x.patient_id}`,
         title: `Alerte: ${x.last_name} ${x.first_name}`,
-        detail: `${typeof x.spo2 === "number" ? `SpO2 ${x.spo2}%` : ""} ${typeof x.heart_rate === "number" ? `FC ${x.heart_rate} bpm` : ""}`.trim()
+        detail: `${typeof x.spo2 === "number" ? `SpO2 ${x.spo2}%` : ""} ${typeof x.heart_rate === "number" ? `FC ${x.heart_rate} bpm` : ""}`.trim(),
+        type: "critical_alert",
+        patient_id: x.patient_id
       }));
 
       const messageRows = unreadMessages.slice(-3).reverse().map((m: ChatMessage) => ({
         id: `msg-${m.id}`,
         title: `Message de ${m.sender_role === "admin" ? "Dr. Tremblay" : "Secrétaire"}`,
-        detail: (m.content || "").substring(0, 50)
+        detail: (m.content || "").substring(0, 50),
+        type: "chat_message"
       }));
 
       const urgentRows = (summary.appointmentsToday || [])
@@ -98,7 +110,8 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
         .map((a) => ({
           id: `rdv-${a.id}`,
           title: `RDV urgent: ${a.last_name} ${a.first_name}`,
-          detail: new Date(a.starts_at).toLocaleTimeString()
+          detail: new Date(a.starts_at).toLocaleTimeString(),
+          type: "urgent_appointment"
         }));
 
       setNotifications([...alertRows, ...messageRows, ...urgentRows]);
@@ -209,12 +222,84 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
               {notifications.length === 0 ? (
                 <div className="p-4 text-center text-xs text-muted-foreground">Aucune notification</div>
               ) : (
-                notifications.map((n) => (
-                  <div key={n.id} className="p-3 hover:bg-muted/50 transition-colors border-b last:border-0">
-                    <div className="text-xs font-semibold">{n.title}</div>
-                    <div className="text-[10px] text-muted-foreground mt-1">{n.detail}</div>
-                  </div>
-                ))
+                notifications.map((n: HeaderNotification) => {
+                  let Icon = Bell;
+                  if (n.type === "patient_created") Icon = UserPlus;
+                  else if (n.type === "consultation_added") Icon = Stethoscope;
+                  else if (n.type === "vitals_added") Icon = Activity;
+                  else if (n.type === "document_uploaded") Icon = FileUp;
+                  else if (n.type === "prescription_created") Icon = Pill;
+                  else if (n.type === "chat_message") Icon = MessageCircle;
+                  else if (n.type === "critical_alert") Icon = Heart;
+                  else if (n.type === "urgent_appointment") Icon = CalendarDays;
+                  return (
+                    <div
+                      key={n.id}
+                      className="p-3 hover:bg-muted/50 transition-colors border-b last:border-0 cursor-pointer flex items-start gap-2"
+                      onClick={() => {
+                        if (n.id.startsWith("notif-")) {
+                          const notifId = n.id.replace("notif-", "");
+                          apiFetch(`/api/notifications/${notifId}/read`, { method: "PUT" }).catch(() => {});
+                        }
+                        if (session?.role === "patient") {
+                          switch (n.type) {
+                            case "chat_message":
+                              router.push("/patient/chat");
+                              break;
+                            case "consultation_added":
+                            case "appointment_created":
+                              router.push("/patient/consultations");
+                              break;
+                            case "vitals_added":
+                              router.push("/patient");
+                              break;
+                            case "document_uploaded":
+                              router.push("/patient/documents");
+                              break;
+                          }
+                        } else {
+                          switch (n.type) {
+                            case "patient_created":
+                              router.push(`/dashboard/patients?patientId=${n.patient_id || ""}`);
+                              break;
+                            case "vitals_added":
+                              router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=vitals`);
+                              break;
+                            case "consultation_added":
+                              router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=consultations`);
+                              break;
+                            case "document_uploaded":
+                              router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=documents`);
+                              break;
+                            case "prescription_created":
+                              router.push(`/dashboard/patients?patientId=${n.patient_id || ""}&tab=ordonnances`);
+                              break;
+                            case "chat_message":
+                              if (n.patient_id) {
+                                router.push(`/dashboard/chat?patientId=${n.patient_id}`);
+                              } else {
+                                router.push("/dashboard/chat");
+                              }
+                              break;
+                            case "appointment_created":
+                            case "urgent_appointment":
+                              router.push("/dashboard/agenda");
+                              break;
+                            case "critical_alert":
+                              router.push("/dashboard");
+                              break;
+                          }
+                        }
+                      }}
+                    >
+                      <Icon className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold">{n.title}</div>
+                        <div className="text-[10px] text-muted-foreground mt-1">{n.detail}</div>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </DropdownMenuContent>
