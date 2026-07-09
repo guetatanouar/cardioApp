@@ -342,24 +342,23 @@ async function seed() {
 
         // ── NOTIFICATIONS ─────────────────────────────────────────────────────
 
-        const notifs: Array<[string, string, string, string, string, string, string, boolean, string]> = [
-            ['', 'critical_alert', 'Alerte - Robert Ouellet', 'SpO2 à 88%, FC 95 bpm. Patient instable.', 'Dr. Étienne Tremblay', 'admin', 'p6', 'false', ago('4 hours')],
-            ['', 'vitals_added', 'Nouveaux signes vitaux - Robert Ouellet', 'TA 160/100, saturation 88%', 'Infirmière', 'secretaire', 'p6', 'false', ago('4 hours')],
-            ['', 'appointment_created', 'Rendez-vous urgent - Robert Ouellet', 'Dyspnée aiguë à 14h00', 'Marie-Claude Gagnon', 'secretaire', 'p6', 'false', ago('2 hours')],
-            ['', 'patient_created', 'Nouveau patient - James MacDonald', 'Hypercholestérolémie familiale', 'Marie-Claude Gagnon', 'secretaire', 'p8', 'true', ago('3 days')],
-            ['', 'patient_created', 'Nouveau patient - Catherine Lavoie', 'Souffle cardiaque à explorer', 'Marie-Claude Gagnon', 'secretaire', 'p9', 'true', ago('5 days')],
-            ['', 'consultation_added', 'Consultation - Catherine Lavoie', 'Prolapsus mitral diagnostiqué', 'Dr. Étienne Tremblay', 'admin', 'p9', 'true', ago('4 days')],
-            ['', 'vitals_added', 'Nouveaux signes vitaux - Michel Leblanc', 'TA 155/95, FC 112, saturation 91%', 'Infirmière', 'secretaire', 'p3', 'false', ago('5 hours')],
-            ['', 'prescription_created', 'Ordonnance créée - Nathalie Pelletier', 'Metformine + Zestril', 'Dr. Étienne Tremblay', 'admin', 'p7', 'true', ago('1 day')],
-            ['', 'chat_message', 'Nouveau message - Sylvie Roy', 'Mon pouls était à 100 BPM ce matin', 'Sylvie Roy', 'patient', 'p2', 'false', ago('5 hours')],
-            ['', 'chat_message', 'Nouveau message - Michel Leblanc', 'Douleur à la poitrine en montant les escaliers', 'Michel Leblanc', 'patient', 'p3', 'false', ago('3 hours')],
+        const notifs: Array<{ type: string; title: string; message: string; actor_name: string; actor_role: string; patient_id: string; is_read: boolean; created_at: string }> = [
+            { type: 'critical_alert', title: 'Alerte - Robert Ouellet', message: 'SpO2 à 88%, FC 95 bpm. Patient instable.', actor_name: 'Dr. Étienne Tremblay', actor_role: 'admin', patient_id: 'p6', is_read: false, created_at: ago('4 hours') },
+            { type: 'vitals_added', title: 'Nouveaux signes vitaux - Robert Ouellet', message: 'TA 160/100, saturation 88%', actor_name: 'Infirmière', actor_role: 'secretaire', patient_id: 'p6', is_read: false, created_at: ago('4 hours') },
+            { type: 'appointment_created', title: 'Rendez-vous urgent - Robert Ouellet', message: 'Dyspnée aiguë à 14h00', actor_name: 'Marie-Claude Gagnon', actor_role: 'secretaire', patient_id: 'p6', is_read: false, created_at: ago('2 hours') },
+            { type: 'patient_created', title: 'Nouveau patient - James MacDonald', message: 'Hypercholestérolémie familiale', actor_name: 'Marie-Claude Gagnon', actor_role: 'secretaire', patient_id: 'p8', is_read: true, created_at: ago('3 days') },
+            { type: 'patient_created', title: 'Nouveau patient - Catherine Lavoie', message: 'Souffle cardiaque à explorer', actor_name: 'Marie-Claude Gagnon', actor_role: 'secretaire', patient_id: 'p9', is_read: true, created_at: ago('5 days') },
+            { type: 'consultation_added', title: 'Consultation - Catherine Lavoie', message: 'Prolapsus mitral diagnostiqué', actor_name: 'Dr. Étienne Tremblay', actor_role: 'admin', patient_id: 'p9', is_read: true, created_at: ago('4 days') },
+            { type: 'vitals_added', title: 'Nouveaux signes vitaux - Michel Leblanc', message: 'TA 155/95, FC 112, saturation 91%', actor_name: 'Infirmière', actor_role: 'secretaire', patient_id: 'p3', is_read: false, created_at: ago('5 hours') },
+            { type: 'prescription_created', title: 'Ordonnance créée - Nathalie Pelletier', message: 'Metformine + Zestril', actor_name: 'Dr. Étienne Tremblay', actor_role: 'admin', patient_id: 'p7', is_read: true, created_at: ago('1 day') },
+            { type: 'chat_message', title: 'Nouveau message - Sylvie Roy', message: 'Mon pouls était à 100 BPM ce matin', actor_name: 'Sylvie Roy', actor_role: 'patient', patient_id: 'p2', is_read: false, created_at: ago('5 hours') },
+            { type: 'chat_message', title: 'Nouveau message - Michel Leblanc', message: 'Douleur à la poitrine en montant les escaliers', actor_name: 'Michel Leblanc', actor_role: 'patient', patient_id: 'p3', is_read: false, created_at: ago('3 hours') },
         ];
         for (const n of notifs) {
             await query(
                 `INSERT INTO notifications (type, title, message, actor_name, actor_role, patient_id, is_read, created_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                 RETURNING id`,
-                [n[1], n[2], n[3], n[4], n[5], n[6], n[7] === 'true', n[8]]
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [n.type, n.title, n.message, n.actor_name, n.actor_role, n.patient_id, n.is_read, n.created_at]
             );
         }
 
