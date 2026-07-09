@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { Eye } from "lucide-react";
 import { apiFetch, apiUpload } from "@/lib/api/client";
 import { getSession } from "@/lib/auth/storage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PatientHeader } from "@/components/patient/patient-header";
+import { DocumentPreview } from "@/components/ui/document-preview";
 
 export default function PatientDocumentsPage() {
   const session = typeof window !== "undefined" ? getSession() : null;
@@ -14,6 +16,7 @@ export default function PatientDocumentsPage() {
   const [items, setItems] = React.useState<any[]>([]);
   const [file, setFile] = React.useState<File | null>(null);
   const [category, setCategory] = React.useState("analyse");
+  const [previewDoc, setPreviewDoc] = React.useState<{ file_path: string; name: string } | null>(null);
 
   async function load() {
     if (!patientId) return;
@@ -64,15 +67,39 @@ export default function PatientDocumentsPage() {
               <div className="divide-y divide-border">
                 {items.map((d) => (
                   <div key={d.id} className="flex items-center justify-between gap-3 py-3">
-                    <div>
-                      <a className="text-sm underline" href={`http://localhost:4000/${d.file_path}`} target="_blank" rel="noreferrer">{d.name}</a>
+                    <div className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewDoc({ file_path: d.file_path, name: d.name })}
+                        className="text-sm underline hover:text-blue-600 text-left"
+                      >
+                        {d.name}
+                      </button>
                       <div className="text-xs text-muted-foreground">{d.category} — {d.size}</div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => remove(d.id)}>Delete</Button>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setPreviewDoc({ file_path: d.file_path, name: d.name })}
+                        className="gap-1"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Aperçu
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => remove(d.id)}>Delete</Button>
+                    </div>
                   </div>
                 ))}
                 {items.length === 0 ? <div className="py-8 text-sm text-muted-foreground">Empty</div> : null}
               </div>
+
+              <DocumentPreview
+                open={!!previewDoc}
+                onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+                filePath={previewDoc?.file_path || ""}
+                fileName={previewDoc?.name || ""}
+              />
             </CardContent>
           </Card>
         </div>
