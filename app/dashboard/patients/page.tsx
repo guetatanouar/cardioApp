@@ -971,7 +971,7 @@ export default function PatientsPage() {
                   {detail?.patient ? `${detail.patient.last_name} ${detail.patient.first_name}` : "Fiche patient"}
                 </DialogTitle>
                 {detail?.patient && !editMode && !showDeleteConfirm ? (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 mr-10">
                     <Button type="button" variant="secondary" size="sm" onClick={startEdit}>Modifier</Button>
                     <Button type="button" variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)}>Supprimer</Button>
                   </div>
@@ -1920,39 +1920,80 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
   prescriptions: any[];
   onRefresh: () => void;
 }) {
-  const [showNew, setShowNew] = React.useState(false);
+  const [showForm, setShowForm] = React.useState(false);
+  const [editingPrescription, setEditingPrescription] = React.useState<any | null>(null);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [generalNotes, setGeneralNotes] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
   const [medicines, setMedicines] = React.useState([
     { name: "", dosage: "", frequency: "", duration: "", instructions: "" }
   ]);
 
-  async function createPrescription(e: React.FormEvent) {
+  function resetForm() {
+    setShowForm(false);
+    setEditingPrescription(null);
+    setGeneralNotes("");
+    setMedicines([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
+  }
+
+  function openNewForm() {
+    setEditingPrescription(null);
+    setGeneralNotes("");
+    setMedicines([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
+    setShowForm(true);
+  }
+
+  function openEditForm(p: any) {
+    const meds = typeof p.medications === 'string' ? JSON.parse(p.medications) : (p.medications || []);
+    setEditingPrescription(p);
+    setGeneralNotes(p.general_notes || "");
+    setMedicines(meds.length > 0 ? meds.map((m: any) => ({ name: m.name, dosage: m.dosage, frequency: m.frequency, duration: m.duration, instructions: m.instructions || "" })) : [{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
+    setShowForm(true);
+  }
+
+  async function savePrescription(e: React.FormEvent) {
     e.preventDefault();
     const payloadItems = medicines.filter((m) => m.name && m.dosage && m.frequency && m.duration);
     if (payloadItems.length === 0) return;
 
-    await apiFetch("/api/prescriptions", {
-      method: "POST",
-      body: JSON.stringify({
-        patientId,
-        generalNotes,
-        items: payloadItems
-      })
-    });
-
-    dispatchNotification({
-      id: `presc-${Date.now()}`,
-      title: "Ordonnance créée",
-      detail: `Pour ${patient?.last_name || ""} ${patient?.first_name || ""}`,
-      type: "success"
-    });
-
-    setShowNew(false);
-    setGeneralNotes("");
-    setMedicines([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
-    onRefresh();
+    setSaving(true);
+    try {
+      if (editingPrescription) {
+        await apiFetch(`/api/prescriptions/${editingPrescription.id}`, {
+          method: "PUT",
+          body: JSON.stringify({ generalNotes, items: payloadItems })
+        });
+        dispatchNotification({
+          id: `presc-upd-${Date.now()}`,
+          title: "Ordonnance modifiée",
+          detail: `Pour ${patient?.last_name || ""} ${patient?.first_name || ""}`,
+          type: "success"
+        });
+      } else {
+        await apiFetch("/api/prescriptions", {
+          method: "POST",
+          body: JSON.stringify({ patientId, generalNotes, items: payloadItems })
+        });
+        dispatchNotification({
+          id: `presc-${Date.now()}`,
+          title: "Ordonnance créée",
+          detail: `Pour ${patient?.last_name || ""} ${patient?.first_name || ""}`,
+          type: "success"
+        });
+      }
+      resetForm();
+      onRefresh();
+    } catch {
+      dispatchNotification({
+        id: `presc-err-${Date.now()}`,
+        title: "Erreur",
+        detail: "Impossible de sauvegarder l'ordonnance",
+        type: "error"
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   function addMedicine() {
@@ -2033,19 +2074,90 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Ordonnances</h2>
-        <Button size="sm" onClick={() => setShowNew(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nouvelle ordonnance
-        </Button>
+        {!showForm && (
+          <Button size="sm" onClick={openNewForm}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle ordonnance
+          </Button>
+        )}
       </div>
 
+      {showForm && (
+        <Card className="border-primary/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{editingPrescription ? "Modifier l'ordonnance" : "Nouvelle ordonnance"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={savePrescription}>
+              <div>
+                <label className="text-sm font-medium">Medicaments</label>
+                <div className="mt-2 space-y-2">
+                  {medicines.map((med, i) => (
+                    <div key={i} className="grid gap-2 grid-cols-5">
+                      <Input
+                        placeholder="Nom"
+                        value={med.name}
+                        onChange={(e) => updateMedicine(i, "name", e.target.value)}
+                        required
+                      />
+                      <Input
+                        placeholder="Dosage"
+                        value={med.dosage}
+                        onChange={(e) => updateMedicine(i, "dosage", e.target.value)}
+                        required
+                      />
+                      <Input
+                        placeholder="Frequence"
+                        value={med.frequency}
+                        onChange={(e) => updateMedicine(i, "frequency", e.target.value)}
+                        required
+                      />
+                      <Input
+                        placeholder="Duree"
+                        value={med.duration}
+                        onChange={(e) => updateMedicine(i, "duration", e.target.value)}
+                        required
+                      />
+                      {medicines.length > 1 && (
+                        <Button type="button" variant="ghost" size="sm" onClick={() => removeMedicine(i)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button type="button" variant="outline" size="sm" onClick={addMedicine}>
+                    <Plus className="mr-1 h-4 w-4" />
+                    Ajouter medicament
+                  </Button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium">Notes generales</label>
+                <Input
+                  value={generalNotes}
+                  onChange={(e) => setGeneralNotes(e.target.value)}
+                  placeholder="Notes additionnelles..."
+                />
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={resetForm} disabled={saving}>Annuler</Button>
+                <Button type="submit" disabled={saving}>{saving ? "Sauvegarde..." : editingPrescription ? "Modifier" : "Creer ordonnance"}</Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
-        <CardContent>
+        <CardContent className="max-h-[360px] overflow-y-auto">
           <div className="space-y-3">
             {(prescriptions || []).map((p) => {
               const meds = typeof p.medications === 'string' ? JSON.parse(p.medications) : (p.medications || []);
+              const isEditing = editingPrescription?.id === p.id;
               return (
-                <div key={p.id} className="flex items-center justify-between rounded-lg border border-border p-4">
+                <div key={p.id} className={`flex items-center justify-between rounded-lg border p-4 ${isEditing ? "border-primary" : "border-border"}`}>
                   <div className="flex items-center gap-3">
                     <FileText className="h-8 w-8 text-primary" />
                     <div>
@@ -2060,6 +2172,9 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
                       <Download className="mr-1 h-4 w-4" />
                       PDF
                     </Button>
+                    <Button variant="ghost" size="sm" onClick={() => openEditForm(p)}>
+                      Modifier
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -2072,7 +2187,7 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
                 </div>
               );
             })}
-            {(prescriptions || []).length === 0 && (
+            {(prescriptions || []).length === 0 && !showForm && (
               <div className="py-8 text-center text-sm text-muted-foreground">
                 Aucune ordonnance
               </div>
@@ -2080,76 +2195,6 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
           </div>
         </CardContent>
       </Card>
-
-      {showNew && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader>
-              <CardTitle>Nouvelle ordonnance</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-4" onSubmit={createPrescription}>
-                <div>
-                  <label className="text-sm">Medicaments</label>
-                  <div className="mt-2 space-y-2">
-                    {medicines.map((med, i) => (
-                      <div key={i} className="grid gap-2 md:grid-cols-5">
-                        <Input
-                          placeholder="Nom"
-                          value={med.name}
-                          onChange={(e) => updateMedicine(i, "name", e.target.value)}
-                          required
-                        />
-                        <Input
-                          placeholder="Dosage"
-                          value={med.dosage}
-                          onChange={(e) => updateMedicine(i, "dosage", e.target.value)}
-                          required
-                        />
-                        <Input
-                          placeholder="Frequence"
-                          value={med.frequency}
-                          onChange={(e) => updateMedicine(i, "frequency", e.target.value)}
-                          required
-                        />
-                        <Input
-                          placeholder="Duree"
-                          value={med.duration}
-                          onChange={(e) => updateMedicine(i, "duration", e.target.value)}
-                          required
-                        />
-                        {medicines.length > 1 && (
-                          <Button type="button" variant="ghost" size="sm" onClick={() => removeMedicine(i)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <Button type="button" variant="outline" size="sm" onClick={addMedicine}>
-                      <Plus className="mr-1 h-4 w-4" />
-                      Ajouter medicament
-                    </Button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm">Notes generales</label>
-                  <Input
-                    value={generalNotes}
-                    onChange={(e) => setGeneralNotes(e.target.value)}
-                    placeholder="Notes additionnelles..."
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setShowNew(false)}>Annuler</Button>
-                  <Button type="submit">Creer ordonnance</Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       <ConfirmDialog
         open={confirmDeleteId !== null}

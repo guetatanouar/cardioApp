@@ -5,14 +5,17 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
-dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env') });
 
-console.log('DATABASE_URL:', process.env.DATABASE_URL);
+const url = process.env.DATABASE_URL;
+if (!url) {
+  console.error('DATABASE_URL not set');
+  process.exit(1);
+}
 
 const { Pool } = pg;
 
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: url,
 });
 
 export const query = (text: string, params?: any[]) => {

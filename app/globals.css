@@ -41,6 +41,8 @@
   --border: var(--gray-200);
   --input: var(--gray-200);
   --ring: var(--primary-blue);
+  --destructive: var(--primary-red);
+  --destructive-foreground: 0 0% 100%;
   --radius: 16px;
 }
 
@@ -62,6 +64,8 @@
   --border: 217 20% 25%;
   --input: 217 20% 25%;
   --ring: var(--primary-blue);
+  --destructive: var(--primary-red);
+  --destructive-foreground: 0 0% 100%;
 }
 
 .theme-blue {

@@ -15,20 +15,20 @@ const NavbarLogo = ({ href = "/", inverted = false, iconOnly = false }: NavbarLo
         <Image
           src={logo}
           alt="CardioManager"
-          className={`h-9 w-auto ${inverted ? "invert brightness-0" : ""}`}
+          className={`h-9 w-auto shrink-0 ${inverted ? "invert brightness-0" : ""}`}
         />
       </Link>
     );
   }
   return (
-    <div className={`flex items-center ${inverted ? "invert brightness-0" : ""}`}>
+    <div className="flex items-center">
       <Link href={href} className="flex items-center gap-2">
         <Image
           src={logo}
           alt="CardioManager"
           className="h-9 w-auto shrink-0"
         />
-        <span className="text-lg font-extrabold tracking-tight text-slate-800">Cardio<span className="font-normal text-slate-500">Manager</span></span>
+        <span className={`text-lg font-extrabold tracking-tight ${inverted ? "text-white" : "text-slate-800"}`}>Cardio<span className={`font-normal ${inverted ? "text-white/80" : "text-slate-500"}`}>Manager</span></span>
       </Link>
     </div>
   );

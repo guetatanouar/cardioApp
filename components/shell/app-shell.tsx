@@ -165,6 +165,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [notifications, setNotifications] = React.useState<HeaderNotification[]>([]);
   const [chatUnreadCount, setChatUnreadCount] = React.useState(0);
+  const patientNotifRef = React.useRef<HTMLDivElement>(null);
+  const staffNotifRef = React.useRef<HTMLDivElement>(null);
 
   async function refreshHeaderData() {
     if (!session || isAuthRoute) return;
@@ -351,7 +353,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}>
           <div className="flex flex-col flex-1 min-h-0">
             <div className="p-5 border-b border-white/10">
-              <NavbarLogo href="/dashboard" />
+              <NavbarLogo href="/dashboard" inverted />
             </div>
 
             <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
@@ -462,11 +464,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       )}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <div className="max-h-72 overflow-y-auto notif-scroll">
+                    <div ref={patientNotifRef} className="max-h-72 overflow-y-auto notif-scroll">
                     {notifications.length === 0 ? (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">Aucune notification</div>
                     ) : (
-                      notifications.map((n: HeaderNotification) => {
+                      [...notifications].sort((a, b) => {
+                        if (!a.is_read && b.is_read) return -1;
+                        if (a.is_read && !b.is_read) return 1;
+                        return 0;
+                      }).map((n: HeaderNotification) => {
                         let Icon = Bell;
                         if (n.type === "patient_created") Icon = UserPlus;
                         else if (n.type === "consultation_added") Icon = Stethoscope;
@@ -481,6 +487,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             key={n.id}
                             className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2 cursor-pointer hover:bg-accent transition-colors"
                             onClick={() => {
+                              setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, is_read: true } : item));
+                              setTimeout(() => { patientNotifRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 50);
                               if (isPatientRoute) {
                                 switch (n.type) {
                                   case "vitals_added":
@@ -559,15 +567,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
           {!isPatientRoute && (
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/50 bg-background/95 px-6 backdrop-blur">
-            {/* Left side: Logo + Page Title and Subtitle */}
+            {/* Left side: Page Title and Subtitle */}
             <div className="flex items-center gap-4">
-              <div className="hidden sm:flex">
-                <NavbarLogo href="/dashboard" />
-              </div>
-              <div className="flex sm:hidden">
-                <NavbarLogo href="/dashboard" iconOnly />
-              </div>
-              <div className="hidden sm:block w-px h-8 bg-border/60" />
               <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
                 <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">{headerInfo.title}</h1>
                 <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-medium leading-none">{headerInfo.subtitle}</span>
@@ -613,11 +614,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     )}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <div className="max-h-72 overflow-auto">
+                  <div ref={staffNotifRef} className="max-h-72 overflow-auto">
                     {notifications.length === 0 ? (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">Aucune notification</div>
                     ) : (
-                      notifications.map((n: HeaderNotification) => {
+                      [...notifications].sort((a, b) => {
+                        if (!a.is_read && b.is_read) return -1;
+                        if (a.is_read && !b.is_read) return 1;
+                        return 0;
+                      }).map((n: HeaderNotification) => {
                         let Icon = Bell;
                         if (n.type === "patient_created") Icon = UserPlus;
                         else if (n.type === "consultation_added") Icon = Stethoscope;
@@ -632,6 +637,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             key={n.id}
                             className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2 cursor-pointer hover:bg-accent transition-colors"
                             onClick={() => {
+                              setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, is_read: true } : item));
+                              setTimeout(() => { staffNotifRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 50);
                               if (n.id.startsWith("notif-")) {
                                 const notifId = n.id.replace("notif-", "");
                                 apiFetch(`/api/notifications/${notifId}/read`, { method: "PUT" }).catch(() => {});
