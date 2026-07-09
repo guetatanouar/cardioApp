@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useI18n } from "@/lib/i18n/client";
 import { usePagePermission } from "@/lib/auth/usePermissions";
+import { DocumentPreview } from "@/components/ui/document-preview";
 import {
   Microscope,
   Upload,
@@ -19,7 +20,8 @@ import {
   Clock,
   ChevronDown,
   ChevronUp,
-  Loader2
+  Loader2,
+  Eye
 } from "lucide-react";
 
 type PatientDoc = {
@@ -68,6 +70,7 @@ export default function AnalysePage() {
   const [analyzingPatient, setAnalyzingPatient] = React.useState<string | null>(null);
   const [uploading, setUploading] = React.useState(false);
   const [uploadReport, setUploadReport] = React.useState<Report | null>(null);
+  const [previewDoc, setPreviewDoc] = React.useState<PatientDoc | null>(null);
 
   async function loadData() {
     setLoading(true);
@@ -503,15 +506,24 @@ export default function AnalysePage() {
                           key={doc.id}
                           className="flex items-center justify-between rounded-lg border p-2.5"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
                             <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                            <div>
-                              <p className="text-sm font-medium">{doc.name}</p>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{doc.name}</p>
                               <p className="text-xs text-muted-foreground">
                                 {doc.category} &middot; {new Date(doc.created_at).toLocaleDateString()}
                               </p>
                             </div>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPreviewDoc(doc)}
+                            className="gap-1 flex-shrink-0"
+                          >
+                            <Eye className="h-4 w-4" />
+                            Aperçu
+                          </Button>
                         </div>
                       ))}
                     </div>
@@ -522,6 +534,13 @@ export default function AnalysePage() {
           })
         )}
       </div>
+
+      <DocumentPreview
+        open={!!previewDoc}
+        onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+        filePath={previewDoc?.file_path || ""}
+        fileName={previewDoc?.name || ""}
+      />
     </div>
   );
 }
