@@ -63,6 +63,17 @@ export default function PatientLayout({
   const session = typeof window !== "undefined" ? getSession() : null;
   const [mounted, setMounted] = React.useState(false);
   const [notifications, setNotifications] = React.useState<HeaderNotification[]>([]);
+  const notifContainerRef = React.useRef<HTMLDivElement>(null);
+  const notifScrollFlag = React.useRef(false);
+  const setNotifRef = React.useCallback((node: HTMLDivElement | null) => {
+    notifContainerRef.current = node;
+    if (node) {
+      const saved = sessionStorage.getItem('patient-notif-scroll');
+      if (saved) {
+        node.scrollTop = parseInt(saved, 10);
+      }
+    }
+  }, []);
 
   React.useEffect(() => {
     setMounted(true);
@@ -137,6 +148,17 @@ export default function PatientLayout({
     return cleanup;
   }, []);
 
+  React.useEffect(() => {
+    if (notifications.length === 0) return;
+    const saved = sessionStorage.getItem('patient-notif-scroll');
+    if (saved) {
+      const frame = requestAnimationFrame(() => {
+        notifContainerRef.current?.scrollTo({ top: parseInt(saved, 10) });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [notifications.length]);
+
   if (!mounted) {
     return <div className="min-h-screen bg-background" />;
   }
@@ -145,7 +167,7 @@ export default function PatientLayout({
     return null;
   }
 
-  const totalNotif = notifications.length;
+  const totalNotif = notifications.filter(n => !n.is_read).length;
 
   const isRTL = locale === "ar";
 
@@ -179,7 +201,7 @@ export default function PatientLayout({
               <button className="relative flex h-8 w-8 items-center justify-center rounded-full text-white/80 hover:bg-white/20 transition-all focus:outline-none active:scale-95">
                 <Bell className="h-5 w-5" />
                 {totalNotif > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-green-600">
+                  <span className="absolute -top-1.5 -right-1.5 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white shadow-md ring-2 ring-white/60">
                     {totalNotif}
                   </span>
                 )}
@@ -195,7 +217,7 @@ export default function PatientLayout({
                 )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <div className="max-h-72 overflow-auto">
+              <div ref={setNotifRef} className="max-h-72 overflow-auto" onScroll={(e) => { if (!notifScrollFlag.current) { sessionStorage.setItem('patient-notif-scroll', String(e.currentTarget.scrollTop)); } }}>
                 {notifications.length === 0 ? (
                   <div className="px-2 py-4 text-center text-sm text-muted-foreground">Aucune notification</div>
                 ) : (
@@ -214,6 +236,9 @@ export default function PatientLayout({
                         key={n.id}
                         className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2 cursor-pointer hover:bg-accent transition-colors"
                         onClick={() => {
+                          if (notifContainerRef.current) {
+                            sessionStorage.setItem('patient-notif-scroll', String(notifContainerRef.current.scrollTop));
+                          }
                           if (n.id.startsWith("notif-")) {
                             const notifId = n.id.replace("notif-", "");
                             apiFetch(`/api/notifications/${notifId}/read`, { method: "PUT" }).catch(() => {});

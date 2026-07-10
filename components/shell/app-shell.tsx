@@ -167,6 +167,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [chatUnreadCount, setChatUnreadCount] = React.useState(0);
   const patientNotifRef = React.useRef<HTMLDivElement>(null);
   const staffNotifRef = React.useRef<HTMLDivElement>(null);
+  const patientNotifScrollFlag = React.useRef(false);
+  const staffNotifScrollFlag = React.useRef(false);
 
   async function refreshHeaderData() {
     if (!session || isAuthRoute) return;
@@ -185,7 +187,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       const notifRows = (serverNotifs || []).slice(0, 5).map((n: any) => ({
         id: `notif-${n.id}`,
         title: n.title,
-        detail: n.message || ""
+        detail: n.message || "",
+        is_read: n.is_read
       }));
 
       const chatNotifs = chatItems
@@ -304,6 +307,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [session?.role, session?.userId, isAuthRoute]);
 
   React.useEffect(() => {
+    if (notifications.length === 0) return;
+    const key = isPatientRoute ? 'patient-notif-scroll' : 'staff-notif-scroll';
+    const saved = sessionStorage.getItem(key);
+    if (saved) {
+      const ref = isPatientRoute ? patientNotifRef : staffNotifRef;
+      const frame = requestAnimationFrame(() => {
+        ref.current?.scrollTo({ top: parseInt(saved, 10) });
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [notifications.length, isPatientRoute]);
+
+  React.useEffect(() => {
     const cleanup = addNotificationListener((notification) => {
       setNotifications((prev) => {
         const exists = prev.some((n) => n.id === notification.id);
@@ -330,7 +346,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen bg-background">{children}</div>;
   }
 
-  const totalNotif = notifications.length;
+  const totalNotif = notifications.filter(n => !n.is_read).length;
 
   const fullName = session?.fullName ?? (session?.role === "patient" ? "Espace patient" : "Personnel médical");
   const initials = fullName
@@ -378,7 +394,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <Icon className={cn("h-5 w-5", isDashboard ? "text-white/50" : active ? "text-[#2f3b8f]" : "text-white/70")} />
                     <span>{t(item.labelKey as any)}</span>
                     {item.href.includes("chat") && chatUnreadCount > 0 ? (
-                      <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-medium text-white">
+                      <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-bold leading-none text-white shadow-sm">
                         {chatUnreadCount}
                       </span>
                     ) : null}
@@ -448,7 +464,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <button className="relative flex h-8 w-8 items-center justify-center rounded-full text-white/80 hover:bg-white/20 transition-all focus:outline-none active:scale-95">
                       <Bell className="h-5 w-5" />
                       {totalNotif > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-emerald-600">
+                        <span className="absolute -top-1.5 -right-1.5 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white shadow-md ring-2 ring-white/60">
                           {totalNotif}
                         </span>
                       )}
@@ -464,7 +480,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       )}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <div ref={patientNotifRef} className="max-h-72 overflow-y-auto notif-scroll">
+                    <div ref={(node) => { patientNotifRef.current = node; if (node) { const saved = sessionStorage.getItem('patient-notif-scroll'); if (saved) { node.scrollTop = parseInt(saved, 10); } } }} className="max-h-72 overflow-y-auto notif-scroll" onScroll={(e) => { if (!patientNotifScrollFlag.current) { sessionStorage.setItem('patient-notif-scroll', String(e.currentTarget.scrollTop)); } }}>
                     {notifications.length === 0 ? (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">Aucune notification</div>
                     ) : (
@@ -488,7 +504,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2 cursor-pointer hover:bg-accent transition-colors"
                             onClick={() => {
                               setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, is_read: true } : item));
+                              if (patientNotifRef.current) {
+                                sessionStorage.setItem('patient-notif-scroll', String(patientNotifRef.current.scrollTop));
+                              }
+                              patientNotifScrollFlag.current = true;
                               setTimeout(() => { patientNotifRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 50);
+                              setTimeout(() => { patientNotifScrollFlag.current = false; }, 400);
                               if (isPatientRoute) {
                                 switch (n.type) {
                                   case "vitals_added":
@@ -598,9 +619,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   <button className="relative flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-accent transition-all focus:outline-none active:scale-95">
                     <Bell className="h-5 w-5 stroke-[1.8]" />
                     {totalNotif > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background">
-                        {totalNotif}
-                      </span>
+                        <span className="absolute -top-1.5 -right-1.5 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white shadow-md ring-2 ring-white/60">
+                          {totalNotif}
+                        </span>
                     )}
                   </button>
                 </DropdownMenuTrigger>
@@ -614,7 +635,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     )}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <div ref={staffNotifRef} className="max-h-72 overflow-auto">
+                  <div ref={(node) => { staffNotifRef.current = node; if (node) { const saved = sessionStorage.getItem('staff-notif-scroll'); if (saved) { node.scrollTop = parseInt(saved, 10); } } }} className="max-h-72 overflow-auto" onScroll={(e) => { if (!staffNotifScrollFlag.current) { sessionStorage.setItem('staff-notif-scroll', String(e.currentTarget.scrollTop)); } }}>
                     {notifications.length === 0 ? (
                       <div className="px-2 py-4 text-center text-sm text-muted-foreground">Aucune notification</div>
                     ) : (
@@ -638,7 +659,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             className="rounded-md border border-border/50 p-2 m-1 flex items-start gap-2 cursor-pointer hover:bg-accent transition-colors"
                             onClick={() => {
                               setNotifications(prev => prev.map(item => item.id === n.id ? { ...item, is_read: true } : item));
+                              if (staffNotifRef.current) {
+                                sessionStorage.setItem('staff-notif-scroll', String(staffNotifRef.current.scrollTop));
+                              }
+                              staffNotifScrollFlag.current = true;
                               setTimeout(() => { staffNotifRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); }, 50);
+                              setTimeout(() => { staffNotifScrollFlag.current = false; }, 400);
                               if (n.id.startsWith("notif-")) {
                                 const notifId = n.id.replace("notif-", "");
                                 apiFetch(`/api/notifications/${notifId}/read`, { method: "PUT" }).catch(() => {});
