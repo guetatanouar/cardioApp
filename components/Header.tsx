@@ -34,7 +34,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 
-type HeaderNotification = { id: string; title: string; detail: string; type?: string; patient_id?: string; related_id?: string };
+type HeaderNotification = { id: string; title: string; detail: string; type?: string; is_read?: boolean; patient_id?: string; related_id?: string };
 
 type ChatMessage = { id: string; content?: string; is_read: boolean; sender_role?: string; sender_id?: string };
 
@@ -202,7 +202,7 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
             <button className="relative flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-accent transition-all focus:outline-none active:scale-95">
               <Bell className="h-5 w-5 stroke-[1.8]" />
               {notifications.length > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-background">
+                <span className="absolute -top-1.5 -right-1.5 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white shadow-md ring-2 ring-white/60">
                   {notifications.length}
                 </span>
               )}
