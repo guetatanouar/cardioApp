@@ -23,7 +23,9 @@ import {
   Activity,
   FileUp,
   Pill,
-  MessageCircle
+  MessageCircle,
+  Menu,
+  X
 } from "lucide-react";
 import { Toaster } from "sonner";
 
@@ -169,6 +171,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const staffNotifRef = React.useRef<HTMLDivElement>(null);
   const patientNotifScrollFlag = React.useRef(false);
   const staffNotifScrollFlag = React.useRef(false);
+  const [mobileOpen, setMobileOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   async function refreshHeaderData() {
     if (!session || isAuthRoute) return;
@@ -363,13 +370,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-background">
       <div className={cn("flex", isRTL && "flex-row-reverse")}>
         {!isPatientRoute && (
+        <>
+        {/* Mobile overlay */}
+        <div
+          className={cn(
+            "fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 md:hidden",
+            mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={() => setMobileOpen(false)}
+        />
         <aside className={cn(
-          "fixed inset-y-0 z-50 w-[250px] bg-[#2f3b8f] flex flex-col",
-          isRTL ? "right-0 border-l border-white/10" : "left-0 border-r border-white/10"
+          "fixed inset-y-0 z-50 w-[250px] bg-[#2f3b8f] flex flex-col transition-transform duration-300 ease-in-out",
+          isRTL ? "right-0 border-l border-white/10" : "left-0 border-r border-white/10",
+          "max-md:hidden",
+          mobileOpen && "max-md:!flex"
         )}>
           <div className="flex flex-col flex-1 min-h-0">
-            <div className="p-5 border-b border-white/10">
+            <div className="p-5 border-b border-white/10 flex items-center justify-between">
               <NavbarLogo href="/dashboard" inverted />
+              <button
+                className="md:hidden text-white/70 hover:text-white p-1 -mr-1"
+                onClick={() => setMobileOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
 
             <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
@@ -435,9 +459,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </aside>
+        </>
         )}
 
-        <div className={cn("flex flex-1 flex-col", isRTL ? "pr-[250px]" : "pl-[250px]", isPatientRoute && "!pl-0 !pr-0")}>
+        <div className={cn("flex flex-1 flex-col", !isPatientRoute && (isRTL ? "pr-[250px]" : "pl-[250px]"), "max-md:!pl-0 max-md:!pr-0")}>
           {isPatientRoute && (
             <div className="bg-emerald-600 text-white px-6 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -590,6 +615,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/50 bg-background/95 px-6 backdrop-blur">
             {/* Left side: Page Title and Subtitle */}
             <div className="flex items-center gap-4">
+              <button
+                className="md:hidden flex items-center justify-center h-9 w-9 rounded-full hover:bg-accent transition-colors"
+                onClick={() => setMobileOpen(true)}
+              >
+                <Menu className="h-5 w-5" />
+              </button>
               <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
                 <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">{headerInfo.title}</h1>
                 <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-medium leading-none">{headerInfo.subtitle}</span>
