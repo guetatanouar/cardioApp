@@ -226,13 +226,13 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f7f7] flex">
- <div className="w-[230px] h-fit bg-white border border-gray-200 rounded-2xl p-4 shadow-sm"><div className="space-y-2">
+    <div className="min-h-screen bg-[#f7f7f7] flex flex-col md:flex-row">
+ <div className="max-md:w-full max-md:overflow-x-auto bg-white border border-gray-200 rounded-2xl p-4 shadow-sm md:w-[230px] md:h-fit md:shrink-0"><div className="flex md:flex-col gap-1 md:space-y-2">
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition whitespace-nowrap shrink-0 ${
                 tab === t.key
                   ? "bg-gray-100 text-black font-medium"
                   : "text-gray-500 hover:bg-gray-50"
@@ -245,16 +245,16 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-4 md:p-8">
         {loading ? (
          <div className="flex items-center justify-center h-30">
   <Loader2 className="h-3 w-3 animate-spin text-gray-400" />
           </div>
         ) : tab === "profil" ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-4xl">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Profil médecin</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-8 max-w-4xl">
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6 md:mb-8">Profil médecin</h2>
               <form onSubmit={saveProfile} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-600 mb-2">Prénom</label>
                   <input
@@ -300,7 +300,7 @@ export default function SettingsPage() {
                   className="w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm text-gray-600 mb-2">RPPS</label>
                   <input
@@ -333,7 +333,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-medium transition flex items-center gap-2"
+                  className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"
                 >
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   Enregistrer
@@ -342,8 +342,8 @@ export default function SettingsPage() {
             </form>
           </div>
         ) : tab === "securite" ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-4xl">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Sécurité</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-8 max-w-4xl">
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6 md:mb-8">Sécurité</h2>
             <form onSubmit={changePassword} className="space-y-6">
               <div>
                 <label className="block text-sm text-gray-600 mb-2">Mot de passe actuel</label>
@@ -380,7 +380,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={changingPwd}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-medium transition flex items-center gap-2"
+                  className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2"
                 >
                   {changingPwd && <Loader2 className="h-4 w-4 animate-spin" />}
                   Modifier le mot de passe
@@ -389,8 +389,8 @@ export default function SettingsPage() {
             </form>
           </div>
         ) : tab === "notifications" ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-4xl">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Notifications</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-8 max-w-4xl">
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6 md:mb-8">Notifications</h2>
             <div className="space-y-6">
               {Object.keys(notifLabels).map((key) => (
                 <div key={key} className="flex items-center justify-between py-2">
@@ -416,12 +416,12 @@ export default function SettingsPage() {
             </div>
           </div>
         ) : tab === "apparence" ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-4xl">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-8">Apparence</h2>
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 md:p-8 max-w-4xl">
+            <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6 md:mb-8">Apparence</h2>
             <div className="space-y-8">
               <div>
                 <label className="block text-sm text-gray-600 mb-3">Thème</label>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   {["light", "dark"].map((t) => (
                     <button
                       key={t}
@@ -440,7 +440,7 @@ export default function SettingsPage() {
               </div>
               <div>
                 <label className="block text-sm text-gray-600 mb-3">Langue</label>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   {locales.map((l) => (
                     <button
                       key={l}
@@ -466,7 +466,7 @@ export default function SettingsPage() {
               <p className="text-gray-500">Aucun compte secrétaire trouvé.</p>
             ) : (
               secretaires.map((sec) => (
-                <div key={sec.user_id} className="bg-white rounded-2xl border border-gray-200 p-8">
+                <div key={sec.user_id} className="bg-white rounded-2xl border border-gray-200 p-4 md:p-8">
                   <h3 className="text-lg font-semibold text-gray-800 mb-1">{sec.full_name}</h3>
                   <p className="text-sm text-gray-400 mb-6">{sec.email}</p>
                   <div className="space-y-3">
