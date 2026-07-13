@@ -172,18 +172,18 @@ export default function PatientLayout({
   const isRTL = locale === "ar";
 
   return (
-    <div className={cn("min-h-screen bg-background", isRTL && "rtl")}>
-      <div className="h-14 bg-green-600 flex items-center justify-between px-6 shadow-sm">
+    <div className={cn("h-screen bg-background overflow-hidden flex flex-col", isRTL && "rtl")}>
+      <div className="h-14 bg-green-600 flex items-center justify-between px-4 md:px-6 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-green-600">
             <Heart className="h-5 w-5 fill-green-600" strokeWidth={0} />
           </div>
           <span className="text-white font-bold text-lg">CardioManager</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex h-8 items-center justify-center gap-1 rounded-full bg-white/20 pl-1.5 pr-2 text-white transition-all hover:bg-white/30 focus:outline-none active:scale-95">
+              <button className="flex h-9 md:h-8 items-center justify-center gap-1 rounded-full bg-white/20 pl-1.5 pr-2 text-white transition-all hover:bg-white/30 focus:outline-none active:scale-95">
                 {renderFlag(locale)}
                 <ChevronDown className="h-3 w-3 opacity-80" />
               </button>
@@ -198,16 +198,16 @@ export default function PatientLayout({
           </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="relative flex h-8 w-8 items-center justify-center rounded-full text-white/80 hover:bg-white/20 transition-all focus:outline-none active:scale-95">
+              <button className="relative flex h-9 w-9 md:h-8 md:w-8 items-center justify-center rounded-full text-white/80 hover:bg-white/20 transition-all focus:outline-none active:scale-95">
                 <Bell className="h-5 w-5" />
                 {totalNotif > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white shadow-md ring-2 ring-white/60">
+                  <span className="absolute -top-1 -right-1 md:-top-1.5 md:-right-1.5 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white shadow-md ring-2 ring-white/60">
                     {totalNotif}
                   </span>
                 )}
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
+            <DropdownMenuContent align="end" className="w-80 max-md:w-[calc(100vw-2rem)]">
               <DropdownMenuLabel className="flex items-center justify-between">
                 <span>Notifications</span>
                 {totalNotif > 0 && (
@@ -277,14 +277,16 @@ export default function PatientLayout({
           </DropdownMenu>
           <button
             onClick={() => { clearSession(); router.replace("/login"); }}
-            className="flex items-center gap-2 text-white/90 hover:text-white text-sm font-medium transition"
+            className="flex items-center gap-2 text-white/90 hover:text-white text-sm max-md:text-base font-medium transition max-md:py-2 max-md:px-3"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4 max-md:h-5 max-md:w-5 flex-shrink-0" />
             {t("logout" as any)}
           </button>
         </div>
       </div>
-      {children}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        {children}
+      </div>
     </div>
   );
 }

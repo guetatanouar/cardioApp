@@ -42,33 +42,33 @@ export default function PatientDocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-full bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border">
         <PatientHeader />
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           <Card>
             <CardHeader>
-              <CardTitle>Mes documents</CardTitle>
+              <CardTitle className="text-base md:text-lg">Mes documents</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-10 rounded-md border border-input bg-transparent px-3 text-sm">
                   <option value="analyse">Analyse</option>
                   <option value="radio">Radio</option>
                   <option value="echographie">Échographie</option>
                   <option value="autre">Autre</option>
                 </select>
-                <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-                <Button onClick={upload} disabled={!file}>Upload</Button>
+                <input type="file" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="text-sm" />
+                <Button onClick={upload} disabled={!file} className="h-10">Upload</Button>
               </div>
               <div className="divide-y divide-border">
                 {items.map((d) => (
-                  <div key={d.id} className="flex items-center justify-between gap-3 py-3">
-                    <div>
-                      <a className="text-sm underline" href={`http://localhost:4000/${d.file_path}`} target="_blank" rel="noreferrer">{d.name}</a>
+                  <div key={d.id} className="flex items-start md:items-center justify-between gap-3 py-3">
+                    <div className="min-w-0">
+                      <a className="text-sm underline break-all" href={`http://localhost:4000/${d.file_path}`} target="_blank" rel="noreferrer">{d.name}</a>
                       <div className="text-xs text-muted-foreground">{d.category} — {d.size}</div>
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => remove(d.id)}>Delete</Button>
+                    <Button variant="outline" size="sm" onClick={() => remove(d.id)} className="flex-shrink-0">Delete</Button>
                   </div>
                 ))}
                 {items.length === 0 ? <div className="py-8 text-sm text-muted-foreground">Empty</div> : null}

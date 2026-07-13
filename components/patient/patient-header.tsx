@@ -59,32 +59,32 @@ export function PatientHeader() {
 
   return (
     <>
-      <div className="p-6 border-b">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-green-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
+      <div className="p-4 md:p-6 border-b">
+        <div className="flex items-center justify-between flex-wrap gap-3 md:gap-4">
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-green-600 rounded-xl flex items-center justify-center text-white font-bold text-lg md:text-xl flex-shrink-0">
               {initials}
             </div>
-            <div>
-              <h1 className="text-xl font-semibold">{fullName}</h1>
-              <p className="text-sm text-gray-500">
+            <div className="min-w-0">
+              <h1 className="text-lg md:text-xl font-semibold truncate">{fullName}</h1>
+              <p className="text-xs md:text-sm text-gray-500">
                 {age !== null ? `${age} ans` : ""} • {gender} • {bloodGroup}
               </p>
-              <p className="text-sm text-gray-400">{phone} · {email}</p>
+              <p className="text-xs md:text-sm text-gray-400 truncate">{phone} · {email}</p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <span className="px-3 py-1 rounded-full bg-red-50 text-red-600 text-sm font-medium">
+          <div className="flex gap-2 md:gap-3">
+            <span className="px-2.5 md:px-3 py-1 rounded-full bg-red-50 text-red-600 text-xs md:text-sm font-medium whitespace-nowrap">
               {allergies.length} {t("allergiesCount" as any)}
             </span>
-            <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-sm font-medium">
+            <span className="px-2.5 md:px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs md:text-sm font-medium whitespace-nowrap">
               {mappedConsultations.length} {t("consultationsCount" as any)}
             </span>
           </div>
         </div>
       </div>
 
-      <div className="flex border-b">
+      <div className="flex flex-wrap border-b">
         {tabs.map((tab) => {
           const active = pathname === tab.href;
           const Icon = tab.icon;
@@ -93,7 +93,7 @@ export function PatientHeader() {
               key={tab.href}
               onClick={() => router.push(tab.href)}
               className={cn(
-                "px-6 py-4 flex items-center gap-2 text-sm relative",
+                "px-4 md:px-6 py-3 md:py-3.5 flex items-center gap-1.5 md:gap-2 text-sm relative",
                 active
                   ? "border-b-2 border-green-600 text-green-700 font-medium"
                   : "text-gray-600 hover:text-gray-900"

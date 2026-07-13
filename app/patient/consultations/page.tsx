@@ -25,10 +25,10 @@ export default function PatientConsultationsPage() {
   }, [patientId]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-full bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border">
         <PatientHeader />
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           <Card>
             <CardHeader>
               <CardTitle>{t("consultations" as any)}</CardTitle>

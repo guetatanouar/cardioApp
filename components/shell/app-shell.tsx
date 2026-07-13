@@ -172,9 +172,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const patientNotifScrollFlag = React.useRef(false);
   const staffNotifScrollFlag = React.useRef(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [patientMobileOpen, setPatientMobileOpen] = React.useState(false);
 
   React.useEffect(() => {
     setMobileOpen(false);
+    setPatientMobileOpen(false);
   }, [pathname]);
 
   async function refreshHeaderData() {
@@ -367,8 +369,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isRTL = locale === "ar";
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className={cn("flex", isRTL && "flex-row-reverse")}>
+    <div className="h-screen bg-background overflow-hidden">
+      <div className={cn("flex h-full", isRTL && "flex-row-reverse")}>
         {!isPatientRoute && (
         <>
         {/* Mobile overlay */}
@@ -380,23 +382,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           onClick={() => setMobileOpen(false)}
         />
         <aside className={cn(
-          "fixed inset-y-0 z-50 w-[250px] bg-[#2f3b8f] flex flex-col transition-transform duration-300 ease-in-out",
+          "fixed inset-y-0 z-50 bg-[#2f3b8f] flex flex-col transition-transform duration-300 ease-in-out",
           isRTL ? "right-0 border-l border-white/10" : "left-0 border-r border-white/10",
+          "w-[250px] max-md:w-full",
           "max-md:hidden",
           mobileOpen && "max-md:!flex"
         )}>
           <div className="flex flex-col flex-1 min-h-0">
-            <div className="p-5 border-b border-white/10 flex items-center justify-between">
+            <div className="p-5 max-md:p-6 border-b border-white/10 flex items-center justify-between">
               <NavbarLogo href="/dashboard" inverted />
               <button
-                className="md:hidden text-white/70 hover:text-white p-1 -mr-1"
+                className="md:hidden text-white/70 hover:text-white p-2 -mr-2 rounded-lg hover:bg-white/10"
                 onClick={() => setMobileOpen(false)}
               >
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               </button>
             </div>
 
-            <nav className="sidebar-nav mt-6 px-4 space-y-0.5 overflow-y-auto flex-1">
+            <nav className="sidebar-nav mt-4 md:mt-6 px-2 md:px-4 space-y-1 overflow-y-auto flex-1">
               {navItems.map((item) => {
                 const active = pathname === item.href || pathname?.startsWith(item.href + "/");
                 const Icon = item.icon;
@@ -406,17 +409,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-2 rounded-xl text-sm transition-all",
+                      "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all min-h-[48px]",
                       isRTL ? "flex-row-reverse" : "",
-                      isDashboard
-                        ? "text-white/70 hover:bg-white/10"
-                        : active
-                          ? "bg-white text-[#2f3b8f] font-semibold"
-                          : "text-white hover:bg-white/10"
+                      active
+                        ? "bg-white text-[#2f3b8f] font-semibold shadow-sm"
+                        : isDashboard
+                          ? "text-white hover:bg-white/15"
+                          : "text-white hover:bg-white/15"
                     )}
                   >
-                    <Icon className={cn("h-5 w-5", isDashboard ? "text-white/50" : active ? "text-[#2f3b8f]" : "text-white/70")} />
-                    <span>{t(item.labelKey as any)}</span>
+                    <Icon className={cn("h-6 w-6 flex-shrink-0", active ? "text-[#2f3b8f]" : "text-white")} />
+                    <span className="text-[15px] font-medium">{t(item.labelKey as any)}</span>
                     {item.href.includes("chat") && chatUnreadCount > 0 ? (
                       <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-bold leading-none text-white shadow-sm">
                         {chatUnreadCount}
@@ -428,25 +431,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
 
-          <div className="p-4 border-t border-white/10 space-y-2 mt-auto">
+          <div className="p-3 md:p-4 border-t border-white/10 space-y-1 md:space-y-2 mt-auto">
             {session?.role !== "patient" && (
               <button
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all",
+                  "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all min-h-[48px]",
                   isRTL ? "flex-row-reverse" : "",
                   pathname === "/dashboard/parametres" || pathname?.startsWith("/dashboard/parametres/")
-                    ? "bg-white text-[#2f3b8f] font-semibold"
-                    : "text-white hover:bg-white/10"
+                    ? "bg-white text-[#2f3b8f] font-semibold shadow-sm"
+                    : "text-white hover:bg-white/15"
                 )}
                 onClick={() => router.push("/dashboard/parametres")}
               >
-                <Settings className="h-5 w-5 text-white/70" />
-                <span>{t("settings")}</span>
+                <Settings className="h-6 w-6 text-white flex-shrink-0" />
+                <span className="text-[15px] font-medium">{t("settings")}</span>
               </button>
             )}
             <button
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-all text-white hover:bg-white/10",
+                "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all text-white hover:bg-white/15 min-h-[48px]",
                 isRTL ? "flex-row-reverse" : ""
               )}
               onClick={() => {
@@ -454,18 +457,88 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 router.replace("/login");
               }}
             >
-              <LogOut className="h-5 w-5 text-white/70" />
-              <span>{t("logout")}</span>
+              <LogOut className="h-6 w-6 text-white flex-shrink-0" />
+              <span className="text-[15px] font-medium">{t("logout")}</span>
             </button>
           </div>
         </aside>
         </>
         )}
 
-        <div className={cn("flex flex-1 flex-col", !isPatientRoute && (isRTL ? "pr-[250px]" : "pl-[250px]"), "max-md:!pl-0 max-md:!pr-0")}>
+        <div className={cn("flex flex-1 flex-col min-h-0 h-full overflow-x-hidden", !isPatientRoute && (isRTL ? "pr-[250px]" : "pl-[250px]"), "max-md:!pl-0 max-md:!pr-0")}>
           {isPatientRoute && (
-            <div className="bg-emerald-600 text-white px-6 py-3 flex items-center justify-between">
+            <>
+            {/* Patient mobile overlay */}
+            <div
+              className={cn(
+                "fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 md:hidden",
+                patientMobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+              )}
+              onClick={() => setPatientMobileOpen(false)}
+            />
+            {/* Patient mobile drawer */}
+            <aside className={cn(
+              "fixed inset-y-0 z-50 w-full bg-emerald-700 flex flex-col transition-transform duration-300 ease-in-out md:hidden",
+              isRTL ? "right-0" : "left-0",
+              patientMobileOpen ? "translate-x-0" : (isRTL ? "translate-x-full" : "-translate-x-full")
+            )}>
+              <div className="p-5 border-b border-white/15 flex items-center justify-between">
+                <NavbarLogo href="/patient" inverted />
+                <button
+                  className="text-white/70 hover:text-white p-2 -mr-2 rounded-lg hover:bg-white/10"
+                  onClick={() => setPatientMobileOpen(false)}
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              <nav className="mt-4 px-2 space-y-1 overflow-y-auto flex-1">
+                {patientNav.map((item) => {
+                  const active = pathname === item.href || pathname?.startsWith(item.href + "/");
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all min-h-[48px]",
+                        isRTL ? "flex-row-reverse" : "",
+                        active
+                          ? "bg-white text-emerald-700 font-semibold shadow-sm"
+                          : "text-white hover:bg-white/15"
+                      )}
+                    >
+                      <Icon className={cn("h-6 w-6 flex-shrink-0", active ? "text-emerald-700" : "text-white")} />
+                      <span className="text-[15px] font-medium">{t(item.labelKey as any)}</span>
+                      {item.href.includes("chat") && chatUnreadCount > 0 ? (
+                        <span className="ml-auto rounded-full bg-red-500 px-2 py-0.5 text-[11px] font-bold leading-none text-white shadow-sm">
+                          {chatUnreadCount}
+                        </span>
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </nav>
+              <div className="p-4 border-t border-white/15 space-y-2 mt-auto">
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-base text-white hover:bg-white/10 transition-all"
+                  onClick={() => {
+                    clearSession();
+                    router.replace("/patient/login");
+                  }}
+                >
+                  <LogOut className="h-5 w-5 text-white/70 flex-shrink-0" />
+                  <span>{t("logout" as any)}</span>
+                </button>
+              </div>
+            </aside>
+            <div className="bg-emerald-600 text-white px-4 md:px-6 py-3 flex items-center justify-between">
               <div className="flex items-center gap-3">
+                <button
+                  className="md:hidden flex items-center justify-center h-10 w-10 -ml-1 rounded-lg hover:bg-white/10 transition-colors"
+                  onClick={() => setPatientMobileOpen(true)}
+                >
+                  <Menu className="h-6 w-6" />
+                </button>
                 <NavbarLogo href="/patient" inverted />
               </div>
               <div className="flex items-center gap-3">
@@ -495,7 +568,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       )}
                     </button>
                   </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 overflow-visible">
+                <DropdownMenuContent align="end" className="w-80 max-md:w-[calc(100vw-2rem)] overflow-visible">
                     <DropdownMenuLabel className="flex items-center justify-between">
                       <span>Notifications</span>
                       {totalNotif > 0 && (
@@ -602,36 +675,37 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
                 </DropdownMenu>
                 <button
-                  className="flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-sm max-md:text-base max-md:py-2 max-md:px-3 text-white/80 hover:text-white transition-colors"
                   onClick={() => { clearSession(); router.replace("/login"); }}
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-4 w-4 max-md:h-5 max-md:w-5 flex-shrink-0" />
                   {t("logout" as any)}
                 </button>
               </div>
             </div>
+            </>
           )}
           {!isPatientRoute && (
-          <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-border/50 bg-background/95 px-6 backdrop-blur">
+          <header className="sticky top-0 z-30 flex h-16 md:h-16 items-center justify-between gap-3 md:gap-4 border-b border-border/50 bg-background/95 px-4 md:px-6 backdrop-blur">
             {/* Left side: Page Title and Subtitle */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
               <button
-                className="md:hidden flex items-center justify-center h-9 w-9 rounded-full hover:bg-accent transition-colors"
+                className="md:hidden flex items-center justify-center h-10 w-10 rounded-lg hover:bg-accent transition-colors"
                 onClick={() => setMobileOpen(true)}
               >
-                <Menu className="h-5 w-5" />
+                <Menu className="h-6 w-6" />
               </button>
               <div className={cn("flex flex-col justify-center select-none", isRTL ? "text-right" : "text-left")}>
-                <h1 className="text-sm sm:text-base font-bold text-foreground leading-none">{headerInfo.title}</h1>
-                <span className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 font-medium leading-none">{headerInfo.subtitle}</span>
+                <h1 className="text-base sm:text-lg font-bold text-foreground leading-none">{headerInfo.title}</h1>
+                <span className="text-xs sm:text-sm text-muted-foreground mt-1.5 font-medium leading-none">{headerInfo.subtitle}</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
               {/* Language Selector (Pill with Flag & Chevron) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex h-8 items-center justify-center gap-1 rounded-full bg-slate-100 pl-1.5 pr-2 text-foreground transition-all hover:bg-slate-200 focus:outline-none active:scale-95">
+                  <button className="flex h-9 md:h-8 items-center justify-center gap-1 rounded-full bg-slate-100 pl-1.5 pr-2 text-foreground transition-all hover:bg-slate-200 focus:outline-none active:scale-95">
                     {renderFlag(locale)}
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </button>
@@ -647,16 +721,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {/* Notification Bell with red badge */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="relative flex h-9 w-9 items-center justify-center rounded-full text-foreground hover:bg-accent transition-all focus:outline-none active:scale-95">
+                  <button className="relative flex h-10 w-10 md:h-9 md:w-9 items-center justify-center rounded-full text-foreground hover:bg-accent transition-all focus:outline-none active:scale-95">
                     <Bell className="h-5 w-5 stroke-[1.8]" />
                     {totalNotif > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white shadow-md ring-2 ring-white/60">
+                        <span className="absolute -top-1 -right-1 md:-top-1.5 md:-right-1.5 flex min-w-[20px] h-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold leading-none text-white shadow-md ring-2 ring-white/60">
                           {totalNotif}
                         </span>
                     )}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuContent align="end" className="w-80 max-md:w-[calc(100vw-2rem)]">
                   <DropdownMenuLabel className="flex items-center justify-between">
                     <span>Notifications</span>
                     {totalNotif > 0 && (
@@ -749,15 +823,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {/* User Avatar with Initials (DP) styled as a blue circle */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex h-9 w-9 items-center justify-center rounded-full overflow-hidden transition-all focus:outline-none active:scale-95">
-                    <Avatar className="h-9 w-9">
+                  <button className="flex h-10 w-10 md:h-9 md:w-9 items-center justify-center rounded-full overflow-hidden transition-all focus:outline-none active:scale-95">
+                    <Avatar className="h-10 w-10 md:h-9 md:w-9">
                       <AvatarFallback className="text-xs font-bold bg-[#3B82F6] text-white flex items-center justify-center w-full h-full rounded-full select-none tracking-wide">
                         {initials || "U"}
                       </AvatarFallback>
                     </Avatar>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 max-md:w-[calc(100vw-2rem)]">
                   <DropdownMenuLabel>
                     <div className="text-sm font-semibold">{fullName}</div>
                     <div className="text-xs text-muted-foreground capitalize">
@@ -778,7 +852,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </header>
           )}
 
-          <main className="p-6">
+          <main className="flex-1 p-4 md:p-6 overflow-y-auto overflow-x-hidden min-w-0">
             <Toaster position="top-right" richColors />
             {children}
           </main>
