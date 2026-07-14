@@ -227,7 +227,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-[#f7f7f7] flex flex-col md:flex-row">
- <div className="max-md:w-fit max-md:overflow-x-auto bg-white border border-gray-200 rounded-2xl p-4 shadow-sm md:w-[230px] md:h-fit md:shrink-0"><div className="flex md:flex-col gap-1 md:space-y-2">
+ <div className="max-md:overflow-x-auto bg-white border border-gray-200 rounded-2xl p-4 shadow-sm md:w-[230px] md:h-fit md:shrink-0"><div className="flex flex-nowrap md:flex-col gap-1 md:space-y-2">
           {tabs.map((t) => (
             <button
               key={t.key}

@@ -384,7 +384,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <aside className={cn(
           "fixed inset-y-0 z-50 bg-[#2f3b8f] flex flex-col transition-transform duration-300 ease-in-out",
           isRTL ? "right-0 border-l border-white/10" : "left-0 border-r border-white/10",
-          "w-[250px] max-md:w-full",
+          "w-[250px] max-md:w-1/2",
           "max-md:hidden",
           mobileOpen && "max-md:!flex"
         )}>
