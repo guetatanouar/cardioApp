@@ -183,14 +183,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (!session || isAuthRoute) return;
 
     if (session.role === "patient") {
-      const [chat, serverNotifs] = await Promise.all([
+      const [medicalChat, rdvChat, serverNotifs] = await Promise.all([
         apiFetch<any[] | { items: Array<{ id: string; sender_role: string; text: string; content: string; is_read: boolean }> }>(
-          `/api/chat?channel=${encodeURIComponent(`patient:${session.userId}`)}`
+          `/api/chat?channel=${encodeURIComponent(`patient_medical:${session.userId}`)}`
+        ),
+        apiFetch<any[] | { items: Array<{ id: string; sender_role: string; text: string; content: string; is_read: boolean }> }>(
+          `/api/chat?channel=${encodeURIComponent(`patient_rdv:${session.userId}`)}`
         ),
         apiFetch<any[]>("/api/notifications")
       ]);
-      const chatItems = Array.isArray(chat) ? chat : (chat as any).items ?? [];
-      const unread = chatItems.filter((m: any) => !m.is_read && m.sender_role !== "patient").length;
+      const medicalItems = Array.isArray(medicalChat) ? medicalChat : (medicalChat as any).items ?? [];
+      const rdvItems = Array.isArray(rdvChat) ? rdvChat : (rdvChat as any).items ?? [];
+      const allChatItems = [...medicalItems, ...rdvItems];
+      const unread = allChatItems.filter((m: any) => !m.is_read && m.sender_role !== "patient").length;
       setChatUnreadCount(unread);
 
       const notifRows = (serverNotifs || []).slice(0, 5).map((n: any) => ({
@@ -200,7 +205,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         is_read: n.is_read
       }));
 
-      const chatNotifs = chatItems
+      const chatNotifs = allChatItems
         .filter((m: any) => m.sender_role !== "patient")
         .slice(-5)
         .reverse()

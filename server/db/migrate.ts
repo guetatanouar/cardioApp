@@ -15,7 +15,9 @@ async function migrate() {
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS first_name VARCHAR(100)",
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_name VARCHAR(100)",
             "ALTER TABLE patient_accounts ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
-            "ALTER TABLE consultations ADD COLUMN IF NOT EXISTS ecole VARCHAR(200)"
+            "ALTER TABLE consultations ADD COLUMN IF NOT EXISTS ecole VARCHAR(200)",
+            "ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS conversation_type TEXT DEFAULT 'medical'",
+            "DO $$ BEGIN ALTER TABLE chat_messages ADD CONSTRAINT chat_messages_conversation_type_check CHECK (conversation_type IN ('medical', 'rdv')); EXCEPTION WHEN duplicate_object THEN NULL; END $$"
         ];
         for (const col of alterCols) {
             try { await query(col); } catch { /* column may already exist */ }

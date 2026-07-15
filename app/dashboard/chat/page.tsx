@@ -9,16 +9,18 @@ import { usePagePermission } from "@/lib/auth/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Users } from "lucide-react";
+import { Send, Users, Stethoscope, CalendarDays } from "lucide-react";
 
 export default function ChatPage() {
   const hasAccess = usePagePermission("can_view_chat");
   const searchParams = useSearchParams();
   const session = typeof window !== "undefined" ? getSession() : null;
+  const isDoctor = session?.role === "admin";
 
   const [patients, setPatients] = React.useState<Array<{ id: string; first_name: string; last_name: string }>>([]);
   const patientIdParam = searchParams.get("patientId");
-  const [channel, setChannel] = React.useState(patientIdParam ? `patient:${patientIdParam}` : "staff");
+  const prefix = isDoctor ? "patient_medical" : "patient_rdv";
+  const [channel, setChannel] = React.useState(patientIdParam ? `${prefix}:${patientIdParam}` : "staff");
   const [items, setItems] = React.useState<any[]>([]);
   const [text, setText] = React.useState("");
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -97,11 +99,19 @@ export default function ChatPage() {
     return "bg-blue-50 border border-blue-200";
   }
 
+  function getChannelLabel() {
+    if (channel === "staff") return "Discussion equipe";
+    const p = patients.find(pp => channel === `${prefix}:${pp.id}`);
+    if (!p) return "Chat";
+    return isDoctor
+      ? `Chat médical - ${p.last_name}`
+      : `Rendez-vous - ${p.last_name}`;
+  }
+
   if (!hasAccess) return null;
 
   return (
     <div className="flex flex-col gap-3 md:gap-4 h-full min-h-0">
-      {/* Mobile: contact bubbles at top */}
       <div className="md:hidden flex flex-wrap gap-2 pb-1">
         <button
           type="button"
@@ -116,7 +126,7 @@ export default function ChatPage() {
           <span>Staff</span>
         </button>
         {patients.map((p) => {
-          const patientChannel = `patient:${p.id}`;
+          const patientChannel = `${prefix}:${p.id}`;
           return (
             <button
               key={p.id}
@@ -128,9 +138,7 @@ export default function ChatPage() {
                   : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
               }`}
             >
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium">
-                {p.first_name[0]}{p.last_name[0]}
-              </div>
+              {isDoctor ? <Stethoscope className="h-4 w-4" /> : <CalendarDays className="h-4 w-4" />}
               <span className="truncate max-w-[80px]">{p.last_name}</span>
             </button>
           );
@@ -138,10 +146,11 @@ export default function ChatPage() {
       </div>
 
       <div className="flex flex-1 gap-4 min-h-0">
-        {/* Desktop: sidebar contacts */}
         <Card className="hidden md:flex w-64 flex-shrink-0 flex-col min-h-0">
           <CardHeader className="p-3">
-            <CardTitle className="text-sm">Conversations</CardTitle>
+            <CardTitle className="text-sm">
+              {isDoctor ? "Conversations médicales" : "Gestion des rendez-vous"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0 flex-1 overflow-y-auto">
             <button
@@ -155,7 +164,7 @@ export default function ChatPage() {
               <span>Staff</span>
             </button>
             {patients.map((p) => {
-              const patientChannel = `patient:${p.id}`;
+              const patientChannel = `${prefix}:${p.id}`;
               return (
                 <button
                   key={p.id}
@@ -165,9 +174,11 @@ export default function ChatPage() {
                     channel === patientChannel ? "bg-accent font-medium" : ""
                   }`}
                 >
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs">
-                    {p.first_name[0]}{p.last_name[0]}
-                  </div>
+                  {isDoctor ? (
+                    <Stethoscope className="h-4 w-4 text-blue-600" />
+                  ) : (
+                    <CalendarDays className="h-4 w-4 text-amber-600" />
+                  )}
                   <span className="truncate">{p.last_name}</span>
                 </button>
               );
@@ -178,7 +189,7 @@ export default function ChatPage() {
         <Card className="flex flex-1 flex-col min-h-0">
           <CardHeader className="flex flex-row items-center justify-between p-4">
             <CardTitle className="text-base">
-              {channel === "staff" ? "Discussion equipe" : `Chat avec ${patients.find(p => `patient:${p.id}` === channel)?.last_name || "Patient"}`}
+              {getChannelLabel()}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-1 flex-col p-4 pt-0 min-h-0">

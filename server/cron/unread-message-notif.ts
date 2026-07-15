@@ -60,13 +60,35 @@ async function notifyUnreadMessages() {
           }
         }
         notifiedIds.push(msg.id);
-      } else if (msg.channel === 'patient' && msg.patient_email) {
-        await sendEmail(
-          msg.patient_email,
-          `Nouveau message de votre médecin`,
-          `Vous avez reçu un nouveau message de ${msg.sender_name || 'votre médecin'}. Connectez-vous à votre espace patient pour le consulter.`
-        );
-        notifiedIds.push(msg.id);
+      } else if (msg.channel === 'patient') {
+        if (msg.conversation_type === 'medical' && msg.sender_role !== 'admin') {
+          const doctor = staffUsers.find((u: any) => u.role === 'admin');
+          if (doctor && doctor.email) {
+            await sendEmail(
+              doctor.email,
+              `Nouveau message médical de ${msg.sender_name || 'un patient'}`,
+              `Vous avez reçu un nouveau message médical de ${msg.sender_name || 'un patient'}. Connectez-vous pour le consulter.`
+            );
+          }
+          notifiedIds.push(msg.id);
+        } else if (msg.conversation_type === 'rdv' && msg.sender_role !== 'secretaire') {
+          const secretary = staffUsers.find((u: any) => u.role === 'secretaire');
+          if (secretary && secretary.email) {
+            await sendEmail(
+              secretary.email,
+              `Nouveau message rendez-vous de ${msg.sender_name || 'un patient'}`,
+              `Vous avez reçu un nouveau message concernant un rendez-vous de ${msg.sender_name || 'un patient'}. Connectez-vous pour le consulter.`
+            );
+          }
+          notifiedIds.push(msg.id);
+        } else if (msg.patient_email) {
+          await sendEmail(
+            msg.patient_email,
+            `Nouveau message de votre équipe médicale`,
+            `Vous avez reçu un nouveau message. Connectez-vous à votre espace patient pour le consulter.`
+          );
+          notifiedIds.push(msg.id);
+        }
       }
     }
 

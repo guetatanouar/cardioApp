@@ -106,6 +106,7 @@ CREATE TABLE IF NOT EXISTS prescriptions (
 CREATE TABLE IF NOT EXISTS chat_messages (
     id TEXT PRIMARY KEY,
     channel TEXT NOT NULL,
+    conversation_type TEXT CHECK (conversation_type IN ('medical', 'rdv')),
     sender_role TEXT NOT NULL,
     sender_id TEXT NOT NULL,
     patient_id TEXT,
@@ -248,16 +249,16 @@ INSERT INTO appointments (id, patient_id, date, time, duration, type, status, re
 ('a12', 'p1', CURRENT_DATE - INTERVAL '3 days', '09:30', 30, 'suivi', 'complete', 'Contrôle de routine', NULL);
 
 -- 8. CHAT MESSAGES
-INSERT INTO chat_messages (id, channel, sender_role, sender_id, patient_id, content, created_at) VALUES
-('m1', 'staff', 'admin', '1', NULL, 'Bonjour, je suis disponible pour les consultations aujourd''hui.', NOW() - INTERVAL '2 days'),
-('m2', 'staff', 'secretaire', '2', NULL, 'Bonjour Dr. Tremblay. Monsieur Leblanc est arrivé pour son rendez-vous.', NOW() - INTERVAL '1 day'),
-('m3', 'staff', 'admin', '1', NULL, 'Merci. Je le reçois dans 5 minutes.', NOW() - INTERVAL '1 day'),
-('m4', 'staff', 'secretaire', '2', NULL, 'Les résultats sont sur votre bureau.', NOW() - INTERVAL '20 hours'),
-('m5', 'staff', 'admin', '1', NULL, 'Je confirme la consultation pour Mme Pelletier à 11h demain.', NOW() - INTERVAL '18 hours'),
-('m6', 'patient', 'patient', 'p1', 'p1', 'Bonjour Docteur, puis-je reprendre mes promenades quotidiennes ?', NOW() - INTERVAL '1 day'),
-('m7', 'patient', 'admin', '1', 'p1', 'Oui, la marche modérée est encouragée. Évitez les efforts intenses.', NOW() - INTERVAL '20 hours'),
-('m8', 'patient', 'patient', 'p2', 'p2', 'Mon pouls était à 100 bpm ce matin. Dois-je m''inquiéter ?', NOW() - INTERVAL '5 hours'),
-('m9', 'patient', 'patient', 'p3', 'p3', 'Docteur, j''ai ressenti une douleur à la poitrine ce matin en montant les escaliers.', NOW() - INTERVAL '3 hours');
+INSERT INTO chat_messages (id, channel, conversation_type, sender_role, sender_id, patient_id, content, created_at) VALUES
+('m1', 'staff', NULL, 'admin', '1', NULL, 'Bonjour, je suis disponible pour les consultations aujourd''hui.', NOW() - INTERVAL '2 days'),
+('m2', 'staff', NULL, 'secretaire', '2', NULL, 'Bonjour Dr. Tremblay. Monsieur Leblanc est arrivé pour son rendez-vous.', NOW() - INTERVAL '1 day'),
+('m3', 'staff', NULL, 'admin', '1', NULL, 'Merci. Je le reçois dans 5 minutes.', NOW() - INTERVAL '1 day'),
+('m4', 'staff', NULL, 'secretaire', '2', NULL, 'Les résultats sont sur votre bureau.', NOW() - INTERVAL '20 hours'),
+('m5', 'staff', NULL, 'admin', '1', NULL, 'Je confirme la consultation pour Mme Pelletier à 11h demain.', NOW() - INTERVAL '18 hours'),
+('m6', 'patient', 'medical', 'patient', 'p1', 'p1', 'Bonjour Docteur, puis-je reprendre mes promenades quotidiennes ?', NOW() - INTERVAL '1 day'),
+('m7', 'patient', 'medical', 'admin', '1', 'p1', 'Oui, la marche modérée est encouragée. Évitez les efforts intenses.', NOW() - INTERVAL '20 hours'),
+('m8', 'patient', 'medical', 'patient', 'p2', 'p2', 'Mon pouls était à 100 bpm ce matin. Dois-je m''inquiéter ?', NOW() - INTERVAL '5 hours'),
+('m9', 'patient', 'medical', 'patient', 'p3', 'p3', 'Docteur, j''ai ressenti une douleur à la poitrine ce matin en montant les escaliers.', NOW() - INTERVAL '3 hours');
 
 -- 9. ANALYSIS REPORTS
 INSERT INTO analysis_reports (id, patient_id, document_ids, report_content, created_by, created_at) VALUES
