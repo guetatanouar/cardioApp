@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 :root {
+  --bg: #ffffff;
+  --text: #1a1a2e;
+  --border: #e5e7eb;
+  --card-bg: #ffffff;
+
   --primary-blue: 217 91% 60%;
   --primary-purple: 271 81% 56%;
   --primary-green: 160 84% 39%;
@@ -47,6 +52,11 @@
 }
 
 .dark {
+  --bg: #0C0E2B;
+  --text: #ffffff;
+  --border: #312a57;
+  --card-bg: #131640;
+
   --background: var(--gray-900);
   --foreground: var(--gray-50);
   --card: var(--gray-800);

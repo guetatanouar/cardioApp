@@ -6,6 +6,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/lib/i18n/client";
 import { config } from "@/lib/config";
+import ThemeController from "@/components/ThemeController";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -47,10 +48,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="fr" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <I18nProvider>
             {children}
           </I18nProvider>
+          <ThemeController />
         </ThemeProvider>
       </body>
     </html>

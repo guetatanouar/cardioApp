@@ -705,7 +705,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               {/* Language Selector (Pill with Flag & Chevron) */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex h-9 md:h-8 items-center justify-center gap-1 rounded-full bg-slate-100 pl-1.5 pr-2 text-foreground transition-all hover:bg-slate-200 focus:outline-none active:scale-95">
+                  <button className="flex h-9 md:h-8 items-center justify-center gap-1 rounded-full bg-slate-100 dark:bg-white/10 pl-1.5 pr-2 text-foreground transition-all hover:bg-slate-200 dark:hover:bg-white/20 focus:outline-none active:scale-95">
                     {renderFlag(locale)}
                     <ChevronDown className="h-3 w-3 opacity-60" />
                   </button>

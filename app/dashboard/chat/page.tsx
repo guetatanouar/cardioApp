@@ -109,14 +109,14 @@ export default function ChatPage() {
           className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm flex-shrink-0 border transition ${
             channel === "staff"
               ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+              : "bg-white dark:bg-white/10 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/20 hover:bg-gray-50 dark:hover:bg-white/15"
           }`}
         >
           <Users className="h-4 w-4" />
           <span>Staff</span>
         </button>
         {patients.map((p) => {
-          const patientChannel = `patient:${p.id}`;
+          const patientChannel = `${prefix}:${p.id}`;
           return (
             <button
               key={p.id}
@@ -125,7 +125,7 @@ export default function ChatPage() {
               className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm flex-shrink-0 border transition ${
                 channel === patientChannel
                   ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                  : "bg-white dark:bg-white/10 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-white/20 hover:bg-gray-50 dark:hover:bg-white/15"
               }`}
             >
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium">
