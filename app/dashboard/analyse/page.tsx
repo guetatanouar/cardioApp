@@ -359,9 +359,9 @@ export default function AnalysePage() {
         </CardContent>
       </Card>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">{t("analyseModule")}</h2>
-        <Button variant="ghost" size="sm" onClick={() => setShowReports(!showReports)} className="gap-1">
+        <Button variant="ghost" size="sm" onClick={() => setShowReports(!showReports)} className="gap-1 self-start">
           <Clock className="h-4 w-4" />
           {t("analysisHistory")} ({reports.length})
           {showReports ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -382,19 +382,19 @@ export default function AnalysePage() {
                         setExpandedReportId(isExpanded ? null : r.id);
                         setSelectedReport(null);
                       }}
-                      className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/50 transition-colors"
+                      className="w-full flex items-center justify-between p-3 text-left hover:bg-muted/50 transition-colors gap-2"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         <Microscope className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                        <span className="font-medium text-sm">{r.first_name} {r.last_name}</span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="font-medium text-sm truncate">{r.first_name} {r.last_name}</span>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
                           {new Date(r.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </button>
                     {isExpanded && (
-                      <div className="border-t px-3 py-3 space-y-3 bg-muted/20">
+                      <div className="border-t px-2 sm:px-3 py-3 space-y-3 bg-muted/20">
                         <div>
                           <h4 className="font-semibold text-xs mb-0.5">{t("reportSummary")}</h4>
                           <p className="text-sm text-muted-foreground">{r.report_content.summary}</p>
@@ -461,8 +461,8 @@ export default function AnalysePage() {
             return (
               <Card key={patient.id} className={hasDocs ? "" : "opacity-60"}>
                 <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <CardTitle className="text-base">
                         {patient.first_name} {patient.last_name}
                       </CardTitle>
@@ -503,10 +503,10 @@ export default function AnalysePage() {
                           key={doc.id}
                           className="flex items-center justify-between rounded-lg border p-2.5"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 min-w-0">
                             <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                            <div>
-                              <p className="text-sm font-medium">{doc.name}</p>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{doc.name}</p>
                               <p className="text-xs text-muted-foreground">
                                 {doc.category} &middot; {new Date(doc.created_at).toLocaleDateString()}
                               </p>

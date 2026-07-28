@@ -100,95 +100,134 @@ export default function ChatPage() {
   if (!hasAccess) return null;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] gap-4">
-      <Card className="w-64 flex-shrink-0 flex flex-col min-h-0">
-        <CardHeader className="p-3">
-          <CardTitle className="text-sm">Conversations</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 flex-1 overflow-y-auto">
-          <button
-            type="button"
-            onClick={() => setChannel("staff")}
-            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent ${
-              channel === "staff" ? "bg-accent font-medium" : ""
-            }`}
-          >
-            <Users className="h-4 w-4" />
-            <span>Staff</span>
-          </button>
-          {patients.map((p) => {
-            const patientChannel = `patient:${p.id}`;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setChannel(patientChannel)}
-                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent ${
-                  channel === patientChannel ? "bg-accent font-medium" : ""
-                }`}
-              >
-                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs">
-                  {p.first_name[0]}{p.last_name[0]}
-                </div>
-                <span className="truncate">{p.last_name}</span>
-              </button>
-            );
-          })}
-        </CardContent>
-      </Card>
+    <div className="flex flex-col gap-3 md:gap-4 h-full min-h-0">
+      {/* Mobile: contact bubbles at top */}
+      <div className="md:hidden flex flex-wrap gap-2 pb-1">
+        <button
+          type="button"
+          onClick={() => setChannel("staff")}
+          className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm flex-shrink-0 border transition ${
+            channel === "staff"
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          <Users className="h-4 w-4" />
+          <span>Staff</span>
+        </button>
+        {patients.map((p) => {
+          const patientChannel = `patient:${p.id}`;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setChannel(patientChannel)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm flex-shrink-0 border transition ${
+                channel === patientChannel
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium">
+                {p.first_name[0]}{p.last_name[0]}
+              </div>
+              <span className="truncate max-w-[80px]">{p.last_name}</span>
+            </button>
+          );
+        })}
+      </div>
 
-      <Card className="flex flex-1 flex-col min-h-0">
-        <CardHeader className="flex flex-row items-center justify-between p-4">
-          <CardTitle className="text-base">
-            {channel === "staff" ? "Discussion equipe" : `Chat avec ${patients.find(p => `patient:${p.id}` === channel)?.last_name || "Patient"}`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-1 flex-col p-4 pt-0 min-h-0">
-          <div className="flex-1 space-y-2 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3 min-h-0">
-            {(items || []).map((msg) => {
-              const mine = isMine(msg);
-              const bubbleStyle = getBubbleStyle(msg);
+      <div className="flex flex-1 gap-4 min-h-0">
+        {/* Desktop: sidebar contacts */}
+        <Card className="hidden md:flex w-64 flex-shrink-0 flex-col min-h-0">
+          <CardHeader className="p-3">
+            <CardTitle className="text-sm">Conversations</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 flex-1 overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => setChannel("staff")}
+              className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent ${
+                channel === "staff" ? "bg-accent font-medium" : ""
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              <span>Staff</span>
+            </button>
+            {patients.map((p) => {
+              const patientChannel = `patient:${p.id}`;
               return (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setChannel(patientChannel)}
+                  className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent ${
+                    channel === patientChannel ? "bg-accent font-medium" : ""
+                  }`}
                 >
-                  <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${bubbleStyle}`}>
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
-                    <div className={`text-[9px] mt-1 ${mine ? "text-primary-foreground/50" : "opacity-50"}`}>
-                      {formatTime(msg.created_at)}
-                    </div>
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-xs">
+                    {p.first_name[0]}{p.last_name[0]}
                   </div>
-                </div>
+                  <span className="truncate">{p.last_name}</span>
+                </button>
               );
             })}
-            {(items || []).length === 0 && (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                Aucun message
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="mt-3 flex gap-2">
-            <Input
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-              }}
-              placeholder="Votre message..."
-              className="flex-1"
-            />
-            <Button onClick={sendMessage} disabled={!text.trim()}>
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <Card className="flex flex-1 flex-col min-h-0">
+          <CardHeader className="flex flex-row items-center justify-between p-4">
+            <CardTitle className="text-base">
+              {channel === "staff" ? "Discussion equipe" : `Chat avec ${patients.find(p => `patient:${p.id}` === channel)?.last_name || "Patient"}`}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-1 flex-col p-4 pt-0 min-h-0">
+            <div className="flex-1 space-y-2 overflow-y-auto rounded-xl border border-border bg-muted/30 p-3 min-h-0">
+              {(items || []).map((msg) => {
+                const mine = isMine(msg);
+                const bubbleStyle = getBubbleStyle(msg);
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
+                  >
+                    <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${bubbleStyle}`}>
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                      <div className={`text-[9px] mt-1 ${mine ? "text-primary-foreground/50" : "opacity-50"}`}>
+                        {formatTime(msg.created_at)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {(items || []).length === 0 && (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                  Aucun message
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            <div className="mt-3 flex gap-2">
+              <Input
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
+                placeholder="Votre message..."
+                className="flex-1"
+              />
+              <Button onClick={sendMessage} disabled={!text.trim()}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

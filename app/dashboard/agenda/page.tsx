@@ -439,8 +439,8 @@ export default function AgendaPage() {
           <span className="text-xs text-muted-foreground">{filteredItems.length} résultat(s)</span>
         )}
       </div>
-      <div className="flex gap-5 h-[calc(100vh-6rem)] justify-center -mt-5">
-        <div className="flex-1 max-w-4xl h-[550px]">
+      <div className="flex flex-col md:flex-row gap-5 h-auto md:h-[calc(100vh-6rem)] justify-center -mt-5">
+        <div className="flex-1 max-w-4xl h-auto md:h-[550px]">
           <Card className="h-full">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between px-2">
@@ -466,7 +466,7 @@ export default function AgendaPage() {
               <div className="grid grid-cols-7 gap-1">
                 {calendarDays.map((day, index) => {
                   if (day === null) {
-                    return <div key={`empty-${index}`} className="h-10" />;
+                    return <div key={`empty-${index}`} className="h-10 md:h-16" />;
                   }
                   const dayAppts = getAppointmentsForDay(day);
                   const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
@@ -480,16 +480,16 @@ export default function AgendaPage() {
                       type="button"
                       onClick={() => setSelectedDate(dateObj)}
                       className={cn(
-                        "h-16 rounded-xl flex flex-col items-center justify-center p-1 transition-all relative group",
+                        "h-12 md:h-16 rounded-xl flex flex-col items-center justify-center p-1 transition-all relative group",
                         isToday && "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105 z-10",
                         isSelected && !isToday && "bg-blue-50 ring-2 ring-blue-500",
                         !isToday && !isSelected && "hover:bg-slate-50"
                       )}
                     >
-                      <span className={cn("text-sm font-semibold", isToday ? "text-white" : "text-gray-700")}>{day}</span>
+                      <span className={cn("text-xs md:text-sm font-semibold", isToday ? "text-white" : "text-gray-700")}>{day}</span>
                       {hasAppointments && (
-                        <div className="flex gap-1 mt-1 justify-center">
-                          {dayAppts.slice(0, 4).map((a, i) => (
+                        <div className="flex gap-0.5 md:gap-1 mt-1 justify-center">
+                          {dayAppts.slice(0, 3).map((a, i) => (
                             <div
                               key={i}
                               className={cn(
@@ -519,7 +519,7 @@ export default function AgendaPage() {
           </Card>
         </div>
 
-        <div className="w-80 flex-shrink-0">
+        <div className="w-full md:w-80 flex-shrink-0">
           <Card className="h-full flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -539,7 +539,7 @@ export default function AgendaPage() {
             <CardContent className="flex-1 overflow-auto p-3 pt-0">
               {selectedDate ? (
                 selectedAppointments.length > 0 ? (
-                  <div className="space-y-4 max-h-[calc(100vh-20rem)] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-4 max-h-[50vh] md:max-h-[calc(100vh-20rem)] overflow-y-auto pr-2 custom-scrollbar">
                     {selectedAppointments.map((a) => {
                       const borderColor =
                         a.type === "consultation"
@@ -695,7 +695,7 @@ export default function AgendaPage() {
                   </div>
                 )
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-[50vh] md:max-h-[calc(100vh-20rem)] overflow-y-auto pr-2 custom-scrollbar">
                   {filteredItems.length > 0 ? (
                     <>
                       <p className="text-xs text-muted-foreground mb-3">{filteredItems.length} rendez-vous ce mois</p>
@@ -740,32 +740,30 @@ export default function AgendaPage() {
           </Card>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 w-full max-w-4xl -mt-16 ml-1">
-        <div className="rounded-xl border bg-white p-3 shadow-sm flex items-center gap-4">
-          <div className="text-2xl font-bold text-blue-600">
+      <div className="grid grid-cols-3 gap-3 mb-6 w-full max-w-4xl">
+        <div className="rounded-xl border bg-white p-3 md:p-4 shadow-sm flex flex-col items-center text-center gap-1">
+          <div className="text-xl md:text-2xl font-bold text-blue-600">
             {filteredItems.length}
           </div>
-          <p className="text-xs font-medium text-muted-foreground">
+          <p className="text-[11px] md:text-xs font-medium text-muted-foreground">
             Total RDV
           </p>
         </div>
 
-        <div className="rounded-xl border bg-white p-3 shadow-sm flex items-center gap-4">
-          <div className="text-2xl font-bold text-green-600">
+        <div className="rounded-xl border bg-white p-3 md:p-4 shadow-sm flex flex-col items-center text-center gap-1">
+          <div className="text-xl md:text-2xl font-bold text-green-600">
             {filteredItems.filter(a => a.status === "complete").length}
           </div>
-          <p className="text-xs font-medium text-muted-foreground">
+          <p className="text-[11px] md:text-xs font-medium text-muted-foreground">
             Terminés
           </p>
         </div>
 
-    
-
-        <div className="rounded-xl border bg-white p-3 shadow-sm flex items-center gap-4">
-          <div className="text-2xl font-bold text-orange-500">
+        <div className="rounded-xl border bg-white p-3 md:p-4 shadow-sm flex flex-col items-center text-center gap-1">
+          <div className="text-xl md:text-2xl font-bold text-orange-500">
             {filteredItems.filter(a => a.status === "scheduled").length}
           </div>
-          <p className="text-xs font-medium text-muted-foreground">
+          <p className="text-[11px] md:text-xs font-medium text-muted-foreground">
             Planifiés
           </p>
         </div>

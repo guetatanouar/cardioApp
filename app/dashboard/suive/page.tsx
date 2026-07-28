@@ -97,7 +97,7 @@ export default function MedicalDashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#f6f6f3]">
-      <main className="flex-1 p-6">
+      <main className="flex-1 p-4 md:p-6">
         <div className="bg-white rounded-2xl p-4 border mb-5">
           <p className="text-sm text-gray-500 mb-3">{t("selectPatient")}</p>
           <div className="flex flex-wrap gap-2">
@@ -120,7 +120,7 @@ export default function MedicalDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
           <StatCard
             title={t("bloodPressure")}
             value={latest ? `${latest.systolic ?? "—"}/${latest.diastolic ?? "—"}` : "—"}
@@ -158,7 +158,7 @@ export default function MedicalDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="bg-white rounded-2xl border p-5">
             <h3 className="text-sm font-medium text-gray-700 mb-4">{t("heartRateEvolution")}</h3>
             <div className="h-[220px]">
@@ -201,12 +201,12 @@ function StatCard({
   unit: string;
 }) {
   return (
-    <div className="bg-white border rounded-2xl p-5">
-      <p className="text-sm text-gray-500">{title}</p>
+    <div className="bg-white border rounded-2xl p-3 md:p-5">
+      <p className="text-xs md:text-sm text-gray-500">{title}</p>
 
       <div className="flex items-end gap-1 mt-2">
-        <h3 className="text-3xl font-bold text-gray-800">{value}</h3>
-        <span className="text-gray-400 mb-1">{unit}</span>
+        <h3 className="text-xl md:text-3xl font-bold text-gray-800 leading-tight">{value}</h3>
+        <span className="text-xs md:text-gray-400 text-gray-400 mb-1">{unit}</span>
       </div>
     </div>
   );

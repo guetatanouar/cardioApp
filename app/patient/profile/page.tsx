@@ -75,7 +75,7 @@ export default function PatientProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+      <div className="min-h-full bg-gray-50 p-4 md:p-6 flex items-center justify-center">
         <p className="text-gray-500">{t("loading" as any)}</p>
       </div>
     );
@@ -83,7 +83,7 @@ export default function PatientProfile() {
 
   if (!data?.patient) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+      <div className="min-h-full bg-gray-50 p-4 md:p-6 flex items-center justify-center">
         <p className="text-gray-500">{t("loadProfileError" as any)}</p>
       </div>
     );
@@ -104,12 +104,12 @@ export default function PatientProfile() {
       ];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-full bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border">
         <PatientHeader />
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
           <div className="grid md:grid-cols-2 gap-4">
             <div className="bg-gray-50 rounded-xl p-4">
               <div className="flex items-center gap-2 text-gray-500 text-sm mb-2">

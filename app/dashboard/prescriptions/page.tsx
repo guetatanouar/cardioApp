@@ -179,7 +179,7 @@ export default function PrescriptionsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="relative max-w-md">
+      <div className="relative max-w-full sm:max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder={t("searchPatient")}
@@ -193,9 +193,9 @@ export default function PrescriptionsPage() {
           </button>
         )}
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{t("prescriptions")}</h1>
-        <Button onClick={() => setShowNew(true)}>
+        <Button onClick={() => setShowNew(true)} className="self-start">
           <Plus className="mr-2 h-4 w-4" />
           {t("createPrescription")}
         </Button>
@@ -210,17 +210,17 @@ export default function PrescriptionsPage() {
             {(filteredItems || []).map((p) => {
               const meds = typeof p.medications === 'string' ? JSON.parse(p.medications) : (p.medications || []);
               return (
-                <div key={p.id} className="flex items-center justify-between rounded-lg border border-border p-4">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-primary" />
-                    <div>
-                      <div className="font-medium">{p.patient_name || "Patient"}</div>
+                <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-border p-4 gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <FileText className="h-8 w-8 text-primary flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium truncate">{p.patient_name || "Patient"}</div>
                       <div className="text-sm text-muted-foreground">
                         {new Date(p.date).toLocaleDateString()} - {meds.length} {t("medicationCount")}
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 self-end sm:self-center">
                     <Button variant="outline" size="sm" onClick={() => exportPdfPrescription(p)}>
                       <Download className="mr-1 h-4 w-4" />
                       PDF
@@ -252,7 +252,7 @@ export default function PrescriptionsPage() {
 
       {showNew && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-4">
             <CardHeader>
               <CardTitle>{t("createPrescription")}</CardTitle>
             </CardHeader>

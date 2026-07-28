@@ -68,77 +68,77 @@ export default function PatientDashboard() {
   const latest = items[0];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-full bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border">
         <PatientHeader />
 
-        <div className="p-6 space-y-6">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-red-50 rounded-xl p-4 text-center">
-              <Heart className="h-6 w-6 text-red-500 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-red-700">{latest?.heart_rate ?? "-"}</div>
-              <div className="text-xs text-red-500/80">{t("beatsPerMin" as any)}</div>
+        <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+          <div className="grid grid-cols-2 gap-2 md:gap-3">
+            <div className="bg-red-50 rounded-xl p-3 md:p-4 text-center">
+              <Heart className="h-5 w-5 md:h-6 md:w-6 text-red-500 mx-auto mb-1" />
+              <div className="text-xl md:text-2xl font-bold text-red-700 leading-tight">{latest?.heart_rate ?? "-"}</div>
+              <div className="text-[10px] md:text-xs text-red-500/80">{t("beatsPerMin" as any)}</div>
             </div>
 
-            <div className="bg-blue-50 rounded-xl p-4 text-center">
-              <Activity className="h-6 w-6 text-blue-500 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-blue-700">{latest ? `${latest.systolic ?? "-"}/${latest.diastolic ?? "-"}` : "-"}</div>
-              <div className="text-xs text-blue-500/80">{t("bloodPressureLabel" as any)}</div>
+            <div className="bg-blue-50 rounded-xl p-3 md:p-4 text-center">
+              <Activity className="h-5 w-5 md:h-6 md:w-6 text-blue-500 mx-auto mb-1" />
+              <div className="text-xl md:text-2xl font-bold text-blue-700 leading-tight">{latest ? `${latest.systolic ?? "-"}/${latest.diastolic ?? "-"}` : "-"}</div>
+              <div className="text-[10px] md:text-xs text-blue-500/80">{t("bloodPressureLabel" as any)}</div>
             </div>
 
-            <div className="bg-emerald-50 rounded-xl p-4 text-center">
-              <Wind className="h-6 w-6 text-emerald-500 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-emerald-700">{latest?.sp02 ?? "-"}%</div>
-              <div className="text-xs text-emerald-500/80">{t("oxygenSat" as any)}</div>
+            <div className="bg-emerald-50 rounded-xl p-3 md:p-4 text-center">
+              <Wind className="h-5 w-5 md:h-6 md:w-6 text-emerald-500 mx-auto mb-1" />
+              <div className="text-xl md:text-2xl font-bold text-emerald-700 leading-tight">{latest?.sp02 ?? "-"}%</div>
+              <div className="text-[10px] md:text-xs text-emerald-500/80">{t("oxygenSat" as any)}</div>
             </div>
 
-            <div className="bg-amber-50 rounded-xl p-4 text-center">
-              <Scale className="h-6 w-6 text-amber-500 mx-auto mb-1" />
-              <div className="text-2xl font-bold text-amber-700">{latest?.weight ?? "-"} {t("kg" as any)}</div>
-              <div className="text-xs text-amber-500/80">{t("weightLabel" as any)}</div>
+            <div className="bg-amber-50 rounded-xl p-3 md:p-4 text-center">
+              <Scale className="h-5 w-5 md:h-6 md:w-6 text-amber-500 mx-auto mb-1" />
+              <div className="text-xl md:text-2xl font-bold text-amber-700 leading-tight">{latest?.weight ?? "-"} {t("kg" as any)}</div>
+              <div className="text-[10px] md:text-xs text-amber-500/80">{t("weightLabel" as any)}</div>
             </div>
           </div>
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">{t("recordVitals" as any)}</CardTitle>
+              <CardTitle className="text-sm md:text-base">{t("recordVitals" as any)}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500">{t("systolic" as any)}</label>
-                  <Input placeholder="120" value={form.systolicBp} onChange={(e) => setForm((s) => ({ ...s, systolicBp: e.target.value }))} className="h-10" />
+                  <label className="text-[11px] md:text-xs text-gray-500">{t("systolic" as any)}</label>
+                  <Input placeholder="120" value={form.systolicBp} onChange={(e) => setForm((s) => ({ ...s, systolicBp: e.target.value }))} className="h-9 md:h-10 text-sm" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500">{t("diastolic" as any)}</label>
-                  <Input placeholder="80" value={form.diastolicBp} onChange={(e) => setForm((s) => ({ ...s, diastolicBp: e.target.value }))} className="h-10" />
+                  <label className="text-[11px] md:text-xs text-gray-500">{t("diastolic" as any)}</label>
+                  <Input placeholder="80" value={form.diastolicBp} onChange={(e) => setForm((s) => ({ ...s, diastolicBp: e.target.value }))} className="h-9 md:h-10 text-sm" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500">{t("heartRate" as any)}</label>
-                  <Input placeholder="72" value={form.heartRate} onChange={(e) => setForm((s) => ({ ...s, heartRate: e.target.value }))} className="h-10" />
+                  <label className="text-[11px] md:text-xs text-gray-500">{t("heartRate" as any)}</label>
+                  <Input placeholder="72" value={form.heartRate} onChange={(e) => setForm((s) => ({ ...s, heartRate: e.target.value }))} className="h-9 md:h-10 text-sm" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-gray-500">{t("oxygenSat" as any)}</label>
-                  <Input placeholder="98" value={form.spo2} onChange={(e) => setForm((s) => ({ ...s, spo2: e.target.value }))} className="h-10" />
+                  <label className="text-[11px] md:text-xs text-gray-500">{t("oxygenSat" as any)}</label>
+                  <Input placeholder="98" value={form.spo2} onChange={(e) => setForm((s) => ({ ...s, spo2: e.target.value }))} className="h-9 md:h-10 text-sm" />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-gray-500">{t("weight" as any)} ({t("kg" as any)})</label>
-                <Input placeholder="70" value={form.weightKg} onChange={(e) => setForm((s) => ({ ...s, weightKg: e.target.value }))} className="h-10" />
+                <label className="text-[11px] md:text-xs text-gray-500">{t("weight" as any)} ({t("kg" as any)})</label>
+                <Input placeholder="70" value={form.weightKg} onChange={(e) => setForm((s) => ({ ...s, weightKg: e.target.value }))} className="h-9 md:h-10 text-sm" />
               </div>
-              <Input placeholder={t("note" as any)} value={form.note} onChange={(e) => setForm((s) => ({ ...s, note: e.target.value }))} />
-              <Button onClick={submit} className="w-full bg-indigo-600 hover:bg-indigo-700">
+              <Input placeholder={t("note" as any)} value={form.note} onChange={(e) => setForm((s) => ({ ...s, note: e.target.value }))} className="text-sm" />
+              <Button onClick={submit} className="w-full bg-indigo-600 hover:bg-indigo-700 h-10 md:h-11">
                 <Plus className="h-4 w-4 mr-2" />
                 {t("record" as any)}
               </Button>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="mb-4">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">{t("recentEvolution" as any)}</CardTitle>
+              <CardTitle className="text-sm md:text-base">{t("recentEvolution" as any)}</CardTitle>
             </CardHeader>
-            <CardContent style={{ height: 240 }}>
+            <CardContent className="h-[200px] md:h-[240px]">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={chartData}>
