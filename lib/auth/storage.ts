@@ -18,6 +18,9 @@ export type SecretairePermissions = {
   can_view_documents: boolean;
   can_upload_documents: boolean;
   can_view_consultations: boolean;
+  can_view_templates: boolean;
+  can_edit_templates: boolean;
+  can_delete_templates: boolean;
 };
 
 export type StoredSession = {

@@ -18,7 +18,10 @@ const permMap: Record<string, string> = {
   'vitals:delete': 'can_edit_vitals',
   documents: 'can_view_documents',
   'documents:write': 'can_upload_documents',
-  consultations: 'can_view_consultations'
+  consultations: 'can_view_consultations',
+  templates: 'can_view_templates',
+  'templates:write': 'can_edit_templates',
+  'templates:delete': 'can_delete_templates',
 };
 
 export function requirePermission(resource: string, action: 'read' | 'write' | 'delete' | 'send' = 'read') {
