@@ -274,6 +274,20 @@ patientsRouter.put('/:id/consultations/:consultationId', authenticateToken, requ
     }
 });
 
+patientsRouter.delete('/:id/consultations/:consultationId', authenticateToken, requirePermission('consultations', 'write'), async (req, res) => {
+    try {
+        const result = await query(
+            'DELETE FROM consultations WHERE id = $1 AND patient_id = $2 RETURNING id',
+            [req.params.consultationId, req.params.id]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ message: 'Consultation non trouvée' });
+        res.json({ message: 'Consultation deleted' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 patientsRouter.get('/:id/consultations', authenticateToken, async (req, res) => {
     try {
       const result = await query('SELECT * FROM consultations WHERE patient_id = $1 ORDER BY created_at DESC', [req.params.id]);

@@ -26,7 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DocumentPreview } from "@/components/ui/document-preview";
-import { FileText, Plus, Trash2, Download, Upload, Eye, EyeOff } from "lucide-react";
+import { Activity, FileText, FolderOpen, MessageSquare, Pill, Plus, Search, Stethoscope, Trash2, Download, Upload, Eye, EyeOff, UserCog } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -119,6 +119,9 @@ export default function PatientsPage() {
   const [consultationError, setConsultationError] = React.useState<string | null>(null);
   const [editConsultId, setEditConsultId] = React.useState<string | null>(null);
   const [editConsultForm, setEditConsultForm] = React.useState({ date: "", motif: "", ecole: "", examen: "", diagnostic: "", traitement: "", note: "" });
+  const [selectedConsultId, setSelectedConsultId] = React.useState<string | null>(null);
+  const [consultSearch, setConsultSearch] = React.useState("");
+  const [confirmConsultDeleteId, setConfirmConsultDeleteId] = React.useState<string | null>(null);
 
   const [showCreate, setShowCreate] = React.useState(false);
   const [creating, setCreating] = React.useState(false);
@@ -547,6 +550,18 @@ export default function PatientsPage() {
       });
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function deleteConsultation(id: string) {
+    if (!selectedId) return;
+    try {
+      await apiFetch(`/api/patients/${selectedId}/consultations/${id}`, { method: "DELETE" });
+      setConfirmConsultDeleteId(null);
+      dispatchNotification({ id: `consult-del-${Date.now()}`, title: "Consultation supprimée", detail: "La consultation a été supprimée", type: "success" });
+      if (selectedId) await loadDetail(selectedId);
+    } catch {
+      dispatchNotification({ id: `consult-del-err-${Date.now()}`, title: "Erreur", detail: "Impossible de supprimer la consultation", type: "error" });
     }
   }
 
@@ -1005,15 +1020,15 @@ export default function PatientsPage() {
             <div className="mb-4 flex flex-wrap gap-2">
               {(
                 [
-                  ["dossier", "Dossier medical"],
-                  ["consultations", "Consultations"],
-                  ["vitals", "Vitaux"],
-                  ["documents", "Documents"],
-                  ["ordonnances", "Ordonnances"],
-                  ["messages", "Messagerie"],
-                  ["access", "Acces patient"]
+                  ["dossier", "Dossier medical", FolderOpen],
+                  ["consultations", "Consultations", Stethoscope],
+                  ["vitals", "Vitaux", Activity],
+                  ["documents", "Documents", FileText],
+                  ["ordonnances", "Ordonnances", Pill],
+                  ["messages", "Messagerie", MessageSquare],
+                  ["access", "Acces patient", UserCog]
                 ] as const
-              ).map(([key, label]) => (
+              ).map(([key, label, Icon]) => (
                 <button
                   key={key}
                   type="button"
@@ -1024,6 +1039,7 @@ export default function PatientsPage() {
                   )}
                 >
                   <span className="inline-flex items-center gap-2">
+                    <Icon className="h-4 w-4" />
                     <span>{label}</span>
                     {key === "messages" && chatUnread > 0 ? (
                       <span className="rounded-full bg-destructive px-2 py-0.5 text-xs font-semibold text-white">{chatUnread}</span>
@@ -1035,8 +1051,8 @@ export default function PatientsPage() {
 
             {tab === "dossier" ? (
               editMode ? (
-                <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-3">
+                  <div className="grid gap-3 md:grid-cols-2">
                     <div>
                       <label className="text-sm text-muted-foreground mb-1 block">Telephone</label>
                       <PhoneInput
@@ -1082,9 +1098,9 @@ export default function PatientsPage() {
                     </div>
                   </div>
                   {editError ? <div className="text-sm text-destructive">{editError}</div> : null}
-                  <div className="flex justify-end gap-2">
+                  <div className="sticky bottom-0 z-10 -mx-6 -mb-6 flex justify-end gap-3 border-t border-border bg-background/95 px-6 py-3 backdrop-blur">
                     <Button type="button" variant="outline" onClick={cancelEdit}>Annuler</Button>
-                    <Button type="button" onClick={saveEdit} disabled={editSaving}>{editSaving ? "Sauvegarde..." : "Sauvegarder"}</Button>
+                    <Button type="button" onClick={saveEdit} disabled={editSaving}>{editSaving ? "Enregistrement..." : "Enregistrer"}</Button>
                   </div>
                 </div>
               ) : (
@@ -1139,14 +1155,29 @@ export default function PatientsPage() {
               </div>
               )
             ) : tab === "consultations" ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              (() => {
+                const q = consultSearch.trim().toLowerCase();
+                const consults = (detail.consultations || []).filter((c: any) => {
+                  if (!q) return true;
+                  return [c.motif, c.diagnostic, c.traitement, c.ecole, c.note, c.date]
+                    .filter(Boolean)
+                    .join(" ")
+                    .toLowerCase()
+                    .includes(q);
+                });
+                return (
+                  <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">Historique</CardTitle>
+                    <div className="relative mt-1">
+                      <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input placeholder="Rechercher une consultation..." value={consultSearch} onChange={(e) => setConsultSearch(e.target.value)} className="h-9 pl-8" />
+                    </div>
                   </CardHeader>
                   <CardContent className="max-h-[360px] overflow-y-auto">
                     <div className="space-y-3">
-                      {(detail.consultations || []).map((c: any) => (
+                      {consults.map((c: any) => (
                         editConsultId === c.id ? (
                           <div key={c.id} className="rounded-xl border border-border p-3 space-y-2">
                             <div className="grid grid-cols-3 gap-2">
@@ -1203,23 +1234,38 @@ export default function PatientsPage() {
                             </div>
                           </div>
                         ) : (
-                        <div key={c.id} className="rounded-xl border border-border p-3">
+                        <div
+                          key={c.id}
+                          className={cn(
+                            "cursor-pointer rounded-xl border p-3 transition",
+                            selectedConsultId === c.id ? "border-primary bg-primary/5 ring-1 ring-primary/40" : "border-border hover:bg-muted/40"
+                          )}
+                        >
                           <div className="flex items-start justify-between gap-2">
-                            <div>
+                            <div className="flex-1" onClick={() => setSelectedConsultId(selectedConsultId === c.id ? null : c.id)}>
                               <div className="text-xs text-muted-foreground">{new Date(c.date).toLocaleDateString("fr-FR")}</div>
                               <div className="mt-1 font-medium text-sm">{c.motif ?? "—"}</div>
                               {c.ecole ? <div className="text-xs text-muted-foreground mt-0.5">Ecole: {c.ecole}</div> : null}
                               {c.diagnostic && <div className="text-sm text-muted-foreground">{c.diagnostic}</div>}
                               {c.traitement && <div className="text-xs text-blue-600 mt-1">Traitement: {c.traitement}</div>}
                             </div>
-                            <Button type="button" variant="ghost" size="sm" onClick={() => { setEditConsultId(c.id); setEditConsultForm({ date: c.date || "", motif: c.motif || "", ecole: c.ecole || "", examen: c.examen || "", diagnostic: c.diagnostic || "", traitement: c.traitement || "", note: c.note || "" }); }}>
-                              Modifier
-                            </Button>
+                            <div className="flex shrink-0 items-center gap-1">
+                              <Button type="button" variant="ghost" size="sm" onClick={() => { setSelectedConsultId(c.id); setEditConsultId(c.id); setEditConsultForm({ date: c.date || "", motif: c.motif || "", ecole: c.ecole || "", examen: c.examen || "", diagnostic: c.diagnostic || "", traitement: c.traitement || "", note: c.note || "" }); }}>
+                                Modifier
+                              </Button>
+                              <Button type="button" variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setConfirmConsultDeleteId(c.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                         )
                       ))}
-                      {!detail.consultations?.length ? <div className="text-sm text-muted-foreground">Aucune consultation</div> : null}
+                      {!detail.consultations?.length ? (
+                        <div className="text-sm text-muted-foreground">Aucune consultation</div>
+                      ) : consults.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">Aucune consultation trouvée</div>
+                      ) : null}
                     </div>
                   </CardContent>
                 </Card>
@@ -1228,7 +1274,7 @@ export default function PatientsPage() {
                   <CardHeader>
                     <CardTitle className="text-base">Nouvelle consultation</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 max-h-[360px] overflow-y-auto">
+                  <CardContent className="space-y-1.5 max-h-[360px] overflow-y-auto">
                     <div>
                       <label className="text-xs text-muted-foreground mb-0.5 block">Date</label>
                       <Input
@@ -1335,6 +1381,8 @@ export default function PatientsPage() {
                   </CardContent>
                 </Card>
               </div>
+                );
+              })()
             ) : tab === "vitals" ? (
               (() => {
                 const rows = (detail.vitals || [])
@@ -1740,6 +1788,17 @@ export default function PatientsPage() {
         cancelLabel="Annuler"
         variant="destructive"
         onConfirm={() => { if (confirmVitalDeleteId) deleteVital(confirmVitalDeleteId); }}
+      />
+
+      <ConfirmDialog
+        open={confirmConsultDeleteId !== null}
+        onOpenChange={(o) => { if (!o) setConfirmConsultDeleteId(null); }}
+        title="Supprimer la consultation"
+        description="Voulez-vous vraiment supprimer cette consultation ?"
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="destructive"
+        onConfirm={() => { if (confirmConsultDeleteId) deleteConsultation(confirmConsultDeleteId); }}
       />
     </div>
   );
