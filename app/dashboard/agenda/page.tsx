@@ -386,10 +386,10 @@ export default function AgendaPage() {
   }
 
   function statusBadge(status: string) {
-    if (status === "complete") return "bg-green-100 text-green-700";
-    if (status === "cancelled") return "bg-gray-100 text-gray-500 line-through";
-    if (status === "urgent") return "bg-red-100 text-red-700";
-    return "bg-blue-100 text-blue-700";
+    if (status === "complete") return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    if (status === "cancelled") return "bg-gray-100 text-gray-500 line-through dark:bg-slate-800/60 dark:text-gray-400";
+    if (status === "urgent") return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
+    return "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400";
   }
 
   function statusLabel(status: string) {
@@ -444,19 +444,19 @@ export default function AgendaPage() {
           <Card className="h-full">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between px-2">
-                <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-blue-50">
+                <Button variant="ghost" size="icon" onClick={prevMonth} className="hover:bg-blue-50 dark:hover:bg-blue-950/40">
                   <ChevronLeft className="h-5 w-5 text-blue-600" />
                 </Button>
-                <h2 className="text-xl font-bold text-gray-800 tracking-tight">
+                <h2 className="text-xl font-bold text-gray-800 tracking-tight dark:text-foreground">
                   {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
                 </h2>
-                <Button variant="ghost" size="icon" onClick={nextMonth} className="hover:bg-blue-50">
+                <Button variant="ghost" size="icon" onClick={nextMonth} className="hover:bg-blue-50 dark:hover:bg-blue-950/40">
                   <ChevronRight className="h-5 w-5 text-blue-600" />
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="p-4">
-              <div className="grid grid-cols-7 gap-1 mb-1 border border-gray-200 rounded-md relative -mt-5">            {dayNames.map((d) => (
+              <div className="grid grid-cols-7 gap-1 mb-1 border border-gray-200 rounded-md relative -mt-5 dark:border-border">            {dayNames.map((d) => (
                 <div key={d} className="text-center text-xs font-medium text-muted-foreground py-2">
                   {d}
                 </div>
@@ -481,12 +481,12 @@ export default function AgendaPage() {
                       onClick={() => setSelectedDate(dateObj)}
                       className={cn(
                         "h-12 md:h-16 rounded-xl flex flex-col items-center justify-center p-1 transition-all relative group",
-                        isToday && "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105 z-10",
-                        isSelected && !isToday && "bg-blue-50 ring-2 ring-blue-500",
-                        !isToday && !isSelected && "hover:bg-slate-50"
+                        isToday && "bg-blue-600 text-white shadow-lg shadow-blue-200 scale-105 z-10 dark:shadow-blue-950",
+                        isSelected && !isToday && "bg-blue-50 ring-2 ring-blue-500 dark:bg-blue-950/40",
+                        !isToday && !isSelected && "hover:bg-slate-50 dark:hover:bg-accent"
                       )}
                     >
-                      <span className={cn("text-xs md:text-sm font-semibold", isToday ? "text-white" : "text-gray-700")}>{day}</span>
+                      <span className={cn("text-xs md:text-sm font-semibold", isToday ? "text-white" : "text-gray-700 dark:text-foreground")}>{day}</span>
                       {hasAppointments && (
                         <div className="flex gap-0.5 md:gap-1 mt-1 justify-center">
                           {dayAppts.slice(0, 3).map((a, i) => (
@@ -543,15 +543,14 @@ export default function AgendaPage() {
                     {selectedAppointments.map((a) => {
                       const borderColor =
                         a.type === "consultation"
-                          ? "border-l-blue-500"
-                          : a.type === "suivi"
-                        
+                          ? "border-l-blue-500 dark:border-l-blue-500"
+                          : "border-l-green-500 dark:border-l-green-500";
 
                       return (
                         <div
                           key={a.id}
                           className={cn(
-                            "rounded-2xl border border-slate-100 border-l-4 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-200",
+                            "rounded-2xl border border-slate-100 border-l-4 bg-white p-4 shadow-sm hover:shadow-md transition-all duration-200 dark:border-slate-700 dark:bg-card",
                             borderColor
                           )}
                         >
@@ -559,15 +558,15 @@ export default function AgendaPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className={cn("w-2.5 h-2.5 rounded-full", typeColorDot(a.type))} />
-                                <span className="text-sm font-bold text-slate-800 truncate">
+                                <span className="text-sm font-bold text-slate-800 truncate dark:text-foreground">
                                   {a.last_name} {a.first_name}
                                 </span>
                               </div>
-                              <div className="text-xs text-slate-500 mt-1 font-medium capitalize">
+                              <div className="text-xs text-slate-500 mt-1 font-medium capitalize dark:text-muted-foreground">
                                 {a.type}
                               </div>
                               {a.reason && (
-                                <div className="text-xs text-slate-400 mt-1 line-clamp-1 italic">
+                                <div className="text-xs text-slate-400 mt-1 line-clamp-1 italic dark:text-muted-foreground">
                                   {a.reason}
                                 </div>
                               )}
@@ -582,7 +581,7 @@ export default function AgendaPage() {
                             </div>
                           </div>
                           {a.status !== "cancelled" && a.status !== "complete" && (
-                            <div className="mt-3 pt-3 border-t border-slate-50 flex justify-end gap-3">
+                            <div className="mt-3 pt-3 border-t border-slate-50 dark:border-slate-700/60 flex justify-end gap-3">
                               {(() => {
                                 const todayStr = new Date().toISOString().split("T")[0];
                                 const isPast = a.date < todayStr;
@@ -591,14 +590,14 @@ export default function AgendaPage() {
                                     <>
                                       <button
                                         type="button"
-                                        className="text-[10px] font-bold text-green-600 hover:text-green-800 uppercase tracking-widest hover:underline"
+                                        className="text-[10px] font-bold text-green-600 hover:text-green-800 dark:text-green-500 dark:hover:text-green-400 uppercase tracking-widest hover:underline"
                                         onClick={() => completeAppointment(a.id)}
                                       >
                                         {t("complete")}
                                       </button>
                                       <button
                                         type="button"
-                                        className="text-[10px] font-bold text-red-600 hover:text-red-800 uppercase tracking-widest hover:underline"
+                                        className="text-[10px] font-bold text-red-600 hover:text-red-800 dark:text-red-500 dark:hover:text-red-400 uppercase tracking-widest hover:underline"
                                         onClick={() => {
                                           setDeletingId(a.id);
                                           setDeleteConfirmOpen(true);
@@ -613,14 +612,14 @@ export default function AgendaPage() {
                                   <>
                                     <button
                                       type="button"
-                                      className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-widest hover:underline"
+                                      className="text-[10px] font-bold text-blue-600 hover:text-blue-800 dark:text-blue-500 dark:hover:text-blue-400 uppercase tracking-widest hover:underline"
                                       onClick={() => openEditModal(a)}
                                     >
                                       {t("edit")}
                                     </button>
                                     <button
                                       type="button"
-                                      className="text-[10px] font-bold text-red-500 hover:text-red-700 uppercase tracking-widest hover:underline"
+                                      className="text-[10px] font-bold text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 uppercase tracking-widest hover:underline"
                                       onClick={() => {
                                         setCancellingId(a.id);
                                         setCancelConfirmOpen(true);
@@ -630,7 +629,7 @@ export default function AgendaPage() {
                                     </button>
                                     <button
                                       type="button"
-                                      className="text-[10px] font-bold text-red-600 hover:text-red-800 uppercase tracking-widest hover:underline"
+                                      className="text-[10px] font-bold text-red-600 hover:text-red-800 dark:text-red-500 dark:hover:text-red-400 uppercase tracking-widest hover:underline"
                                       onClick={() => {
                                         setDeletingId(a.id);
                                         setDeleteConfirmOpen(true);
@@ -644,10 +643,10 @@ export default function AgendaPage() {
                             </div>
                           )}
                           {a.status === "complete" && (
-                            <div className="mt-3 pt-3 border-t border-slate-50 flex justify-end gap-3">
+                            <div className="mt-3 pt-3 border-t border-slate-50 dark:border-slate-700/60 flex justify-end gap-3">
                               <button
                                 type="button"
-                                className="text-[10px] font-bold text-blue-600 hover:text-blue-800 uppercase tracking-widest hover:underline"
+                                className="text-[10px] font-bold text-blue-600 hover:text-blue-800 dark:text-blue-500 dark:hover:text-blue-400 uppercase tracking-widest hover:underline"
                                 onClick={() => {
                                   setDetailAppointment(a);
                                   setDetailModalOpen(true);
@@ -657,7 +656,7 @@ export default function AgendaPage() {
                               </button>
                               <button
                                 type="button"
-                                className="text-[10px] font-bold text-red-600 hover:text-red-800 uppercase tracking-widest hover:underline"
+                                className="text-[10px] font-bold text-red-600 hover:text-red-800 dark:text-red-500 dark:hover:text-red-400 uppercase tracking-widest hover:underline"
                                 onClick={() => {
                                   setDeletingId(a.id);
                                   setDeleteConfirmOpen(true);
@@ -668,10 +667,10 @@ export default function AgendaPage() {
                             </div>
                           )}
                           {a.status === "cancelled" && (
-                            <div className="mt-3 pt-3 border-t border-slate-50 flex justify-end">
+                            <div className="mt-3 pt-3 border-t border-slate-50 dark:border-slate-700/60 flex justify-end">
                               <button
                                 type="button"
-                                className="text-[10px] font-bold text-red-600 hover:text-red-800 uppercase tracking-widest hover:underline"
+                                className="text-[10px] font-bold text-red-600 hover:text-red-800 dark:text-red-500 dark:hover:text-red-400 uppercase tracking-widest hover:underline"
                                 onClick={() => {
                                   setDeletingId(a.id);
                                   setDeleteConfirmOpen(true);
@@ -741,7 +740,7 @@ export default function AgendaPage() {
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3 mb-6 w-full max-w-4xl">
-        <div className="rounded-xl border bg-white p-3 md:p-4 shadow-sm flex flex-col items-center text-center gap-1">
+        <div className="rounded-xl border bg-white p-3 md:p-4 shadow-sm flex flex-col items-center text-center gap-1 dark:bg-card">
           <div className="text-xl md:text-2xl font-bold text-blue-600">
             {filteredItems.length}
           </div>
@@ -750,7 +749,7 @@ export default function AgendaPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border bg-white p-3 md:p-4 shadow-sm flex flex-col items-center text-center gap-1">
+        <div className="rounded-xl border bg-white p-3 md:p-4 shadow-sm flex flex-col items-center text-center gap-1 dark:bg-card">
           <div className="text-xl md:text-2xl font-bold text-green-600">
             {filteredItems.filter(a => a.status === "complete").length}
           </div>
@@ -759,7 +758,7 @@ export default function AgendaPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border bg-white p-3 md:p-4 shadow-sm flex flex-col items-center text-center gap-1">
+        <div className="rounded-xl border bg-white p-3 md:p-4 shadow-sm flex flex-col items-center text-center gap-1 dark:bg-card">
           <div className="text-xl md:text-2xl font-bold text-orange-500">
             {filteredItems.filter(a => a.status === "scheduled").length}
           </div>

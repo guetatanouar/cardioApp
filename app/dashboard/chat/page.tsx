@@ -90,11 +90,11 @@ export default function ChatPage() {
     const mine = isMine(msg);
     if (mine) return "bg-primary text-primary-foreground";
     if (channel === "staff") {
-      if (msg.sender_role === "secretaire") return "bg-amber-50 border border-amber-200";
-      return "bg-blue-50 border border-blue-200";
+      if (msg.sender_role === "secretaire") return "bg-amber-50 border border-amber-200 dark:bg-amber-900/30 dark:border-amber-800";
+      return "bg-blue-50 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800";
     }
-    if (msg.sender_role === "patient") return "bg-emerald-50 border border-emerald-200";
-    return "bg-blue-50 border border-blue-200";
+    if (msg.sender_role === "patient") return "bg-emerald-50 border border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800";
+    return "bg-blue-50 border border-blue-200 dark:bg-blue-900/30 dark:border-blue-800";
   }
 
   if (!hasAccess) return null;
@@ -109,7 +109,7 @@ export default function ChatPage() {
           className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm flex-shrink-0 border transition ${
             channel === "staff"
               ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+              : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-card dark:text-foreground dark:border-border dark:hover:bg-accent"
           }`}
         >
           <Users className="h-4 w-4" />
@@ -125,10 +125,10 @@ export default function ChatPage() {
               className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm flex-shrink-0 border transition ${
                 channel === patientChannel
                   ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50"
+                  : "bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-card dark:text-foreground dark:border-border dark:hover:bg-accent"
               }`}
             >
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-xs font-medium dark:bg-muted">
                 {p.first_name[0]}{p.last_name[0]}
               </div>
               <span className="truncate max-w-[80px]">{p.last_name}</span>

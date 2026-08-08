@@ -44,7 +44,7 @@ interface HeaderProps {
 
 export function Header({ isPatientPortal = false }: HeaderProps) {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const { locale, setLocale } = useI18n();
 
   const session = typeof window !== "undefined" ? getSession() : null;
@@ -186,15 +186,29 @@ export function Header({ isPatientPortal = false }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Theme Toggle styled consistently */}
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="h-9 w-9 p-0 rounded-xl hover:bg-accent active:scale-95 transition-all" 
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        {/* Theme Toggle (day/night) */}
+        <div
+          className="flex h-9 w-[74px] items-center gap-1 rounded-xl border border-input bg-background p-1 shadow-sm"
+          role="group"
+          aria-label="Changer le thème"
         >
-          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-        </Button>
+          <button
+            type="button"
+            title="Mode jour"
+            onClick={() => setTheme("light")}
+            className={`flex h-7 flex-1 items-center justify-center rounded-lg transition-all active:scale-95 ${resolvedTheme === "light" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
+          >
+            <Sun className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            title="Mode nuit"
+            onClick={() => setTheme("dark")}
+            className={`flex h-7 flex-1 items-center justify-center rounded-lg transition-all active:scale-95 ${resolvedTheme === "dark" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
+          >
+            <Moon className="h-4 w-4" />
+          </button>
+        </div>
 
         {/* Notification Bell with red badge */}
         <DropdownMenu>
