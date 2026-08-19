@@ -59,7 +59,7 @@ patientsRouter.get('/', authenticateToken, requirePermission('patients'), async 
             sql += ' JOIN consultations c ON c.patient_id = p.id WHERE c.date = $1';
             params.push(consultationDate);
         }
-        sql += ' ORDER BY p.created_at DESC';
+        sql += ' ORDER BY p.last_name ASC, p.first_name ASC';
         const result = await query(sql, params);
         res.json(result.rows);
     }
