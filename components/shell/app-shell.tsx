@@ -24,6 +24,7 @@ import {
   FileUp,
   Pill,
   MessageCircle,
+  LayoutTemplate,
   Menu,
   X,
   Sun,
@@ -57,6 +58,7 @@ const allStaffNav = [
   { href: "/dashboard/suive", icon: HeartPulse, labelKey: "suivi", permKey: "can_view_suive" },
   { href: "/dashboard/analyse", icon: Microscope, labelKey: "analyse", permKey: "can_view_documents" },
   { href: "/dashboard/prescriptions", icon: FileText, labelKey: "prescriptions", permKey: "can_view_prescriptions" },
+  { href: "/dashboard/templates", icon: LayoutTemplate, labelKey: "templates", permKey: "can_view_templates" },
   { href: "/dashboard/chat", icon: MessageSquare, labelKey: "chat", permKey: "can_view_chat" }
 ];
 
@@ -114,6 +116,9 @@ const getHeaderTitleInfo = (pathname: string) => {
   }
   if (pathname.includes("/dashboard/prescriptions")) {
     return { title: "Prescriptions", subtitle: "Gestion des ordonnances" };
+  }
+  if (pathname.includes("/dashboard/templates")) {
+    return { title: "Templates", subtitle: "Modèles de documents médicaux" };
   }
   if (pathname.includes("/dashboard/chat")) {
     return { title: "Messagerie", subtitle: "Discussions d'équipe" };

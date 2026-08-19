@@ -153,7 +153,10 @@ CREATE TABLE IF NOT EXISTS secretaire_permissions (
     can_edit_vitals BOOLEAN NOT NULL DEFAULT false,
     can_view_documents BOOLEAN NOT NULL DEFAULT false,
     can_upload_documents BOOLEAN NOT NULL DEFAULT false,
-    can_view_consultations BOOLEAN NOT NULL DEFAULT false
+    can_view_consultations BOOLEAN NOT NULL DEFAULT false,
+    can_view_templates BOOLEAN NOT NULL DEFAULT false,
+    can_edit_templates BOOLEAN NOT NULL DEFAULT false,
+    can_delete_templates BOOLEAN NOT NULL DEFAULT false
 );
 
 CREATE TABLE IF NOT EXISTS patient_accounts (
@@ -163,6 +166,18 @@ CREATE TABLE IF NOT EXISTS patient_accounts (
     password_hash TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT true,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS document_templates (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL CHECK (category IN ('ordonnance', 'compte_rendu', 'certificat', 'autre')),
+    content JSONB NOT NULL DEFAULT '{}',
+    created_by TEXT REFERENCES users(id),
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ============================================================
@@ -267,8 +282,8 @@ INSERT INTO analysis_reports (id, patient_id, document_ids, report_content, crea
 ON CONFLICT (id) DO NOTHING;
 
 -- 10. SECRETAIRE PERMISSIONS
-INSERT INTO secretaire_permissions (user_id, can_view_patients, can_edit_patients, can_delete_patients, can_view_appointments, can_edit_appointments, can_delete_appointments, can_view_chat, can_send_chat, can_view_prescriptions, can_edit_prescriptions, can_view_vitals, can_edit_vitals, can_view_documents, can_upload_documents, can_view_consultations)
-VALUES ('2', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true)
+INSERT INTO secretaire_permissions (user_id, can_view_patients, can_edit_patients, can_delete_patients, can_view_appointments, can_edit_appointments, can_delete_appointments, can_view_chat, can_send_chat, can_view_prescriptions, can_edit_prescriptions, can_view_vitals, can_edit_vitals, can_view_documents, can_upload_documents, can_view_consultations, can_view_templates, can_edit_templates, can_delete_templates)
+VALUES ('2', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true)
 ON CONFLICT (user_id) DO NOTHING;
 
 -- 11. PATIENT ACCOUNTS (portal login: username = firstname.lastname, password = patient123)
@@ -276,3 +291,16 @@ INSERT INTO patient_accounts (patient_id, username, password_hash, is_active)
 SELECT id, LOWER(REGEXP_REPLACE(first_name || '.' || last_name, '[^a-z0-9.]', '', 'g')), '$2a$10$X7vQ8z9Y5z5z5z5z5z5z5u', true
 FROM patients
 ON CONFLICT (patient_id) DO NOTHING;
+
+-- 12. DOCUMENT TEMPLATES
+INSERT INTO document_templates (id, name, description, category, content, created_by) VALUES
+('tpl_1', 'Ordonnance médicale', 'Template standard pour les ordonnances médicales', 'ordonnance',
+ '{"title":"ORDONNANCE MÉDICALE","sections":[{"label":"Informations patient","fields":["patient_name","date_of_birth"]},{"label":"Prescription","fields":["medications"]},{"label":"Notes","fields":["notes"]}],"fields":{"patient_name":"","date_of_birth":"","medications":[],"notes":""}}',
+ '1'),
+('tpl_2', 'Compte rendu médical', 'Template pour les comptes rendus de consultation', 'compte_rendu',
+ '{"title":"COMPTE RENDU MÉDICAL","sections":[{"label":"Informations patient","fields":["patient_name","date_of_birth","gender"]},{"label":"Consultation","fields":["consultation_date","motif","examination"]},{"label":"Diagnostic et traitement","fields":["diagnosis","treatment"]},{"label":"Observations","fields":["notes"]}],"fields":{"patient_name":"","date_of_birth":"","gender":"","consultation_date":"","motif":"","examination":"","diagnosis":"","treatment":"","notes":""}}',
+ '1'),
+('tpl_3', 'Certificat médical', 'Template pour les certificats médicaux', 'certificat',
+ '{"title":"CERTIFICAT MÉDICAL","sections":[{"label":"Informations patient","fields":["patient_name","date_of_birth"]},{"label":"Motif du certificat","fields":["motif","duration","rest_period"]},{"label":"Observations","fields":["observations"]}],"fields":{"patient_name":"","date_of_birth":"","motif":"","duration":"","rest_period":"","observations":""}}',
+ '1')
+ON CONFLICT (id) DO NOTHING;
