@@ -22,7 +22,6 @@ import { clearSession, getSession } from "@/lib/auth/storage";
 import { useI18n, locales } from "@/lib/i18n/client";
 import { apiFetch } from "@/lib/api/client";
 import NavbarLogo from "@/components/NavbarLogo";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {

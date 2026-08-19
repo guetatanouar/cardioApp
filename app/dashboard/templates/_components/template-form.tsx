@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ClipboardList, Award } from "lucide-react";
+import { FileText } from "lucide-react";
 import { CATEGORY_META, DEFAULT_TEMPLATES } from "./template-constants";
 
 interface TemplateFormProps {

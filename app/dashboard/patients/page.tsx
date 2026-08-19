@@ -2057,7 +2057,6 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
   const [rxStatus, setRxStatus] = React.useState("active");
   const [expiryDate, setExpiryDate] = React.useState("");
   const [saving, setSaving] = React.useState(false);
-  const [prescriptionDate, setPrescriptionDate] = React.useState(new Date().toISOString().split("T")[0]);
   const [medicines, setMedicines] = React.useState([
     { name: "", dosage: "", frequency: "", duration: "", instructions: "" }
   ]);
@@ -2304,7 +2303,7 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
       alternateRowStyles: { fillColor: [249, 250, 251] }
     });
 
-    let y = (doc as any).lastAutoTable?.finalY || 100;
+    const y = (doc as any).lastAutoTable?.finalY || 100;
     if (p.notes) {
       doc.setFontSize(9);
       doc.text(`Notes : ${p.notes}`, 20, y + 10, { maxWidth: 170 });

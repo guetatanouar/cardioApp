@@ -17,7 +17,6 @@ export function generatePdf(header: PdfHeader, sections: PdfSection[], filename:
   const doc = new jsPDF();
   const pageWidth = 210;
   const margin = 20;
-  const contentWidth = pageWidth - 2 * margin;
 
   doc.setFontSize(18);
   doc.setTextColor(59, 130, 246);
