@@ -22,11 +22,12 @@ import { CountrySelect } from "@/components/ui/country-select";
 import { getCountryByCode } from "@/lib/countries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DocumentPreview } from "@/components/ui/document-preview";
-import { Activity, FileText, FolderOpen, Lock, MessageSquare, Pill, Plus, Search, Stethoscope, Trash2, Download, Upload, Eye, EyeOff, UserCog } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Activity, ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, ChevronDown, ChevronUp, Clock, FileText, FolderOpen, Lock, MessageSquare, Pencil, Pill, Plus, Printer, Search, Send, Stethoscope, Trash2, Download, Upload, Eye, EyeOff, UserCog } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -2052,29 +2053,100 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
   const [generalNotes, setGeneralNotes] = React.useState("");
+  const [doctorName, setDoctorName] = React.useState("Dr. Étienne Tremblay");
+  const [rxStatus, setRxStatus] = React.useState("active");
+  const [expiryDate, setExpiryDate] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [medicines, setMedicines] = React.useState([
     { name: "", dosage: "", frequency: "", duration: "", instructions: "" }
   ]);
 
+  const [rxSearch, setRxSearch] = React.useState("");
+  const [rxFilterStatus, setRxFilterStatus] = React.useState("all");
+  const [rxFilterDoctor, setRxFilterDoctor] = React.useState("all");
+  const [rxFilterDate, setRxFilterDate] = React.useState("");
+  const [rxSortKey, setRxSortKey] = React.useState<"date" | "doctor" | "alpha">("date");
+  const [rxSortDir, setRxSortDir] = React.useState<"asc" | "desc">("desc");
+  const [expandedRx, setExpandedRx] = React.useState<string | null>(null);
+  const [previewRx, setPreviewRx] = React.useState<any | null>(null);
+  const [statusUpdatingId, setStatusUpdatingId] = React.useState<string | null>(null);
+
+  function parseMeds(p: any): any[] {
+    try {
+      return typeof p.medications === 'string' ? JSON.parse(p.medications) : (p.medications || []);
+    } catch {
+      return [];
+    }
+  }
+
+  function rxExpiry(p: any): Date | null {
+    if (!p.expiry_date) return null;
+    const d = new Date(p.expiry_date);
+    if (isNaN(d.getTime())) return null;
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+
+  function rxStatusOf(p: any): string {
+    if (p.status && p.status !== "active") return p.status;
+    const exp = rxExpiry(p);
+    if (exp && exp.getTime() < Date.now()) return "expired";
+    return "active";
+  }
+
+  function rxMeta(p: any) {
+    const status = rxStatusOf(p);
+    const exp = rxExpiry(p);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const in30 = new Date(today.getTime() + 30 * 86400000);
+    const recentCut = new Date(today.getTime() - 14 * 86400000);
+    const isRecent = !!p.date && new Date(p.date).getTime() >= recentCut.getTime();
+    const isExpiringSoon = status === "active" && !!exp && exp.getTime() <= in30.getTime() && exp.getTime() >= today.getTime();
+    const needsRenewal = status === "active" && !!exp && exp.getTime() < today.getTime();
+    return { status, exp, isRecent, isExpiringSoon, needsRenewal };
+  }
+
+  function statusLabel(status: string): string {
+    return ({ active: "Active", expired: "Expirée", renewed: "Renouvelée", archived: "Archivée" } as Record<string, string>)[status] || status;
+  }
+
+  function statusBadgeMeta(status: string): { variant: any; className: string } {
+    switch (status) {
+      case "active": return { variant: "success", className: "" };
+      case "expired": return { variant: "danger", className: "" };
+      case "renewed": return { variant: "outline", className: "bg-blue-100 text-blue-700 border-transparent" };
+      case "archived": return { variant: "secondary", className: "" };
+      default: return { variant: "outline", className: "" };
+    }
+  }
+
   function resetForm() {
     setShowForm(false);
     setEditingPrescription(null);
     setGeneralNotes("");
+    setDoctorName("Dr. Étienne Tremblay");
+    setRxStatus("active");
+    setExpiryDate("");
     setMedicines([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
   }
 
   function openNewForm() {
     setEditingPrescription(null);
     setGeneralNotes("");
+    setDoctorName("Dr. Étienne Tremblay");
+    setRxStatus("active");
+    setExpiryDate("");
     setMedicines([{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
     setShowForm(true);
   }
 
   function openEditForm(p: any) {
-    const meds = typeof p.medications === 'string' ? JSON.parse(p.medications) : (p.medications || []);
+    const meds = parseMeds(p);
     setEditingPrescription(p);
-    setGeneralNotes(p.general_notes || "");
+    setGeneralNotes(p.notes || p.general_notes || "");
+    setDoctorName(p.doctor_name || "Dr. Étienne Tremblay");
+    setRxStatus(p.status || "active");
+    setExpiryDate(p.expiry_date ? String(p.expiry_date).slice(0, 10) : "");
     setMedicines(meds.length > 0 ? meds.map((m: any) => ({ name: m.name, dosage: m.dosage, frequency: m.frequency, duration: m.duration, instructions: m.instructions || "" })) : [{ name: "", dosage: "", frequency: "", duration: "", instructions: "" }]);
     setShowForm(true);
   }
@@ -2089,7 +2161,7 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
       if (editingPrescription) {
         await apiFetch(`/api/prescriptions/${editingPrescription.id}`, {
           method: "PUT",
-          body: JSON.stringify({ generalNotes, items: payloadItems })
+          body: JSON.stringify({ generalNotes, items: payloadItems, doctorName, status: rxStatus, expiryDate: expiryDate || null })
         });
         dispatchNotification({
           id: `presc-upd-${Date.now()}`,
@@ -2100,7 +2172,7 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
       } else {
         await apiFetch("/api/prescriptions", {
           method: "POST",
-          body: JSON.stringify({ patientId, generalNotes, items: payloadItems })
+          body: JSON.stringify({ patientId, generalNotes, items: payloadItems, doctorName, status: rxStatus, expiryDate: expiryDate || null })
         });
         dispatchNotification({
           id: `presc-${Date.now()}`,
@@ -2165,14 +2237,17 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
 
     doc.setFontSize(18);
     doc.setTextColor(59, 130, 246);
-    doc.text("ORDONNANCE MEDICALE", 105, 20, { align: "center" });
+    doc.text("ORDONNANCE MÉDICALE", 105, 20, { align: "center" });
 
     doc.setFontSize(10);
     doc.setTextColor(0);
-    doc.text("Dr. Cabinet de Cardiologie", 20, 35);
-    doc.text("123 Avenue de la Sante", 20, 40);
-    doc.text("Alger, Algerie", 20, 45);
-    doc.text(new Date(p.date).toLocaleDateString("fr-DZ"), 190, 35, { align: "right" });
+    doc.text(config.app.name, 20, 35);
+    doc.text("123 Avenue de la Santé", 20, 40);
+    doc.text("Paris, France", 20, 45);
+    const meta = rxMeta(p);
+    doc.text(`Statut : ${statusLabel(meta.status)}`, 190, 35, { align: "right" });
+    doc.text(new Date(p.date).toLocaleDateString("fr-FR"), 190, 40, { align: "right" });
+    doc.text(`Expire le : ${meta.exp ? meta.exp.toLocaleDateString("fr-FR") : "—"}`, 190, 45, { align: "right" });
 
     doc.setDrawColor(59, 130, 246);
     doc.setLineWidth(0.5);
@@ -2181,21 +2256,147 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
     doc.setFillColor(249, 250, 251);
     doc.rect(20, 55, 170, 20, "F");
     doc.setFontSize(10);
-    doc.text(`Patient: ${patient?.last_name || ""} ${patient?.first_name || ""}`, 25, 62);
-    doc.text(`Ne(e) le: ${patient ? new Date(patient.date_of_birth).toLocaleDateString() : ""}`, 25, 68);
+    doc.text(`Patient : ${patient?.last_name || ""} ${patient?.first_name || ""}`, 25, 62);
+    doc.text(`Né(e) le : ${patient ? new Date(patient.date_of_birth).toLocaleDateString("fr-FR") : ""}`, 25, 68);
+    doc.text(`Prescripteur : ${p.doctor_name || "Dr. Étienne Tremblay"}`, 130, 68);
 
-    const meds = typeof p.medications === 'string' ? JSON.parse(p.medications) : (p.medications || []);
+    const meds = parseMeds(p);
     autoTable(doc, {
       startY: 80,
-      head: [["Medicament", "Dosage", "Frequence", "Duree"]],
+      head: [["Médicament", "Dosage", "Fréquence", "Durée"]],
       body: meds.map((item: any) => [item.name, item.dosage, item.frequency, item.duration]),
       styles: { fontSize: 9, cellPadding: 4 },
       headStyles: { fillColor: [59, 130, 246], textColor: 255 },
       alternateRowStyles: { fillColor: [249, 250, 251] }
     });
 
+    let y = (doc as any).lastAutoTable?.finalY || 100;
+    if (p.notes) {
+      doc.setFontSize(9);
+      doc.text(`Notes : ${p.notes}`, 20, y + 10, { maxWidth: 170 });
+    }
+
     doc.save(`ordonnance_${patient?.last_name || "patient"}.pdf`);
   }
+
+  function prescriptionHtml(p: any) {
+    const meds = parseMeds(p);
+    const meta = rxMeta(p);
+    const rows = meds.map((m: any) => `
+      <tr>
+        <td style="border:1px solid #ddd;padding:6px 8px">${m.name || ""}</td>
+        <td style="border:1px solid #ddd;padding:6px 8px">${m.dosage || ""}</td>
+        <td style="border:1px solid #ddd;padding:6px 8px">${m.frequency || ""}</td>
+        <td style="border:1px solid #ddd;padding:6px 8px">${m.duration || ""}</td>
+        <td style="border:1px solid #ddd;padding:6px 8px">${m.instructions || ""}</td>
+      </tr>`).join("");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ordonnance</title>
+      <style>
+        body{font-family:Georgia,serif;color:#111;padding:40px}
+        h1{color:#3b82f6;text-align:center;font-size:24px}
+        .meta{width:100%;border-collapse:collapse;margin:14px 0}
+        .meta td{padding:2px 0;font-size:12px}
+        .infobox{background:#f9fafb;border:1px solid #eee;padding:10px;font-size:13px;margin:8px 0}
+        table.meds{width:100%;border-collapse:collapse;font-size:12px}
+        .meds th{background:#3b82f6;color:#fff;padding:6px 8px;text-align:left}
+        .notes{margin-top:14px;font-size:12px}
+        hr{border:none;border-top:1px solid #3b82f6;margin:12px 0}
+      </style></head><body>
+      <h1>ORDONNANCE MÉDICALE</h1>
+      <table class="meta">
+        <tr><td><b>${config.app.name}</b><br/>123 Avenue de la Santé<br/>Paris, France</td>
+        <td style="text-align:right">Date : ${new Date(p.date).toLocaleDateString("fr-FR")}<br/>Statut : ${statusLabel(meta.status)}<br/>Expire le : ${meta.exp ? meta.exp.toLocaleDateString("fr-FR") : "—"}</td></tr>
+      </table>
+      <hr/>
+      <div class="infobox">
+        <b>Patient :</b> ${patient?.last_name || ""} ${patient?.first_name || ""} &nbsp;—&nbsp;
+        <b>Né(e) le :</b> ${patient ? new Date(patient.date_of_birth).toLocaleDateString("fr-FR") : ""} &nbsp;—&nbsp;
+        <b>Prescripteur :</b> ${p.doctor_name || "Dr. Étienne Tremblay"}
+      </div>
+      <table class="meds">
+        <tr><th>Médicament</th><th>Dosage</th><th>Fréquence</th><th>Durée</th><th>Instructions</th></tr>
+        ${rows}
+      </table>
+      ${p.notes ? `<div class="notes"><b>Notes :</b> ${p.notes}</div>` : ""}
+    </body></html>`;
+  }
+
+  function printPrescription(p: any) {
+    const win = window.open("", "_blank", "width=820,height=900");
+    if (!win) return;
+    win.document.write(prescriptionHtml(p));
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 300);
+  }
+
+  function sendViaMssante(p: any) {
+    dispatchNotification({
+      id: `mss-${Date.now()}`,
+      title: "Ordonnance envoyée via MSSanté",
+      detail: `Ordonnance du ${new Date(p.date).toLocaleDateString("fr-FR")} transmise au DMP de ${patient?.last_name || ""} ${patient?.first_name || ""}`,
+      type: "success"
+    });
+  }
+
+  async function changeStatus(p: any, status: string) {
+    setStatusUpdatingId(p.id);
+    try {
+      await apiFetch(`/api/prescriptions/${p.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status })
+      });
+      dispatchNotification({
+        id: `rx-status-${Date.now()}`,
+        title: "Statut mis à jour",
+        detail: `Ordonnance ${statusLabel(status)}`,
+        type: "success"
+      });
+      onRefresh();
+    } catch {
+      dispatchNotification({
+        id: `rx-status-err-${Date.now()}`,
+        title: "Erreur",
+        detail: "Impossible de mettre à jour le statut",
+        type: "error"
+      });
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  }
+
+  const doctors = Array.from(new Set((prescriptions || []).map((p) => p.doctor_name || "Dr. Étienne Tremblay"))).sort();
+
+  const visible = (prescriptions || [])
+    .map((p) => ({ p, meta: rxMeta(p), meds: parseMeds(p) }))
+    .filter(({ p, meta }) => {
+      if (rxSearch) {
+        const hay = [
+          p.doctor_name || "",
+          p.notes || "",
+          p.date ? new Date(p.date).toLocaleDateString("fr-FR") : "",
+          statusLabel(meta.status),
+          parseMeds(p).map((m: any) => m.name).join(" ")
+        ].join(" ").toLowerCase();
+        if (!hay.includes(rxSearch.toLowerCase())) return false;
+      }
+      if (rxFilterStatus !== "all" && meta.status !== rxFilterStatus) return false;
+      if (rxFilterDoctor !== "all" && (p.doctor_name || "Dr. Étienne Tremblay") !== rxFilterDoctor) return false;
+      if (rxFilterDate && p.date && String(p.date).slice(0, 10) !== rxFilterDate) return false;
+      return true;
+    });
+
+  visible.sort((a, b) => {
+    let cmp = 0;
+    if (rxSortKey === "date") {
+      cmp = new Date(a.p.date).getTime() - new Date(b.p.date).getTime();
+    } else if (rxSortKey === "doctor") {
+      cmp = (a.p.doctor_name || "").localeCompare(b.p.doctor_name || "");
+    } else {
+      cmp = (a.meds[0]?.name || "").localeCompare(b.meds[0]?.name || "");
+    }
+    return rxSortDir === "asc" ? cmp : -cmp;
+  });
 
   return (
     <div className="space-y-4">
@@ -2209,6 +2410,85 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
         )}
       </div>
 
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher (médicament, médecin, date, statut)..."
+                value={rxSearch}
+                onChange={(e) => setRxSearch(e.target.value)}
+                className="h-8 w-64 pl-8"
+              />
+            </div>
+            <select
+              value={rxFilterStatus}
+              onChange={(e) => setRxFilterStatus(e.target.value)}
+              className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+            >
+              <option value="all">Tous les statuts</option>
+              <option value="active">Active</option>
+              <option value="expired">Expirée</option>
+              <option value="renewed">Renouvelée</option>
+              <option value="archived">Archivée</option>
+            </select>
+            <select
+              value={rxFilterDoctor}
+              onChange={(e) => setRxFilterDoctor(e.target.value)}
+              className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+            >
+              <option value="all">Tous les médecins</option>
+              {doctors.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+            <input
+              type="date"
+              value={rxFilterDate}
+              onChange={(e) => setRxFilterDate(e.target.value)}
+              className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+              title="Filtrer par date"
+            />
+            <select
+              value={rxSortKey}
+              onChange={(e) => setRxSortKey(e.target.value as "date" | "doctor" | "alpha")}
+              className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+            >
+              <option value="date">Trier par date</option>
+              <option value="doctor">Trier par médecin</option>
+              <option value="alpha">Ordre alphabétique</option>
+            </select>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRxSortDir(rxSortDir === "asc" ? "desc" : "asc")}
+              title="Inverser le tri"
+            >
+              {rxSortDir === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setRxSearch("");
+                setRxFilterStatus("all");
+                setRxFilterDoctor("all");
+                setRxFilterDate("");
+                setRxSortKey("date");
+                setRxSortDir("desc");
+              }}
+            >
+              <ArrowUpDown className="mr-1 h-4 w-4" />
+              Réinitialiser
+            </Button>
+            <span className="ml-auto text-sm text-muted-foreground">
+              {visible.length} ordonnance{visible.length > 1 ? "s" : ""}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
       {showForm && (
         <Card className="border-primary/30">
           <CardHeader className="pb-3">
@@ -2217,50 +2497,90 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
           <CardContent>
             <form className="space-y-4" onSubmit={savePrescription}>
               <div>
-                <label className="text-sm font-medium">Medicaments</label>
+                <label className="text-sm font-medium">Médicaments</label>
                 <div className="mt-2 space-y-2">
                   {medicines.map((med, i) => (
-                    <div key={i} className="grid gap-2 grid-cols-5">
+                    <div key={i}>
+                      <div className="grid gap-2 grid-cols-5">
+                        <Input
+                          placeholder="Nom"
+                          value={med.name}
+                          onChange={(e) => updateMedicine(i, "name", e.target.value)}
+                          required
+                        />
+                        <Input
+                          placeholder="Dosage"
+                          value={med.dosage}
+                          onChange={(e) => updateMedicine(i, "dosage", e.target.value)}
+                          required
+                        />
+                        <Input
+                          placeholder="Fréquence"
+                          value={med.frequency}
+                          onChange={(e) => updateMedicine(i, "frequency", e.target.value)}
+                          required
+                        />
+                        <Input
+                          placeholder="Durée"
+                          value={med.duration}
+                          onChange={(e) => updateMedicine(i, "duration", e.target.value)}
+                          required
+                        />
+                        {medicines.length > 1 && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeMedicine(i)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                       <Input
-                        placeholder="Nom"
-                        value={med.name}
-                        onChange={(e) => updateMedicine(i, "name", e.target.value)}
-                        required
+                        placeholder="Instructions (ex : à prendre le matin à jeun)"
+                        value={med.instructions || ""}
+                        onChange={(e) => updateMedicine(i, "instructions", e.target.value)}
+                        className="mt-1"
                       />
-                      <Input
-                        placeholder="Dosage"
-                        value={med.dosage}
-                        onChange={(e) => updateMedicine(i, "dosage", e.target.value)}
-                        required
-                      />
-                      <Input
-                        placeholder="Frequence"
-                        value={med.frequency}
-                        onChange={(e) => updateMedicine(i, "frequency", e.target.value)}
-                        required
-                      />
-                      <Input
-                        placeholder="Duree"
-                        value={med.duration}
-                        onChange={(e) => updateMedicine(i, "duration", e.target.value)}
-                        required
-                      />
-                      {medicines.length > 1 && (
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeMedicine(i)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
                   ))}
                   <Button type="button" variant="outline" size="sm" onClick={addMedicine}>
                     <Plus className="mr-1 h-4 w-4" />
-                    Ajouter medicament
+                    Ajouter un médicament
                   </Button>
                 </div>
               </div>
 
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div>
+                  <label className="text-sm font-medium">Médecin prescripteur</label>
+                  <Input
+                    value={doctorName}
+                    onChange={(e) => setDoctorName(e.target.value)}
+                    placeholder="Nom du médecin"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Date d'expiration</label>
+                  <Input
+                    type="date"
+                    value={expiryDate}
+                    onChange={(e) => setExpiryDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Statut</label>
+                  <select
+                    value={rxStatus}
+                    onChange={(e) => setRxStatus(e.target.value)}
+                    className="h-10 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+                  >
+                    <option value="active">Active</option>
+                    <option value="expired">Expirée</option>
+                    <option value="renewed">Renouvelée</option>
+                    <option value="archived">Archivée</option>
+                  </select>
+                </div>
+              </div>
+
               <div>
-                <label className="text-sm font-medium">Notes generales</label>
+                <label className="text-sm font-medium">Notes générales</label>
                 <Input
                   value={generalNotes}
                   onChange={(e) => setGeneralNotes(e.target.value)}
@@ -2270,7 +2590,7 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={resetForm} disabled={saving}>Annuler</Button>
-                <Button type="submit" disabled={saving}>{saving ? "Sauvegarde..." : editingPrescription ? "Modifier" : "Creer ordonnance"}</Button>
+                <Button type="submit" disabled={saving}>{saving ? "Sauvegarde..." : editingPrescription ? "Modifier" : "Créer l'ordonnance"}</Button>
               </div>
             </form>
           </CardContent>
@@ -2278,56 +2598,213 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
       )}
 
       <Card>
-        <CardContent className="max-h-[360px] overflow-y-auto">
+        <CardContent className="max-h-[480px] overflow-y-auto p-4">
           <div className="space-y-3">
-            {(prescriptions || []).map((p) => {
-              const meds = typeof p.medications === 'string' ? JSON.parse(p.medications) : (p.medications || []);
+            {visible.map(({ p, meta, meds }) => {
               const isEditing = editingPrescription?.id === p.id;
+              const sm = statusBadgeMeta(meta.status);
+              const highlight = meta.needsRenewal ? "border-red-300 bg-red-50/40"
+                : meta.isExpiringSoon ? "border-amber-300 bg-amber-50/40"
+                : meta.isRecent ? "border-blue-300 bg-blue-50/30"
+                : "border-border";
+              const expanded = expandedRx === p.id;
               return (
-                <div key={p.id} className={`flex items-center justify-between rounded-lg border p-4 ${isEditing ? "border-primary" : "border-border"}`}>
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-primary" />
-                    <div>
-                      <div className="font-medium">{new Date(p.date).toLocaleDateString()}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {meds.length} medicament(s){p.doctor_name ? ` - ${p.doctor_name}` : ""}
+                <div key={p.id} className={cn("rounded-lg border p-4", isEditing ? "border-primary" : highlight)}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      className="flex flex-1 cursor-pointer items-center gap-3 text-left min-w-0"
+                      onClick={() => setExpandedRx(expanded ? null : p.id)}
+                    >
+                      <FileText className="h-8 w-8 shrink-0 text-primary" />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium">{new Date(p.date).toLocaleDateString("fr-FR")}</span>
+                          <Badge variant={sm.variant} className={sm.className}>{statusLabel(meta.status)}</Badge>
+                          {meta.needsRenewal && <Badge variant="danger">À renouveler</Badge>}
+                          {meta.isExpiringSoon && <Badge variant="warning">Expire bientôt</Badge>}
+                          {meta.isRecent && <Badge variant="outline" className="border-transparent bg-blue-100 text-blue-700">Récente</Badge>}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {meds.length} médicament{meds.length > 1 ? "s" : ""}
+                          {p.doctor_name ? ` · ${p.doctor_name}` : ""}
+                          {meta.exp ? ` · Expire le ${meta.exp.toLocaleDateString("fr-FR")}` : ""}
+                        </div>
                       </div>
+                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={meta.status}
+                        disabled={statusUpdatingId === p.id}
+                        onChange={(e) => changeStatus(p, e.target.value)}
+                        className="h-7 rounded-md border border-input bg-transparent px-2 text-xs"
+                        title="Changer le statut"
+                      >
+                        <option value="active">Active</option>
+                        <option value="expired">Expirée</option>
+                        <option value="renewed">Renouvelée</option>
+                        <option value="archived">Archivée</option>
+                      </select>
+                      <Button variant="outline" size="xs" title="Aperçu" onClick={() => setPreviewRx(p)}>
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="outline" size="xs" title="Imprimer" onClick={() => printPrescription(p)}>
+                        <Printer className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="outline" size="xs" title="Télécharger PDF" onClick={() => exportPdfPrescription(p)}>
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="outline" size="xs" title="Envoyer via MSSanté" onClick={() => sendViaMssante(p)}>
+                        <Send className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="outline" size="xs" title="Modifier" onClick={() => openEditForm(p)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="xs"
+                        disabled={deletingId === p.id}
+                        title="Supprimer"
+                        onClick={() => setConfirmDeleteId(p.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                      <Button variant="outline" size="xs" title={expanded ? "Replier" : "Déplier"} onClick={() => setExpandedRx(expanded ? null : p.id)}>
+                        {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => exportPdfPrescription(p)}>
-                      <Download className="mr-1 h-4 w-4" />
-                      PDF
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => openEditForm(p)}>
-                      Modifier
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      disabled={deletingId === p.id}
-                      onClick={() => setConfirmDeleteId(p.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
+
+                  {expanded && (
+                    <div className="mt-3 border-t pt-3">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b text-left text-muted-foreground">
+                            <th className="py-1.5 pr-2 font-medium">Médicament</th>
+                            <th className="py-1.5 pr-2 font-medium">Dosage</th>
+                            <th className="py-1.5 pr-2 font-medium">Fréquence</th>
+                            <th className="py-1.5 pr-2 font-medium">Durée</th>
+                            <th className="py-1.5 font-medium">Instructions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {meds.map((m: any, idx: number) => (
+                            <tr key={idx} className="border-b last:border-0">
+                              <td className="py-2 pr-2 font-medium">{m.name}</td>
+                              <td className="py-2 pr-2">{m.dosage}</td>
+                              <td className="py-2 pr-2">{m.frequency}</td>
+                              <td className="py-2 pr-2">{m.duration}</td>
+                              <td className="py-2 text-muted-foreground">{m.instructions}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {p.notes && (
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          <CalendarDays className="mr-1 inline h-3.5 w-3.5" />
+                          Notes : {p.notes}
+                        </div>
+                      )}
+                      {meta.exp && (
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          <Clock className="mr-1 inline h-3.5 w-3.5" />
+                          Expire le : {meta.exp.toLocaleDateString("fr-FR")}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
-            {(prescriptions || []).length === 0 && !showForm && (
+            {visible.length === 0 && !showForm && (
               <div className="py-8 text-center text-sm text-muted-foreground">
-                Aucune ordonnance
+                {prescriptions.length > 0 ? "Aucune ordonnance ne correspond aux filtres" : "Aucune ordonnance"}
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
+      <Dialog open={previewRx !== null} onOpenChange={(o) => { if (!o) setPreviewRx(null); }}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Aperçu de l'ordonnance</DialogTitle>
+            <DialogDescription>Prévisualisation sans téléchargement</DialogDescription>
+          </DialogHeader>
+          {previewRx && (() => {
+            const p = previewRx;
+            const pmeds = parseMeds(p);
+            const pmeta = rxMeta(p);
+            const psm = statusBadgeMeta(pmeta.status);
+            return (
+              <div className="rounded-lg border p-5">
+                <h3 className="text-center text-lg font-bold text-primary">ORDONNANCE MÉDICALE</h3>
+                <div className="mt-3 flex justify-between text-sm">
+                  <div>
+                    <div className="font-medium">{config.app.name}</div>
+                    <div>123 Avenue de la Santé</div>
+                    <div>Paris, France</div>
+                  </div>
+                  <div className="text-right">
+                    <div>Date : {new Date(p.date).toLocaleDateString("fr-FR")}</div>
+                    <div>Statut : <Badge variant={psm.variant} className={psm.className}>{statusLabel(pmeta.status)}</Badge></div>
+                    <div>Expire le : {pmeta.exp ? pmeta.exp.toLocaleDateString("fr-FR") : "—"}</div>
+                  </div>
+                </div>
+                <div className="mt-3 rounded-md bg-muted p-3 text-sm">
+                  <span className="font-medium">Patient :</span> {patient?.last_name || ""} {patient?.first_name || ""}
+                  {" "}· <span className="font-medium">Né(e) le :</span> {patient ? new Date(patient.date_of_birth).toLocaleDateString("fr-FR") : ""}
+                  {" "}· <span className="font-medium">Prescripteur :</span> {p.doctor_name || "Dr. Étienne Tremblay"}
+                </div>
+                <table className="mt-3 w-full text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-muted-foreground">
+                      <th className="py-1.5 pr-2 font-medium">Médicament</th>
+                      <th className="py-1.5 pr-2 font-medium">Dosage</th>
+                      <th className="py-1.5 pr-2 font-medium">Fréquence</th>
+                      <th className="py-1.5 pr-2 font-medium">Durée</th>
+                      <th className="py-1.5 font-medium">Instructions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pmeds.map((m: any, idx: number) => (
+                      <tr key={idx} className="border-b last:border-0">
+                        <td className="py-2 pr-2 font-medium">{m.name}</td>
+                        <td className="py-2 pr-2">{m.dosage}</td>
+                        <td className="py-2 pr-2">{m.frequency}</td>
+                        <td className="py-2 pr-2">{m.duration}</td>
+                        <td className="py-2 text-muted-foreground">{m.instructions}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {p.notes && <div className="mt-3 text-sm"><span className="font-medium">Notes :</span> {p.notes}</div>}
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => previewRx && exportPdfPrescription(previewRx)}>
+              <Download className="mr-1 h-4 w-4" />
+              Télécharger PDF
+            </Button>
+            <Button variant="outline" onClick={() => previewRx && printPrescription(previewRx)}>
+              <Printer className="mr-1 h-4 w-4" />
+              Imprimer
+            </Button>
+            <Button variant="outline" onClick={() => previewRx && sendViaMssante(previewRx)}>
+              <Send className="mr-1 h-4 w-4" />
+              MSSanté
+            </Button>
+            <Button onClick={() => setPreviewRx(null)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <ConfirmDialog
         open={confirmDeleteId !== null}
         onOpenChange={(o) => { if (!o) setConfirmDeleteId(null); }}
         title="Supprimer l'ordonnance"
-        description="Cette action est irreversible. Voulez-vous vraiment supprimer cette ordonnance ?"
+        description="Cette action est irréversible. Voulez-vous vraiment supprimer cette ordonnance ?"
         confirmLabel="Supprimer"
         cancelLabel="Annuler"
         variant="destructive"
