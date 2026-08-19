@@ -26,7 +26,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { cn } from "@/lib/cn";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DocumentPreview } from "@/components/ui/document-preview";
-import { Activity, FileText, FolderOpen, MessageSquare, Pill, Plus, Search, Stethoscope, Trash2, Download, Upload, Eye, EyeOff, UserCog } from "lucide-react";
+import { Activity, FileText, FolderOpen, Lock, MessageSquare, Pill, Plus, Search, Stethoscope, Trash2, Download, Upload, Eye, EyeOff, UserCog } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -293,6 +293,30 @@ export default function PatientsPage() {
     else if (period === "6M") cutoff.setMonth(now.getMonth() - 6);
     else cutoff.setFullYear(now.getFullYear() - 1);
     return d >= cutoff;
+  }
+
+  function computeAge(dateOfBirth?: string) {
+    if (!dateOfBirth) return null;
+    const dob = new Date(dateOfBirth);
+    if (Number.isNaN(dob.getTime())) return null;
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    const monthDiff = now.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) age -= 1;
+    return age;
+  }
+
+  function formatDate(iso?: string) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString();
+  }
+
+  function genderLabel(gender?: string) {
+    if (gender === "F") return "Femme";
+    if (gender === "M") return "Homme";
+    return gender || "";
   }
 
   React.useEffect(() => {
@@ -981,18 +1005,54 @@ export default function PatientsPage() {
         <DialogContent className="max-w-4xl p-0 max-h-[85vh] overflow-y-auto">
           <div className="rounded-t-2xl bg-gradient-to-r from-indigo-600 to-blue-700 px-6 py-4 text-white">
             <DialogHeader className="space-y-0">
-              <div className="flex items-center justify-between">
-                <DialogTitle className="text-lg font-semibold">
-                  {detail?.patient ? `${detail.patient.last_name} ${detail.patient.first_name}` : "Fiche patient"}
-                </DialogTitle>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <DialogTitle className="text-lg font-semibold truncate">
+                    {detail?.patient ? `${detail.patient.last_name} ${detail.patient.first_name}` : "Fiche patient"}
+                  </DialogTitle>
+                  {accountLoading ? (
+                    <span className="shrink-0 rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-medium text-white/80">Chargement...</span>
+                  ) : account ? (
+                    account.is_active ? (
+                      <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-emerald-400/25 px-2.5 py-0.5 text-xs font-semibold text-emerald-100">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                        Actif
+                      </span>
+                    ) : (
+                      <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-rose-400/25 px-2.5 py-0.5 text-xs font-semibold text-rose-100">
+                        <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
+                        Inactif
+                      </span>
+                    )
+                  ) : (
+                    <span className="shrink-0 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white/80">
+                      Sans accès
+                    </span>
+                  )}
+                </div>
                 {detail?.patient && !editMode && !showDeleteConfirm ? (
-                  <div className="flex gap-2 mr-10">
+                  <div className="flex items-center gap-3 shrink-0 mr-10">
                     <Button type="button" variant="secondary" size="sm" onClick={startEdit}>Modifier</Button>
                     <Button type="button" variant="destructive" size="sm" onClick={() => setShowDeleteConfirm(true)}>Supprimer</Button>
                   </div>
                 ) : null}
               </div>
-              <div className="text-sm text-white/80">{detail?.patient?.blood_type ? `Groupe ${detail.patient.blood_type}` : ""}</div>
+              <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-white/85">
+                {(() => {
+                  const dob = detail?.patient?.date_of_birth;
+                  const age = computeAge(dob);
+                  const dobFormatted = formatDate(dob);
+                  const gender = genderLabel(detail?.patient?.gender);
+                  return (
+                    <>
+                      {age !== null ? <span className="font-semibold text-white">{age} ans</span> : null}
+                      {gender ? <span>{gender}</span> : null}
+                      {dobFormatted ? <span>Né(e) le {dobFormatted}</span> : null}
+                      <span>{detail?.patient?.blood_type ? `Groupe ${detail.patient.blood_type}` : ""}</span>
+                    </>
+                  );
+                })()}
+              </div>
             </DialogHeader>
           </div>
 
@@ -1034,8 +1094,10 @@ export default function PatientsPage() {
                   type="button"
                   onClick={() => setTab(key)}
                   className={cn(
-                    "rounded-full px-3 py-1 text-sm",
-                    tab === key ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    "rounded-full px-3 py-1 text-sm transition",
+                    tab === key
+                      ? "bg-primary text-primary-foreground font-semibold ring-2 ring-primary/50 shadow-sm"
+                      : "bg-muted text-muted-foreground hover:bg-muted/70"
                   )}
                 >
                   <span className="inline-flex items-center gap-2">
@@ -1104,6 +1166,11 @@ export default function PatientsPage() {
                   </div>
                 </div>
               ) : (
+              <>
+              <div className="mb-4 flex items-center gap-2 rounded-lg border border-muted bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                <Lock className="h-3.5 w-3.5 shrink-0" />
+                <span>Lecture seule — cliquez sur « Modifier » pour modifier les informations du dossier.</span>
+              </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <Card>
                   <CardHeader>
@@ -1153,6 +1220,7 @@ export default function PatientsPage() {
                   </CardContent>
                 </Card>
               </div>
+              </>
               )
             ) : tab === "consultations" ? (
               (() => {
