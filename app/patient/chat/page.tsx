@@ -70,8 +70,8 @@ export default function PatientChatPage() {
   }
 
   return (
-    <div className="h-full bg-gray-50 p-4 md:p-6 dark:bg-background">
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border h-full flex flex-col dark:bg-card">
+    <div className="h-full bg-gray-50 dark:bg-[var(--bg)] p-4 md:p-6">
+      <div className="max-w-6xl mx-auto bg-white dark:bg-[var(--card-bg)] rounded-2xl shadow-sm border dark:border-[var(--border)] h-full flex flex-col">
         <PatientHeader />
         <div className="flex-1 flex flex-col p-4 md:p-6 min-h-0">
           <div className="flex gap-2 mb-4">
@@ -80,8 +80,8 @@ export default function PatientChatPage() {
               onClick={() => setActiveTab("medical")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "medical"
-                  ? "bg-blue-100 text-blue-700 border border-blue-300"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 border border-blue-300 dark:border-blue-700"
+                  : "bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/15"
               }`}
             >
               <Stethoscope className="h-4 w-4" />
@@ -92,8 +92,8 @@ export default function PatientChatPage() {
               onClick={() => setActiveTab("rdv")}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "rdv"
-                  ? "bg-amber-100 text-amber-700 border border-amber-300"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                  : "bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-white/15"
               }`}
             >
               <CalendarDays className="h-4 w-4" />
@@ -119,7 +119,7 @@ export default function PatientChatPage() {
                       className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
                     >
                       <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${
-                        mine ? "bg-primary text-primary-foreground" : "bg-blue-50 border border-blue-200 text-blue-900"
+                        mine ? "bg-primary text-primary-foreground" : "bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-100"
                       }`}>
                         <div className="whitespace-pre-wrap">{m.content}</div>
                         <div className={`text-[9px] mt-1 ${mine ? "text-primary-foreground/50" : "opacity-50"}`}>
