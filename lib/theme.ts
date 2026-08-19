@@ -1,5 +1,6 @@
 const theme = () => {
   const html = document.querySelector("html");
+  if (!html) return;
   const currentMode = localStorage.getItem("theme");
   if (currentMode === "dark") {
     html.classList.add("dark");
