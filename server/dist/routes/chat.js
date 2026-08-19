@@ -6,10 +6,25 @@ import { createNotification } from '../lib/createNotification.js';
 export const chatRouter = Router();
 chatRouter.get('/', authenticateToken, requirePermission('chat'), async (req, res) => {
     const { channel } = req.query;
+    const user = req.user;
     try {
         let result;
         if (channel === 'staff') {
             result = await query('SELECT * FROM chat_messages WHERE channel = \'staff\' ORDER BY created_at ASC');
+        }
+        else if (typeof channel === 'string' && channel.startsWith('patient_medical:')) {
+            const patientId = channel.replace('patient_medical:', '');
+            if (user.role === 'secretaire') {
+                return res.status(403).json({ message: 'Accès refusé aux conversations médicales' });
+            }
+            result = await query('SELECT * FROM chat_messages WHERE channel = \'patient\' AND patient_id = $1 AND conversation_type = \'medical\' ORDER BY created_at ASC', [patientId]);
+        }
+        else if (typeof channel === 'string' && channel.startsWith('patient_rdv:')) {
+            const patientId = channel.replace('patient_rdv:', '');
+            if (user.role === 'admin') {
+                return res.status(403).json({ message: 'Accès refusé aux conversations de rendez-vous' });
+            }
+            result = await query('SELECT * FROM chat_messages WHERE channel = \'patient\' AND patient_id = $1 AND conversation_type = \'rdv\' ORDER BY created_at ASC', [patientId]);
         }
         else if (typeof channel === 'string' && channel.startsWith('patient:')) {
             const patientId = channel.replace('patient:', '');
@@ -33,14 +48,36 @@ chatRouter.post('/', authenticateToken, requirePermission('chat', 'send'), async
     let sender_role = user.role;
     let sender_id = user.id;
     let actualChannel = 'staff';
-    if (typeof channel === 'string' && channel.startsWith('patient:')) {
+    let actualConversationType = null;
+    if (typeof channel === 'string' && channel.startsWith('patient_medical:')) {
+        patient_id = channel.replace('patient_medical:', '');
+        sender_role = user.role === 'patient' ? 'patient' : 'admin';
+        sender_id = user.id;
+        actualChannel = 'patient';
+        actualConversationType = 'medical';
+    }
+    else if (typeof channel === 'string' && channel.startsWith('patient_rdv:')) {
+        patient_id = channel.replace('patient_rdv:', '');
+        sender_role = user.role === 'patient' ? 'patient' : 'secretaire';
+        sender_id = user.id;
+        actualChannel = 'patient';
+        actualConversationType = 'rdv';
+    }
+    else if (typeof channel === 'string' && channel.startsWith('patient:')) {
         patient_id = channel.replace('patient:', '');
         sender_role = user.role === 'patient' ? 'patient' : 'staff';
         sender_id = user.id;
         actualChannel = 'patient';
+        actualConversationType = 'medical';
+    }
+    if (actualChannel === 'patient' && actualConversationType === 'medical' && user.role === 'secretaire') {
+        return res.status(403).json({ message: 'Accès refusé aux conversations médicales' });
+    }
+    if (actualChannel === 'patient' && actualConversationType === 'rdv' && user.role === 'admin') {
+        return res.status(403).json({ message: 'Accès refusé aux conversations de rendez-vous' });
     }
     try {
-        await query('INSERT INTO chat_messages (id, channel, sender_role, sender_id, patient_id, content) VALUES ($1, $2, $3, $4, $5, $6)', [id, actualChannel, sender_role, sender_id, patient_id, content]);
+        await query('INSERT INTO chat_messages (id, channel, conversation_type, sender_role, sender_id, patient_id, content) VALUES ($1, $2, $3, $4, $5, $6, $7)', [id, actualChannel, actualConversationType, sender_role, sender_id, patient_id, content]);
         if (actualChannel === 'staff' && sender_role !== 'admin') {
             createNotification({
                 type: 'chat_message',
@@ -54,7 +91,18 @@ chatRouter.post('/', authenticateToken, requirePermission('chat', 'send'), async
         if (actualChannel === 'patient' && sender_role === 'patient') {
             createNotification({
                 type: 'chat_message',
-                title: 'Nouveau message patient',
+                title: actualConversationType === 'medical' ? 'Nouveau message médical' : 'Nouveau message rendez-vous',
+                message: `Message de ${user.name}: ${content.substring(0, 100)}`,
+                actor_name: user.name,
+                actor_role: sender_role,
+                patient_id: patient_id,
+                related_id: id,
+            });
+        }
+        if (actualChannel === 'patient' && sender_role !== 'patient') {
+            createNotification({
+                type: 'chat_message',
+                title: actualConversationType === 'medical' ? 'Réponse médicale' : 'Réponse rendez-vous',
                 message: `Message de ${user.name}: ${content.substring(0, 100)}`,
                 actor_name: user.name,
                 actor_role: sender_role,
@@ -71,12 +119,29 @@ chatRouter.post('/', authenticateToken, requirePermission('chat', 'send'), async
 });
 chatRouter.post('/mark-read', authenticateToken, requirePermission('chat'), async (req, res) => {
     const { channel } = req.body;
+    const user = req.user;
     try {
-        let actualChannel = channel;
-        if (typeof channel === 'string' && channel.startsWith('patient:')) {
-            actualChannel = 'patient';
+        if (typeof channel === 'string' && channel.startsWith('patient_medical:')) {
+            const patientId = channel.replace('patient_medical:', '');
+            if (user.role === 'secretaire') {
+                return res.status(403).json({ message: 'Accès refusé' });
+            }
+            await query('UPDATE chat_messages SET is_read = TRUE WHERE channel = \'patient\' AND patient_id = $1 AND conversation_type = \'medical\' AND is_read = FALSE', [patientId]);
         }
-        await query('UPDATE chat_messages SET is_read = TRUE WHERE channel = $1 AND is_read = FALSE', [actualChannel]);
+        else if (typeof channel === 'string' && channel.startsWith('patient_rdv:')) {
+            const patientId = channel.replace('patient_rdv:', '');
+            if (user.role === 'admin') {
+                return res.status(403).json({ message: 'Accès refusé' });
+            }
+            await query('UPDATE chat_messages SET is_read = TRUE WHERE channel = \'patient\' AND patient_id = $1 AND conversation_type = \'rdv\' AND is_read = FALSE', [patientId]);
+        }
+        else if (typeof channel === 'string' && channel.startsWith('patient:')) {
+            const patientId = channel.replace('patient:', '');
+            await query('UPDATE chat_messages SET is_read = TRUE WHERE channel = \'patient\' AND patient_id = $1 AND is_read = FALSE', [patientId]);
+        }
+        else {
+            await query('UPDATE chat_messages SET is_read = TRUE WHERE channel = $1 AND is_read = FALSE', [channel]);
+        }
         res.json({ success: true });
     }
     catch (err) {

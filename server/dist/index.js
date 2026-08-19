@@ -24,6 +24,7 @@ import { documentsRouter } from './routes/documents.js';
 import { analyseRouter } from './routes/analyse.js';
 import { settingsRouter } from './routes/settings.js';
 import { notificationsRouter } from './routes/notifications.js';
+import { documentTemplatesRouter } from './routes/document-templates.js';
 const app = express();
 const PORT = process.env.PORT || 4000;
 app.use(cors({
@@ -93,6 +94,7 @@ app.use('/api/documents', documentsRouter);
 app.use('/api/analyse', analyseRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/document-templates', documentTemplatesRouter);
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
