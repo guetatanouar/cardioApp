@@ -25,9 +25,12 @@ import {
   Pill,
   MessageCircle,
   Menu,
-  X
+  X,
+  Sun,
+  Moon
 } from "lucide-react";
 import { Toaster } from "sonner";
+import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/cn";
 import { clearSession, getSession } from "@/lib/auth/storage";
@@ -149,6 +152,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
   const router = useRouter();
   const { locale, setLocale, t } = useI18n();
+  const { setTheme, resolvedTheme } = useTheme();
 
   const session = typeof window !== "undefined" ? getSession() : null;
   const isAuthRoute = pathname?.startsWith("/login") || pathname?.startsWith("/patient/login");
@@ -718,6 +722,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
+              {/* Theme Toggle (day/night) */}
+              <div
+                className="flex h-10 w-[74px] md:h-9 items-center gap-1 rounded-full border border-input bg-background p-1 shadow-sm"
+                role="group"
+                aria-label="Changer le thème"
+              >
+                <button
+                  type="button"
+                  title="Mode jour"
+                  onClick={() => setTheme("light")}
+                  className={`flex h-7 flex-1 items-center justify-center rounded-full transition-all active:scale-95 ${resolvedTheme === "light" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
+                >
+                  <Sun className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  title="Mode nuit"
+                  onClick={() => setTheme("dark")}
+                  className={`flex h-7 flex-1 items-center justify-center rounded-full transition-all active:scale-95 ${resolvedTheme === "dark" ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/50"}`}
+                >
+                  <Moon className="h-4 w-4" />
+                </button>
+              </div>
               {/* Notification Bell with red badge */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

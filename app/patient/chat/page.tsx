@@ -60,8 +60,8 @@ export default function PatientChatPage() {
   }
 
   return (
-    <div className="h-full bg-gray-50 p-4 md:p-6">
-      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border h-full flex flex-col">
+    <div className="h-full bg-gray-50 p-4 md:p-6 dark:bg-background">
+      <div className="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border h-full flex flex-col dark:bg-card">
         <PatientHeader />
         <div className="flex-1 flex flex-col p-4 md:p-6 min-h-0">
           <div className="flex-1 space-y-2 overflow-y-auto rounded-md border border-border bg-muted/30 p-3 mb-3 min-h-0">
@@ -78,7 +78,7 @@ export default function PatientChatPage() {
                     className={`flex flex-col ${mine ? "items-end" : "items-start"}`}
                   >
                     <div className={`max-w-[70%] rounded-2xl px-3 py-2 text-sm ${
-                      mine ? "bg-primary text-primary-foreground" : "bg-blue-50 border border-blue-200 text-blue-900"
+                      mine ? "bg-primary text-primary-foreground" : "bg-blue-50 border border-blue-200 text-blue-900 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-100"
                     }`}>
                       <div className="whitespace-pre-wrap">{m.content}</div>
                       <div className={`text-[9px] mt-1 ${mine ? "text-primary-foreground/50" : "opacity-50"}`}>
