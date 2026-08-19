@@ -4,6 +4,7 @@ node_modules
 .next/*
 .env
 .env.*
+uploads/
+server/dist/
 
-.env
 server/.env
