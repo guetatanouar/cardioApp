@@ -2057,6 +2057,7 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
   const [rxStatus, setRxStatus] = React.useState("active");
   const [expiryDate, setExpiryDate] = React.useState("");
   const [saving, setSaving] = React.useState(false);
+  const [prescriptionDate, setPrescriptionDate] = React.useState(new Date().toISOString().split("T")[0]);
   const [medicines, setMedicines] = React.useState([
     { name: "", dosage: "", frequency: "", duration: "", instructions: "" }
   ]);
@@ -2232,38 +2233,71 @@ function PrescriptionsTab({ patientId, patient, prescriptions, onRefresh }: {
     }
   }
 
-  function exportPdfPrescription(p: any) {
+  async function exportPdfPrescription(p: any) {
+    const profileRes = await apiFetch<any>("/api/settings/profile");
+    if (!profileRes || !profileRes.address) {
+      throw new Error("Adresse du médecin manquante dans le profil");
+    }
     const doc = new jsPDF();
 
-    doc.setFontSize(18);
-    doc.setTextColor(59, 130, 246);
-    doc.text("ORDONNANCE MÉDICALE", 105, 20, { align: "center" });
+    const fullName = `Dr ${profileRes.first_name || ""} ${profileRes.last_name || ""}`.replace(/\s+/g, " ").trim();
+    const specialty = profileRes.specialty ? `Spécialiste en ${profileRes.specialty}` : "";
+    const addressParts = (profileRes.address || "").split(",");
+    const addressLine1 = addressParts[0]?.trim() || "";
+    const addressLine2 = addressParts.slice(1).join(",").trim();
+    const phone = profileRes.phone ? `Tél. : ${profileRes.phone.replace(/^(\+1)-/, "$1 ")}` : "";
 
-    doc.setFontSize(10);
+    const margin = 20;
+    let cursorY = 15;
+
+    const fontSize = 10;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(fontSize);
     doc.setTextColor(0);
-    doc.text(config.app.name, 20, 35);
-    doc.text("123 Avenue de la Santé", 20, 40);
-    doc.text("Paris, France", 20, 45);
-    const meta = rxMeta(p);
-    doc.text(`Statut : ${statusLabel(meta.status)}`, 190, 35, { align: "right" });
-    doc.text(new Date(p.date).toLocaleDateString("fr-FR"), 190, 40, { align: "right" });
-    doc.text(`Expire le : ${meta.exp ? meta.exp.toLocaleDateString("fr-FR") : "—"}`, 190, 45, { align: "right" });
+    doc.text(fullName, margin, cursorY);
+    cursorY += 6;
 
+    if (specialty) {
+      doc.setFontSize(fontSize);
+      doc.text(specialty, margin, cursorY);
+      cursorY += 5;
+    }
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(fontSize);
+    doc.text(addressLine1, margin, cursorY);
+    cursorY += 4;
+
+    if (addressLine2) {
+      doc.text(addressLine2, margin, cursorY);
+      cursorY += 4;
+    }
+
+    if (phone) {
+      doc.text(phone, margin, cursorY);
+      cursorY += 5;
+    }
+
+    const lineY = cursorY;
     doc.setDrawColor(59, 130, 246);
     doc.setLineWidth(0.5);
-    doc.line(20, 50, 190, 50);
+    doc.line(20, lineY, 190, lineY);
 
+    doc.setFontSize(9);
+    doc.setTextColor(0);
+    doc.text(new Date(p.date).toLocaleDateString("fr-DZ"), 190, lineY + 8, { align: "right" });
+
+    const patientBoxY = lineY + 14;
     doc.setFillColor(249, 250, 251);
-    doc.rect(20, 55, 170, 20, "F");
+    doc.rect(20, patientBoxY, 170, 20, "F");
     doc.setFontSize(10);
-    doc.text(`Patient : ${patient?.last_name || ""} ${patient?.first_name || ""}`, 25, 62);
-    doc.text(`Né(e) le : ${patient ? new Date(patient.date_of_birth).toLocaleDateString("fr-FR") : ""}`, 25, 68);
-    doc.text(`Prescripteur : ${p.doctor_name || "Dr. Étienne Tremblay"}`, 130, 68);
+    doc.text(`Patient: ${patient?.last_name || ""} ${patient?.first_name || ""}`, 25, patientBoxY + 7);
+    doc.text(`Ne(e) le: ${patient ? new Date(patient.date_of_birth).toLocaleDateString() : ""}`, 25, patientBoxY + 13);
 
     const meds = parseMeds(p);
     autoTable(doc, {
-      startY: 80,
-      head: [["Médicament", "Dosage", "Fréquence", "Durée"]],
+      startY: patientBoxY + 26,
+      head: [["Medicament", "Dosage", "Frequence", "Duree"]],
       body: meds.map((item: any) => [item.name, item.dosage, item.frequency, item.duration]),
       styles: { fontSize: 9, cellPadding: 4 },
       headStyles: { fillColor: [59, 130, 246], textColor: 255 },
