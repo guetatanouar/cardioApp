@@ -23,8 +23,12 @@ export function CardDescription({ className, ...props }: React.HTMLAttributes<HT
   return <p className={cn("text-sm text-muted-foreground", className)} {...props} />;
 }
 
-export function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-6 pt-0", className)} {...props} />;
+export function CardContent({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div className={cn("p-6 pt-0", className)} {...props}>
+      {children}
+    </div>
+  );
 }
 
 export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {

@@ -291,7 +291,48 @@ async function seed() {
             );
         }
 
-        // ── DOCUMENTS (at least 1 per patient) ────────────────────────────────
+        await query(
+            `INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            ['doc_1', 'p1', 'ECG - Gérard Bouchard', 'analyse', '2.1 MB', 'uploads/05ddaf4a4f66a6036e1df6c463db044c']
+        );
+        await query(
+            `INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            ['doc_2', 'p1', 'Bilan sanguin - Gérard Bouchard', 'analyse', '7 KB', 'uploads/11d2d865be2997a22bfd86c398d65fb2']
+        );
+        await query(
+            `INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            ['doc_3', 'p2', 'Holter 24h - Sylvie Roy', 'analyse', '508 KB', 'uploads/94ebb6f6413c5d257fca380afba7e927']
+        );
+        await query(
+            `INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            ['doc_4', 'p3', 'Échocardiographie - Michel Leblanc', 'echographie', '7.2 KB', 'uploads/4a27f763a80a3a86ba97164712a55fb8']
+        );
+        await query(
+            `INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            ['doc_5', 'p4', 'ECG effort - Caroline Côté', 'analyse', '348 KB', 'uploads/d67f48cc57a2b264da024ee037064539']
+        );
+        await query(
+            `INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            ['doc_6', 'p6', 'Radiographie pulmonaire - Robert Ouellet', 'radio', '1.1 MB', 'uploads/102d0a43c9488817317dfa5184832069']
+        );
+        await query(
+            `INSERT INTO documents (id, patient_id, name, category, size, file_path)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (id) DO NOTHING`,
+            ['doc_7', 'p7', 'Bilan glycémique - Nathalie Pelletier', 'analyse', '2.1 MB', 'uploads/8b54dd6449b897bc65a07984bc824fc6']
+        );
 
         const docs: Array<[string, string, string, string, string, string]> = [
             ['doc_1', 'p1', 'ECG - Gérard Bouchard',          'analyse',     '1.2 KB', 'uploads/ecg-gerard-bouchard.txt'],
